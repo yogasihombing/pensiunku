@@ -307,7 +307,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       ),
                                       child: Center(
                                         child: Text(
-                                          'Ajukan Orang Lain',
+                                          'Ajukan Orang Lain AJA',
                                           style: TextStyle(
                                             color: Colors.white,
                                             fontSize: 15,
