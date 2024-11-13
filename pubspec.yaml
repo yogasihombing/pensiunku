@@ -1,0 +1,241 @@
+name: pensiunku
+description: A new Flutter project.
+
+# The following line prevents the package from being accidentally published to
+# pub.dev using `pub publish`. This is preferred for private packages.
+publish_to: "none" # Remove this line if you wish to publish to pub.dev
+
+# The following defines the version and build number for your application.
+# A version number is three numbers separated by dots, like 1.2.43
+# followed by an optional build number separated by a +.
+# Both the version and the builder number may be overridden in flutter
+# build by specifying --build-name and --build-number, respectively.
+# In Android, build-name is used as versionName while build-number used as versionCode.
+# Read more about Android versioning at https://developer.android.com/studio/publish/versioning
+# In iOS, build-name is used as CFBundleShortVersionString while build-number used as CFBundleVersion.
+# Read more about iOS versioning at
+# https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
+version: 1.0.0+1
+# version: 1.0.1+1
+# version: 1.1.0+13
+
+environment:
+  sdk: ">=2.18.6 <3.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  http: ^0.13.3
+
+  # The following adds the Cupertino Icons font to your application.
+  # Use with the CupertinoIcons class for iOS style icons.
+  cupertino_icons: ^1.0.2
+  introduction_screen: ^2.1.0
+  shared_preferences: ^2.0.6
+  otp_autofill: ^1.1.0
+  pin_code_fields: ^7.3.0
+  flutter_launcher_icons: ^0.9.2
+  badges: ^2.0.1
+  intl: ^0.17.0
+  flutter_svg: ^0.22.0
+  url_launcher: ^6.0.9
+  camera: ^0.9.2+1
+  google_ml_kit: ^0.7.1
+  dio: ^4.0.0
+  sqflite: ^2.0.0+4
+  image: ^3.0.2
+  permission_handler: ^10.0.0 # Updated to a compatible version
+  string_similarity: ^2.0.0
+  carousel_slider: ^4.0.0
+  webview_flutter: ^2.0.12
+  currency_text_input_formatter: ^2.1.2
+  flutter_rating_bar: ^4.0.0
+  email_validator: ^2.0.1
+  path_provider: ^2.0.4
+  flutter_native_splash: ^1.2.3
+  cached_network_image: ^3.1.0
+  firebase_core: ^2.8.0 # Updated to a compatible version
+  firebase_messaging: ^14.3.0 # Updated to a compatible version
+  age_calculator: ^1.0.0
+  image_picker: ^0.8.4+2
+  restart_app: ^1.1.0
+  new_version: ^0.3.1
+  month_picker_dialog: ^0.4.0
+  flutter_local_notifications: ^9.9.0
+  youtube_player_flutter: ^8.0.0
+  photo_view: ^0.14.0
+  flutter_advanced_switch: ^3.0.1
+  share_plus: ^4.5.3
+  readmore: ^2.1.0
+  flutter_staggered_grid_view: ^0.6.2
+  like_button: ^2.0.5
+  rflutter_alert: ^2.0.4
+  lazy_load_scrollview: ^1.3.0
+  file_picker: ^4.6.1
+
+dependency_overrides:
+  firebase_core_platform_interface: ^4.5.1
+  firebase_messaging_platform_interface: ^4.3.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+# For information on the generic Dart part of this file, see the
+# following page: https://dart.dev/tools/pub/pubspec
+
+# The following section is specific to Flutter.
+flutter:
+  # The following line ensures that the Material Icons font is
+  # included with your application, so that you can use the icons in
+  # the material Icons class.
+  uses-material-design: true
+
+  # To add assets to your application, add an assets section, like this:
+  assets:
+    - assets/icon/home_icon.png
+    - assets/icon/home_icon_active.png
+    - assets/icon/application_icon.png
+    - assets/icon/application_icon_active.png
+    - assets/icon/submission_icon.png
+    - assets/icon/submission_icon_active.png
+    - assets/icon/account_icon.png
+    - assets/icon/account_icon_active.png
+    - assets/icon/notification_icon.png
+    - assets/icon/notification_icon_black.png
+    - assets/icon/whatsapp.svg
+    - assets/bank/bni_logo.png
+    - assets/bank/bjb_logo.png
+    - assets/bank/bba_logo.png
+    - assets/bank/btpn_logo.png
+    - assets/bank/bws_logo.png
+    - assets/bank/kbb_logo.png
+    - assets/bank/mantap_logo.png
+    - assets/document/kartu_keluarga.png
+    - assets/document/ktp.png
+    - assets/document/npwp.jpeg
+    - assets/document/sk.png
+    - assets/document/selfie.png
+    - assets/document/selfie_new.png
+    - assets/welcome_screen/image_1.png
+    - assets/welcome_screen/image_2.png
+    - assets/welcome_screen/image_3.png
+    - assets/logo_small_white.png
+    - assets/logo_name_white.png
+    - assets/otp_screen/phone.png
+    - assets/otp_screen/mail.png
+    - assets/register_screen/image_1.png
+    - assets/dashboard_screen/image_1.png
+    - assets/dashboard_screen/icon_promo.png
+    - assets/dashboard_screen/icon_event.png
+    - assets/dashboard_screen/icon_article.png
+    - assets/dashboard_screen/bg_usaha.png
+    - assets/dashboard_screen/bg_kesehatan.png
+    - assets/dashboard_screen/button_wa.png
+    - assets/application_screen/image_1.png
+    - assets/application_screen/image_2.png
+    - assets/application_screen/image_3.png
+    - assets/application_screen/image_4.png
+    - assets/application_screen/pensiun_bg.png
+    - assets/application_screen/platinum_bg.png
+    - assets/application_screen/prapensiun_bg.png
+    - assets/application_screen/SLIDER-01.png
+    - assets/application_screen/SLIDER-02.png
+    - assets/application_screen/SLIDER-03.png
+    - assets/submission_screen/empty.png
+    - assets/notification_screen/empty.png
+    - assets/referal_screen/referral-02.png
+    - assets/referal_screen/jump-04.png
+    - assets/point/header_bg.png
+    - assets/point/menu_card.png
+    - assets/point/icon_paket_data.png
+    - assets/point/icon_payment_history.png
+    - assets/point/icon_pulsa.png
+    - assets/point/logo_dana.png
+    - assets/point/logo_gopay.png
+    - assets/point/logo_ovo.png
+    - assets/point/logo_data.png
+    - assets/point/logo_pulsa.png
+    - assets/point/logo_shopee.png
+    - assets/point/kp_point.png
+    - assets/icon/icon_event.png
+    - assets/icon/icon_artikel.png
+    - assets/icon/icon_kesehatan.png
+    - assets/icon/icon_usaha.png
+    - assets/icon/icon_toko.png
+    - assets/icon/icon_halo_pensiun.png
+    - assets/icon/icon_points.png
+    - assets/icon/icon_forum.png
+    - assets/icon/live_chat.png
+    - assets/halopensiun/banner.png
+    - assets/toko/alamat.png
+    - assets/toko/history.png
+    - assets/toko/invoice.png
+    - assets/toko/keranjang.png
+    - assets/toko/metode_pembayaran.png
+    - assets/toko/rincian_pembayaran.png
+    - assets/toko/search.png
+    - assets/icon/call.png
+    - assets/toko/delete.png
+    - assets/toko/kategori/kesehatan1.png
+    - assets/toko/kategori/kesehatan2.png
+    - assets/toko/kategori/kesehatan3.png
+    - assets/toko/kategori/tradisional1.png
+    - assets/toko/kategori/tradisional2.png
+    - assets/toko/kategori/tradisional3.png
+    - assets/toko/kategori/hobi1.png
+    - assets/toko/kategori/hobi2.png
+    - assets/toko/kategori/hobi3.png
+
+  # An image asset can refer to one or more resolution-specific "variants", see
+  # https://flutter.dev/assets-and-images/#resolution-aware.
+
+  # For details regarding adding assets from package dependencies, see
+  # https://flutter.dev/assets-and-images/#from-packages
+
+  # To add custom fonts to your application, add a fonts section here,
+  # in this "flutter" section. Each entry in this list should have a
+  # "family" key with the font family name, and a "fonts" key with a
+  # list giving the asset and other descriptors for the font. For
+  # example:
+  fonts:
+    - family: Hind
+      fonts:
+        - asset: assets/font/Hind/Hind-Bold.ttf
+        - asset: assets/font/Hind/Hind-Light.ttf
+        - asset: assets/font/Hind/Hind-Medium.ttf
+        - asset: assets/font/Hind/Hind-Regular.ttf
+        - asset: assets/font/Hind/Hind-SemiBold.ttf
+    - family: San Fransisco
+      fonts:
+        - asset: assets/font/San-Fransisco/SFNSDisplay-Light.otf
+          weight: 200
+        - asset: assets/font/San-Fransisco/SFNSDisplay-Regular.otf
+          weight: 500
+        - asset: assets/font/San-Fransisco/SFNSDisplay-SemiBold.otf
+          weight: 700
+        - asset: assets/font/San-Fransisco/SFNSDisplay-Bold.otf
+          weight: 900
+    - family: Unna
+      fonts:
+        - asset: assets/font/Unna/Unna-Bold.ttf
+        - asset: assets/font/Unna/Unna-BoldItalic.ttf
+        - asset: assets/font/Unna/Unna-Italic.ttf
+        - asset: assets/font/Unna/Unna-Regular.ttf
+    - family: Athelas
+      fonts:
+        - asset: assets/font/Athelas/Athelas-Bold.ttf
+        - asset: assets/font/Athelas/Athelas-BoldItalic.ttf
+        - asset: assets/font/Athelas/Athelas-Italic.ttf
+        - asset: assets/font/Athelas/Athelas-Regular.ttf
+  #
+  # For details regarding fonts from package dependencies,
+  # see https://flutter.dev/custom-fonts/#from-packages
+
+flutter_native_splash:
+  # To update splash screen run:
+  # - flutter pub run flutter_native_splash:create
+  # To restore Flutter's default white splash screen, run:
+  # - flutter pub run flutter_native_splash:remove
+  color: "#ffffff"
+  image: assets/splash_screen/splash_pensiunku.png
