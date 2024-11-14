@@ -14,6 +14,8 @@ class AjukanRepository {
       namaFotoKTP: ajukan.namaFotoKTP,
       fotoNPWPPath: ajukan.fotoNPWPPath,
       namaFotoNPWP: ajukan.namaFotoNPWP,
+      fotoKaripPath: ajukan.fotoKaripPath,
+      namaFotoKarip: ajukan.namaFotoKarip
     );
   }
 }

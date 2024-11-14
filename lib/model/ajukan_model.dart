@@ -7,6 +7,8 @@ class AjukanModel {
   final String namaFotoKTP;
   final String fotoNPWPPath;
   final String namaFotoNPWP;
+  final String fotoKaripPath;
+  final String namaFotoKarip;
 
   AjukanModel({
     required this.nama,
@@ -17,5 +19,7 @@ class AjukanModel {
     required this.namaFotoKTP,
     required this.fotoNPWPPath,
     required this.namaFotoNPWP,
+    required this.fotoKaripPath,
+    required this.namaFotoKarip,
   });
 }

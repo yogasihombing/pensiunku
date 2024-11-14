@@ -14,6 +14,8 @@ class AjukanApi {
     required String namaFotoKTP,
     required String fotoNPWPPath,
     required String namaFotoNPWP,
+    required String fotoKaripPath,
+    required String namaFotoKarip,
   }) async {
     try {
       // Read file KTP and encode it to base64
@@ -23,6 +25,10 @@ class AjukanApi {
       // Read file NPWP and encode it to base64
       List<int> npwpBytes = await File(fotoNPWPPath).readAsBytes();
       String base64NPWP = base64Encode(npwpBytes);
+
+      // Read file NPWP and encode it to base64
+      List<int> karipBytes = await File(fotoKaripPath).readAsBytes();
+      String base64Karip = base64Encode(karipBytes);
 
       // Create JSON payload
       Map<String, dynamic> formData = {
@@ -34,6 +40,8 @@ class AjukanApi {
         "nama_foto_ktp": namaFotoKTP,
         "foto_npwp": base64NPWP, // Send base64-encoded file
         "nama_foto_npwp": namaFotoNPWP,
+        "foto_karip": base64Karip, // Send base64-encoded file
+        "nama_foto_karip": namaFotoKarip,
       };
 
       // Send POST request

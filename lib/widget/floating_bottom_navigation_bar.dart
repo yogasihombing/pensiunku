@@ -79,7 +79,7 @@ class FloatingBottomNavigationBar extends StatelessWidget {
                   onTap: () {
                     onTapItem(1);
                   },
-                  text: 'Pengajuan',
+                  text: 'Riayat Pengajuan',
                   assetNameInactive: 'assets/icon/submission_icon.png',
                   assetNameActive: 'assets/icon/submission_icon_active.png',
                   isActive: currentIndex == 1,

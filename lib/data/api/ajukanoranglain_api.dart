@@ -46,7 +46,7 @@ class AjukanOrangLainApi {
 
       // Send POST request
       final response = await _dio.post(
-        'https://api.pensiunku.id/new.php/pengajuan',
+        'https://api.pensiunku.id/new.php/pengajuanOther',
         data: formData,
         options: Options(
           headers: {

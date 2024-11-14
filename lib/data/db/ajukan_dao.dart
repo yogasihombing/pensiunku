@@ -13,6 +13,8 @@ class AjukanDao {
     required String namaFotoKTP,
     required String fotoNPWP,
     required String namaFotoNPWP,
+    required String fotoKarip,
+    required String namaFotoKarip,
   }) async {
     // Create the AjukanModel with all the necessary data
     AjukanModel ajukan = AjukanModel(
@@ -24,6 +26,8 @@ class AjukanDao {
       namaFotoKTP: namaFotoKTP,
       fotoNPWPPath: fotoNPWP,
       namaFotoNPWP: namaFotoNPWP,
+      fotoKaripPath: fotoKarip,
+      namaFotoKarip: namaFotoKarip,
     );
 
     // Call the repository to send the data

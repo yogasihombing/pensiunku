@@ -334,7 +334,7 @@ class _AjukanOrangLainScreenState extends State<AjukanOrangLainScreen> {
                                 : '',
                           ),
                           decoration: InputDecoration(
-                            labelText: 'SK Pensiun',
+                            labelText: 'SK Pensiun/SK Aktif/Karip/Karpeg',
                             border: OutlineInputBorder(),
                           ),
                           readOnly: true,
