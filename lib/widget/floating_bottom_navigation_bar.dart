@@ -66,15 +66,15 @@ class FloatingBottomNavigationBar extends StatelessWidget {
                   assetNameActive: 'assets/icon/home_icon_active.png',
                   isActive: currentIndex == 0,
                 ),
-                FloatingBottomNavigationBarItem(
-                  onTap: () {
-                    onTapItem(1);
-                  },
-                  text: 'Jenis Produk',
-                  assetNameInactive: 'assets/icon/application_icon.png',
-                  assetNameActive: 'assets/icon/application_icon_active.png',
-                  isActive: currentIndex == 1,
-                ),
+                // FloatingBottomNavigationBarItem(
+                //   onTap: () {
+                //     onTapItem(1);
+                //   },
+                //   text: 'Jenis Produk',
+                //   assetNameInactive: 'assets/icon/application_icon.png',
+                //   assetNameActive: 'assets/icon/application_icon_active.png',
+                //   isActive: currentIndex == 1,
+                // ),
                 FloatingBottomNavigationBarItem(
                   onTap: () {
                     onTapItem(1);

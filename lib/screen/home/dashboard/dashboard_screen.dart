@@ -9,6 +9,7 @@ import 'package:pensiunku/repository/result_model.dart';
 import 'package:pensiunku/repository/user_repository.dart';
 import 'package:pensiunku/screen/article/article_screen.dart';
 import 'package:pensiunku/screen/home/account/customer_support/customer_support_screen.dart';
+import 'package:pensiunku/screen/home/dashboard/ajukan/ajukanoranglain_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/article_list.dart';
 import 'package:pensiunku/screen/home/dashboard/event/event_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/forum/forum_screen.dart';
@@ -263,7 +264,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       ));
                                     },
                                     child: Container(
-                                      width: 160,
+                                      width: 150,
                                       height: 50,
                                       decoration: BoxDecoration(
                                         borderRadius: BorderRadius.all(
@@ -294,11 +295,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     onTap: () {
                                       Navigator.of(context)
                                           .push(MaterialPageRoute(
-                                        builder: (context) => AjukanScreen(),
+                                        builder: (context) =>
+                                            AjukanOrangLainScreen(),
                                       ));
                                     },
                                     child: Container(
-                                      width: 160,
+                                      width: 150,
                                       height: 50,
                                       decoration: BoxDecoration(
                                         borderRadius: BorderRadius.all(
@@ -307,7 +309,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       ),
                                       child: Center(
                                         child: Text(
-                                          'Ajukan Orang Lain AJA',
+                                          'Ajukan Orang Lain',
                                           style: TextStyle(
                                             color: Colors.white,
                                             fontSize: 15,
