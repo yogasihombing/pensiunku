@@ -14,8 +14,8 @@ class AjukanOrangLainApi {
     required String namaFotoKTP,
     required String fotoNPWPPath,
     required String namaFotoNPWP,
-    required String fotoSKPensiunPath,
-    required String namaFotoSKPensiun,
+    required String fotoKaripPath,
+    required String namaFotoKarip,
   }) async {
     try {
       // Read file KTP and encode it to base64
@@ -27,8 +27,8 @@ class AjukanOrangLainApi {
       String base64NPWP = base64Encode(npwpBytes);
 
       // Read file SK Pensiun and encode it to base64
-      List<int> skpensiunBytes = await File(fotoSKPensiunPath).readAsBytes();
-      String base64SKPensiun = base64Encode(skpensiunBytes);
+      List<int> karipBytes = await File(fotoKaripPath).readAsBytes();
+      String base64Karip = base64Encode(karipBytes);
 
       // Create JSON payload
       Map<String, dynamic> formData = {
@@ -40,8 +40,8 @@ class AjukanOrangLainApi {
         "nama_foto_ktp": namaFotoKTP,
         "foto_npwp": base64NPWP, // Send base64-encoded file
         "nama_foto_npwp": namaFotoNPWP,
-        "foto_skpensiun": base64SKPensiun, // Send base64-encoded file
-        "nama_foto_skpensiun": namaFotoSKPensiun,
+        "foto_karip": base64Karip, // Send base64-encoded file
+        "nama_foto_karip": namaFotoKarip,
       };
 
       // Send POST request

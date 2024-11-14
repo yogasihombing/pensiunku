@@ -17,10 +17,10 @@ class _AjukanOrangLainScreenState extends State<AjukanOrangLainScreen> {
   bool _isLoading = false;
   bool _isKtpUploading = false; // Tambahan untuk KTP
   bool _isNpwpUploading = false; // Tambahan untuk NPWP
-  bool _isSkpensiunUploading = false; // Tambahan Untuk SK Pensiun
+  bool _isKaripUploading = false; // Tambahan Untuk SK Pensiun
   double _ktpUploadProgress = 0.0; // Progres upload KTP
   double _npwpUploadProgress = 0.0; // Progres upload NPWP
-  double _skpensiunUploadProgress = 0.0; // Progres upload SK Pensiun
+  double _karipUploadProgress = 0.0; // Progres upload SK Pensiun
 
   // Controllers for the form fields
   TextEditingController namaController = TextEditingController();
@@ -30,7 +30,7 @@ class _AjukanOrangLainScreenState extends State<AjukanOrangLainScreen> {
 
   String? filePathKTP;
   String? filePathNPWP;
-  String? filePathSKPensiun;
+  String? filePathKarip;
 
   AjukanOrangLainDao ajukanOrangLainDao = AjukanOrangLainDao();
 
@@ -46,8 +46,8 @@ class _AjukanOrangLainScreenState extends State<AjukanOrangLainScreen> {
           filePathNPWP = result.files.single.path;
           _isNpwpUploading = true; // Mulai upload NPWP
         } else if (label == 'SK Pensiun') {
-          filePathSKPensiun = result.files.single.path;
-          _isSkpensiunUploading = true; // Mulai Upload SK Pensiun
+          filePathKarip = result.files.single.path;
+          _isKaripUploading = true; // Mulai Upload SK Pensiun
         }
       });
 
@@ -69,8 +69,8 @@ class _AjukanOrangLainScreenState extends State<AjukanOrangLainScreen> {
             _ktpUploadProgress = seconds / 10; // Progres 10 detik untuk KTP
           } else if (label == 'NPWP') {
             _npwpUploadProgress = seconds / 10; // Progres 10 detik untuk NPWP
-          } else if (label == 'SK Pensiun') {
-            _skpensiunUploadProgress =
+          } else if (label == 'Karip') {
+            _karipUploadProgress =
                 seconds / 5; // Progres 5 detik untuk SK Pensiun
           }
         } else {
@@ -83,8 +83,8 @@ class _AjukanOrangLainScreenState extends State<AjukanOrangLainScreen> {
               _isNpwpUploading = false;
               _npwpUploadProgress = 0.0; // Reset progres setelah selesai
             } else if (label == 'SK Pensiun') {
-              _isSkpensiunUploading = false;
-              _skpensiunUploadProgress = 0.0; // Reset progres setelah selesai
+              _isKaripUploading = false;
+              _karipUploadProgress = 0.0; // Reset progres setelah selesai
             }
           });
         }
@@ -96,7 +96,7 @@ class _AjukanOrangLainScreenState extends State<AjukanOrangLainScreen> {
     if (_formKey.currentState!.validate() &&
         filePathKTP != null &&
         filePathNPWP != null &&
-        filePathSKPensiun != null) {
+        filePathKarip != null) {
       setState(() {
         _isLoading = true;
       });
@@ -110,8 +110,8 @@ class _AjukanOrangLainScreenState extends State<AjukanOrangLainScreen> {
         namaFotoKTP: filePathKTP!.split('/').last,
         fotoNPWP: filePathNPWP!,
         namaFotoNPWP: filePathNPWP!.split('/').last,
-        fotoSKPensiun: filePathSKPensiun!,
-        namaFotoSKPensiun: filePathSKPensiun!.split('/').last,
+        fotoKarip: filePathKarip!,
+        namaFotoKarip: filePathKarip!.split('/').last,
       );
 
       // Set loading state to false
@@ -329,8 +329,8 @@ class _AjukanOrangLainScreenState extends State<AjukanOrangLainScreen> {
                       Expanded(
                         child: TextFormField(
                           controller: TextEditingController(
-                            text: filePathSKPensiun != null
-                                ? filePathSKPensiun!.split('/').last
+                            text: filePathKarip != null
+                                ? filePathKarip!.split('/').last
                                 : '',
                           ),
                           decoration: InputDecoration(
@@ -339,8 +339,8 @@ class _AjukanOrangLainScreenState extends State<AjukanOrangLainScreen> {
                           ),
                           readOnly: true,
                           validator: (value) {
-                            if (filePathSKPensiun == null ||
-                                filePathSKPensiun!.isEmpty) {
+                            if (filePathKarip == null ||
+                                filePathKarip!.isEmpty) {
                               return 'Harap upload dokumen SK Pensiun';
                             }
                             return null;
@@ -348,7 +348,7 @@ class _AjukanOrangLainScreenState extends State<AjukanOrangLainScreen> {
                         ),
                       ),
                       SizedBox(width: 8.0),
-                      _isSkpensiunUploading // Jika sedang upload, tampilkan progres
+                      _isKaripUploading // Jika sedang upload, tampilkan progres
                           ? Expanded(
                               child: LinearProgressIndicator(
                                 value:
@@ -359,7 +359,7 @@ class _AjukanOrangLainScreenState extends State<AjukanOrangLainScreen> {
                               ),
                             )
                           : ElevatedButton(
-                              onPressed: () => _pickFile('SKPensiun'),
+                              onPressed: () => _pickFile('Karip'),
                               child: Text('Upload'),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Color(0xFF017964),

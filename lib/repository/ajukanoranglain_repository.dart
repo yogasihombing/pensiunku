@@ -14,8 +14,8 @@ class AjukanOrangLainRepository {
       namaFotoKTP: ajukan.namaFotoKTP,
       fotoNPWPPath: ajukan.fotoNPWPPath,
       namaFotoNPWP: ajukan.namaFotoNPWP,
-      fotoSKPensiunPath: ajukan.fotoSKPensiunPath,
-      namaFotoSKPensiun: ajukan.namaFotoSKPensiun,
+      fotoKaripPath: ajukan.fotoKaripPath,
+      namaFotoKarip: ajukan.namaFotoKarip,
     );
   }
 }

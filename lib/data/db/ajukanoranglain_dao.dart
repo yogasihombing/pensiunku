@@ -14,8 +14,8 @@ class AjukanOrangLainDao {
     required String namaFotoKTP,
     required String fotoNPWP,
     required String namaFotoNPWP,
-    required String fotoSKPensiun,
-    required String namaFotoSKPensiun,
+    required String fotoKarip,
+    required String namaFotoKarip,
   }) async {
     // Create the AjukanModel with all the necessary data
     AjukanOrangLainModel ajukan = AjukanOrangLainModel(
@@ -27,8 +27,8 @@ class AjukanOrangLainDao {
       namaFotoKTP: namaFotoKTP,
       fotoNPWPPath: fotoNPWP,
       namaFotoNPWP: namaFotoNPWP,
-      fotoSKPensiunPath: fotoSKPensiun,
-      namaFotoSKPensiun: namaFotoSKPensiun,
+      fotoKaripPath: fotoKarip,
+      namaFotoKarip: namaFotoKarip,
     );
 
     // Call the repository to send the data

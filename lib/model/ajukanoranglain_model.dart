@@ -7,8 +7,8 @@ class AjukanOrangLainModel {
   final String namaFotoKTP;
   final String fotoNPWPPath;
   final String namaFotoNPWP;
-  final String fotoSKPensiunPath;
-  final String namaFotoSKPensiun;
+  final String fotoKaripPath;
+  final String namaFotoKarip;
 
   AjukanOrangLainModel({
     required this.nama,
@@ -19,7 +19,7 @@ class AjukanOrangLainModel {
     required this.namaFotoKTP,
     required this.fotoNPWPPath,
     required this.namaFotoNPWP,
-    required this.fotoSKPensiunPath,
-    required this.namaFotoSKPensiun,
+    required this.fotoKaripPath,
+    required this.namaFotoKarip,
   });
 }
