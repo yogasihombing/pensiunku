@@ -1,9 +1,6 @@
 import 'dart:developer';
-
 import 'package:dio/dio.dart';
-import 'package:intl/intl.dart';
 import 'package:pensiunku/data/api/base_api.dart';
-
 import 'package:pensiunku/model/simulation_form_model.dart';
 import 'package:pensiunku/util/api_util.dart';
 

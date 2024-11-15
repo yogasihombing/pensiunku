@@ -1,6 +1,4 @@
 import 'dart:developer';
-import 'dart:io';
-
 import 'package:dio/dio.dart';
 import 'package:pensiunku/data/api/forum_api.dart';
 import 'package:pensiunku/model/forum_model.dart';

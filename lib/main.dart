@@ -1,6 +1,5 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pensiunku/screen/article/article_detail_screen.dart';
@@ -17,7 +16,6 @@ import 'package:pensiunku/screen/home/dashboard/event/event_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/forum/forum_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/halopensiun/halopensiun_screen.dart';
 import 'package:pensiunku/screen/home/home_screen.dart';
-import 'package:pensiunku/screen/home/submission/riwayat_pengajuan.dart';
 import 'package:pensiunku/screen/init/init_screen.dart';
 import 'package:pensiunku/screen/notification/notification_screen.dart';
 import 'package:pensiunku/screen/otp/otp_code_screen.dart';

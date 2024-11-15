@@ -45,7 +45,7 @@ class _AjukanOrangLainScreenState extends State<AjukanOrangLainScreen> {
         } else if (label == 'NPWP') {
           filePathNPWP = result.files.single.path;
           _isNpwpUploading = true; // Mulai upload NPWP
-        } else if (label == 'SK Pensiun') {
+        } else if (label == 'Karip') {
           filePathKarip = result.files.single.path;
           _isKaripUploading = true; // Mulai Upload SK Pensiun
         }
@@ -82,7 +82,7 @@ class _AjukanOrangLainScreenState extends State<AjukanOrangLainScreen> {
             } else if (label == 'NPWP') {
               _isNpwpUploading = false;
               _npwpUploadProgress = 0.0; // Reset progres setelah selesai
-            } else if (label == 'SK Pensiun') {
+            } else if (label == 'Karip') {
               _isKaripUploading = false;
               _karipUploadProgress = 0.0; // Reset progres setelah selesai
             }
@@ -155,7 +155,7 @@ class _AjukanOrangLainScreenState extends State<AjukanOrangLainScreen> {
                   context,
                   MaterialPageRoute(
                     builder: (context) => RiwayatPengajuanPage(
-                      telepon: '085243861919',
+                      telepon: 'telepon',
                     ),
                   ),
                 );
@@ -352,7 +352,7 @@ class _AjukanOrangLainScreenState extends State<AjukanOrangLainScreen> {
                           ? Expanded(
                               child: LinearProgressIndicator(
                                 value:
-                                    _npwpUploadProgress, // Menampilkan progres upload SK Pensiun
+                                    _karipUploadProgress, // Menampilkan progres upload SK Pensiun
                                 backgroundColor: Colors.grey[200],
                                 valueColor:
                                     AlwaysStoppedAnimation<Color>(Colors.blue),

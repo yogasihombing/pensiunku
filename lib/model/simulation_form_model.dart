@@ -1,5 +1,3 @@
-import 'package:pensiunku/model/option_model.dart';
-
 abstract class SimulationFormModel {}
 
 class PengajuanFormModel extends SimulationFormModel {

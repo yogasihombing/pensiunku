@@ -31,29 +31,32 @@ class _RiwayatPengajuanPageState extends State<RiwayatPengajuanPage> {
       );
 
       if (response.statusCode == 200) {
-        final decodedData = json.decode(response.body)['text'];
-        print(decodedData);
+        final decodedResponse = json.decode(response.body);
 
-        // Format tanggal dari API
-        String formattedDate = '';
-        if (decodedData['tanggal_pengajuan'] != null) {
-          try {
-            final DateTime parsedDate =
-                DateTime.parse(decodedData['tanggal_pengajuan']);
-            formattedDate =
-                DateFormat('dd MMMM yyyy, HH:mm').format(parsedDate);
-            decodedData['tanggal_pengajuan'] = formattedDate;
-          } catch (e) {
-            print('Error formatting date: $e');
-            formattedDate = decodedData['tanggal_pengajuan'];
-          }
+        // Check if 'text' is a list
+        if (decodedResponse['text'] is List) {
+          _pengajuanData = decodedResponse['text'];
+
+          // Format dates for each entry in _pengajuanData
+          _pengajuanData = _pengajuanData.map((data) {
+            if (data['tanggal_pengajuan'] != null) {
+              try {
+                final parsedDate = DateTime.parse(data['tanggal_pengajuan']);
+                data['tanggal_pengajuan'] =
+                    DateFormat('dd MMMM yyyy, HH:mm').format(parsedDate);
+              } catch (e) {
+                print('Error formatting date: $e');
+              }
+            }
+            return data;
+          }).toList();
+
+          setState(() {
+            _isLoading = false;
+          });
+        } else {
+          _showErrorSnackBar("Data tidak sesuai format");
         }
-
-        setState(() {
-          _pengajuanData = decodedData;
-          _isLoading = false;
-        });
-        print(_pengajuanData);
       } else {
         _showErrorSnackBar("Gagal memuat data pengajuan");
       }
@@ -136,7 +139,7 @@ class _RiwayatPengajuanPageState extends State<RiwayatPengajuanPage> {
             padding: const EdgeInsets.all(16.0),
             child: _isLoading
                 ? Center(child: CircularProgressIndicator())
-                : _pengajuanData.length < 1
+                : _pengajuanData.isEmpty
                     ? Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,

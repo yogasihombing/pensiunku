@@ -380,22 +380,22 @@ class _AccountInfoScreenState extends State<AccountInfoScreen> {
             ),
             fillColor: Color(0xfff7f7f7),
           ),
-          SizedBox(height: 12.0),
-          CustomDateField(
-            labelText: 'Tanggal Lahir',
-            currentValue: _inputBirthDate,
-            enabled: !_isLoading,
-            onChanged: (DateTime? newBirthDate) {
-              setState(() {
-                _inputBirthDate = newBirthDate;
-              });
-            },
-            useLabel: false,
-            fillColor: Color(0xfff7f7f7),
-            buttonType: 'button_text_field',
-            borderRadius: 36.0,
-            lastDate: DateTime.now(),
-          ),
+          // SizedBox(height: 12.0),
+          // CustomDateField(
+          //   labelText: 'Tanggal Lahir',
+          //   currentValue: _inputBirthDate,
+          //   enabled: !_isLoading,
+          //   onChanged: (DateTime? newBirthDate) {
+          //     setState(() {
+          //       _inputBirthDate = newBirthDate;
+          //     });
+          //   },
+          //   useLabel: false,
+          //   fillColor: Color(0xfff7f7f7),
+          //   buttonType: 'button_text_field',
+          //   borderRadius: 36.0,
+          //   lastDate: DateTime.now(),
+          // ),
           SizedBox(height: 12.0),
           CustomTextField(
             controller: _inputAddressController,
@@ -477,126 +477,126 @@ class _AccountInfoScreenState extends State<AccountInfoScreen> {
                     // );
                   },
                 ),
-          SizedBox(height: 12.0),
-          _inputCity.id != 0
-              ? CustomSelectField(
-                  labelText: 'Kecamatan',
-                  searchLabelText: 'Cari Kecamatan',
-                  currentOption: _inputKecamatan,
-                  options: listKecamatan,
-                  enabled: !_isLoading,
-                  onChanged: (OptionModel newKecamatan) {
-                    _getKelurahanList(newKecamatan.id.toString());
-                    setState(() {
-                      _inputKecamatan = newKecamatan;
-                      _inputKelurahan = OptionModel(id: 0, text: '');
-                      _inputKodePos = OptionModel(id: 0, text: '');
-                    });
-                  },
-                  useLabel: false,
-                  buttonType: 'button_text_field',
-                  hintText: 'Kecamatan',
-                  borderRadius: 36.0,
-                  fillColor: Color(0xfff7f7f7),
-                )
-              : DummyCustomSelectField(
-                  labelText: 'Kecamatan',
-                  placeholderText: 'Kecamatan',
-                  enabled: !_isLoading,
-                  onTap: () {
-                    showDialog(
-                        context: context,
-                        builder: (_) => AlertDialog(
-                              content: Text('Anda belum memilih kabupaten',
-                                  style: TextStyle(color: Colors.white)),
-                              backgroundColor: Colors.red,
-                              elevation: 24.0,
-                            ));
-                    // WidgetUtil.showSnackbar(
-                    //   context,
-                    //   'Anda belum memilih provinsi',
-                    // );
-                  },
-                ),
-          SizedBox(height: 12.0),
-          _inputKecamatan.id != 0
-              ? CustomSelectField(
-                  labelText: 'Kelurahan/Desa',
-                  searchLabelText: 'Cari Kelurahan/Desa',
-                  currentOption: _inputKelurahan,
-                  options: listKelurahan,
-                  enabled: !_isLoading,
-                  onChanged: (OptionModel newKelurahan) {
-                    _getKodePost(_inputKecamatan.id.toString(),
-                        newKelurahan.id.toString());
-                    setState(() {
-                      _inputKelurahan = newKelurahan;
-                      _inputKodePos = OptionModel(id: 0, text: '');
-                    });
-                  },
-                  useLabel: false,
-                  buttonType: 'button_text_field',
-                  hintText: 'Kelurahan/Desa',
-                  borderRadius: 36.0,
-                  fillColor: Color(0xfff7f7f7),
-                )
-              : DummyCustomSelectField(
-                  labelText: 'Kelurahan/Desa',
-                  placeholderText: 'Kelurahan/Desa',
-                  enabled: !_isLoading,
-                  onTap: () {
-                    showDialog(
-                        context: context,
-                        builder: (_) => AlertDialog(
-                              content: Text('Anda belum memilih kecamatan',
-                                  style: TextStyle(color: Colors.white)),
-                              backgroundColor: Colors.red,
-                              elevation: 24.0,
-                            ));
-                    // WidgetUtil.showSnackbar(
-                    //   context,
-                    //   'Anda belum memilih provinsi',
-                    // );
-                  },
-                ),
-          SizedBox(height: 12.0),
-          _inputKelurahan.id != 0
-              ? CustomSelectField(
-                  labelText: 'Kode Pos',
-                  searchLabelText: 'Cari Kode Pos',
-                  currentOption: _inputKodePos,
-                  options: listKodePos,
-                  enabled: !_isLoading,
-                  onChanged: (OptionModel newKodePos) {
-                    setState(() {
-                      _inputKodePos = newKodePos;
-                    });
-                  },
-                  useLabel: false,
-                  buttonType: 'button_text_field',
-                  hintText: 'Kode Pos',
-                  borderRadius: 36.0,
-                  fillColor: Color(0xfff7f7f7),
-                )
-              : DummyCustomSelectField(
-                  labelText: 'Kode Pos',
-                  placeholderText: 'Kode Pos',
-                  enabled: !_isLoading,
-                  onTap: () {
-                    showDialog(
-                        context: context,
-                        builder: (_) => AlertDialog(
-                              content: Text('Anda belum memilih kelurahan/desa',
-                                  style: TextStyle(color: Colors.white)),
-                              backgroundColor: Colors.red,
-                              elevation: 24.0,
-                            ));
-                    // WidgetUtil.showSnackbar(
-                    //   context,
-                    //   'Anda belum memilih provinsi',
-                    // );
-                  },
-                ),
+          // SizedBox(height: 12.0),
+          // _inputCity.id != 0
+          //     ? CustomSelectField(
+          //         labelText: 'Kecamatan',
+          //         searchLabelText: 'Cari Kecamatan',
+          //         currentOption: _inputKecamatan,
+          //         options: listKecamatan,
+          //         enabled: !_isLoading,
+          //         onChanged: (OptionModel newKecamatan) {
+          //           _getKelurahanList(newKecamatan.id.toString());
+          //           setState(() {
+          //             _inputKecamatan = newKecamatan;
+          //             _inputKelurahan = OptionModel(id: 0, text: '');
+          //             _inputKodePos = OptionModel(id: 0, text: '');
+          //           });
+          //         },
+          //         useLabel: false,
+          //         buttonType: 'button_text_field',
+          //         hintText: 'Kecamatan',
+          //         borderRadius: 36.0,
+          //         fillColor: Color(0xfff7f7f7),
+          //       )
+          //     : DummyCustomSelectField(
+          //         labelText: 'Kecamatan',
+          //         placeholderText: 'Kecamatan',
+          //         enabled: !_isLoading,
+          //         onTap: () {
+          //           showDialog(
+          //               context: context,
+          //               builder: (_) => AlertDialog(
+          //                     content: Text('Anda belum memilih kabupaten',
+          //                         style: TextStyle(color: Colors.white)),
+          //                     backgroundColor: Colors.red,
+          //                     elevation: 24.0,
+          //                   ));
+          //           // WidgetUtil.showSnackbar(
+          //           //   context,
+          //           //   'Anda belum memilih provinsi',
+          //           // );
+          //         },
+          //       ),
+          // SizedBox(height: 12.0),
+          // _inputKecamatan.id != 0
+          //     ? CustomSelectField(
+          //         labelText: 'Kelurahan/Desa',
+          //         searchLabelText: 'Cari Kelurahan/Desa',
+          //         currentOption: _inputKelurahan,
+          //         options: listKelurahan,
+          //         enabled: !_isLoading,
+          //         onChanged: (OptionModel newKelurahan) {
+          //           _getKodePost(_inputKecamatan.id.toString(),
+          //               newKelurahan.id.toString());
+          //           setState(() {
+          //             _inputKelurahan = newKelurahan;
+          //             _inputKodePos = OptionModel(id: 0, text: '');
+          //           });
+          //         },
+          //         useLabel: false,
+          //         buttonType: 'button_text_field',
+          //         hintText: 'Kelurahan/Desa',
+          //         borderRadius: 36.0,
+          //         fillColor: Color(0xfff7f7f7),
+          //       )
+          //     : DummyCustomSelectField(
+          //         labelText: 'Kelurahan/Desa',
+          //         placeholderText: 'Kelurahan/Desa',
+          //         enabled: !_isLoading,
+          //         onTap: () {
+          //           showDialog(
+          //               context: context,
+          //               builder: (_) => AlertDialog(
+          //                     content: Text('Anda belum memilih kecamatan',
+          //                         style: TextStyle(color: Colors.white)),
+          //                     backgroundColor: Colors.red,
+          //                     elevation: 24.0,
+          //                   ));
+          //           // WidgetUtil.showSnackbar(
+          //           //   context,
+          //           //   'Anda belum memilih provinsi',
+          //           // );
+          //         },
+          //       ),
+          // SizedBox(height: 12.0),
+          // _inputKelurahan.id != 0
+          //     ? CustomSelectField(
+          //         labelText: 'Kode Pos',
+          //         searchLabelText: 'Cari Kode Pos',
+          //         currentOption: _inputKodePos,
+          //         options: listKodePos,
+          //         enabled: !_isLoading,
+          //         onChanged: (OptionModel newKodePos) {
+          //           setState(() {
+          //             _inputKodePos = newKodePos;
+          //           });
+          //         },
+          //         useLabel: false,
+          //         buttonType: 'button_text_field',
+          //         hintText: 'Kode Pos',
+          //         borderRadius: 36.0,
+          //         fillColor: Color(0xfff7f7f7),
+          //       )
+          //     : DummyCustomSelectField(
+          //         labelText: 'Kode Pos',
+          //         placeholderText: 'Kode Pos',
+          //         enabled: !_isLoading,
+          //         onTap: () {
+          //           showDialog(
+          //               context: context,
+          //               builder: (_) => AlertDialog(
+          //                     content: Text('Anda belum memilih kelurahan/desa',
+          //                         style: TextStyle(color: Colors.white)),
+          //                     backgroundColor: Colors.red,
+          //                     elevation: 24.0,
+          //                   ));
+          //           // WidgetUtil.showSnackbar(
+          //           //   context,
+          //           //   'Anda belum memilih provinsi',
+          //           // );
+          //         },
+          //       ),
           SizedBox(height: 12.0),
           CustomSelectField(
             labelText: 'Pekerjaan',

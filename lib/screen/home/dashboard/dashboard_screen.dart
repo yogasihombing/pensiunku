@@ -1,5 +1,4 @@
 import 'package:carousel_slider/carousel_slider.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:pensiunku/model/article_model.dart';
 import 'package:pensiunku/model/event_model.dart';
@@ -8,29 +7,19 @@ import 'package:pensiunku/repository/article_repository.dart';
 import 'package:pensiunku/repository/result_model.dart';
 import 'package:pensiunku/repository/user_repository.dart';
 import 'package:pensiunku/screen/article/article_screen.dart';
-import 'package:pensiunku/screen/home/account/customer_support/customer_support_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/ajukan/ajukanoranglain_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/article_list.dart';
 import 'package:pensiunku/screen/home/dashboard/event/event_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/forum/forum_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/halopensiun/halopensiun_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/icon_menu.dart';
-import 'package:pensiunku/screen/home/dashboard/usaha_screen.dart';
 import 'package:pensiunku/screen/home/submission/riwayat_pengajuan.dart';
 import 'package:pensiunku/screen/notification/notification_screen.dart';
-import 'package:pensiunku/screen/toko/kategori_screen.dart';
-import 'package:pensiunku/screen/toko/toko_screen.dart';
 import 'package:pensiunku/util/shared_preferences_util.dart';
 import 'package:pensiunku/widget/chip_tab.dart';
 import 'package:pensiunku/widget/error_card.dart';
-import 'package:pensiunku/widget/floating_bottom_navigation_bar.dart';
 import 'package:pensiunku/widget/notification_icon.dart';
-import 'package:pensiunku/widget/simulation_form_type/pengajuan_form.dart';
-import 'package:pensiunku/widget/sliver_app_bar_button.dart';
-import 'package:pensiunku/widget/sliver_app_bar_sheet_top.dart';
-import 'package:pensiunku/widget/sliver_app_bar_title.dart';
-
-import 'ajukan/ajukan_screen.dart';
+import 'ajukan/ajukan_screen.dart';   
 
 class DashboardScreen extends StatefulWidget {
   final void Function(BuildContext) onApplySubmission;
