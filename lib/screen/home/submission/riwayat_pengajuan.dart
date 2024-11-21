@@ -1,130 +1,67 @@
-import 'dart:convert';
+import 'dart:math';
+
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'package:intl/intl.dart';
-import 'package:pensiunku/screen/home/dashboard/ajukan/ajukan_screen.dart';
-import 'package:pensiunku/screen/home/submission/status_pengajuan.dart';
+import 'package:pensiunku/data/api/riwayat_ajukan_api.dart';
+import 'package:pensiunku/model/riwayat_ajukan_model.dart';
+import 'package:pensiunku/repository/riwayat_ajukan_repository.dart';
 
 class RiwayatPengajuanPage extends StatefulWidget {
-  final String telepon;
-
-  RiwayatPengajuanPage({required this.telepon});
+  const RiwayatPengajuanPage({Key? key}) : super(key: key);
 
   @override
   _RiwayatPengajuanPageState createState() => _RiwayatPengajuanPageState();
 }
 
 class _RiwayatPengajuanPageState extends State<RiwayatPengajuanPage> {
-  bool _isLoading = false;
-  List _pengajuanData = [];
-
-  Future<void> _fetchPengajuanData() async {
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      final response = await http.post(
-        Uri.parse('https://api.pensiunku.id/new.php/getPengajuan'),
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({"telepon": widget.telepon}),
-      );
-
-      if (response.statusCode == 200) {
-        final decodedResponse = json.decode(response.body);
-
-        // Check if 'text' is a list
-        if (decodedResponse['text'] is List) {
-          _pengajuanData = decodedResponse['text'];
-
-          // Format dates for each entry in _pengajuanData
-          _pengajuanData = _pengajuanData.map((data) {
-            if (data['tanggal_pengajuan'] != null) {
-              try {
-                final parsedDate = DateTime.parse(data['tanggal_pengajuan']);
-                data['tanggal_pengajuan'] =
-                    DateFormat('dd MMMM yyyy, HH:mm').format(parsedDate);
-              } catch (e) {
-                print('Error formatting date: $e');
-              }
-            }
-            return data;
-          }).toList();
-
-          setState(() {
-            _isLoading = false;
-          });
-        } else {
-          _showErrorSnackBar("Data tidak sesuai format");
-        }
-      } else {
-        _showErrorSnackBar("Gagal memuat data pengajuan");
-      }
-    } catch (error) {
-      _showErrorSnackBar("Terjadi kesalahan: $error");
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
-  void _showErrorSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
-  }
+  final RiwayatPengajuanRepository _repository = RiwayatPengajuanRepository();
+  List<RiwayatPengajuanModel> pengajuanData = [];
+  bool isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _fetchPengajuanData();
+    fetchPengajuanData();
   }
 
-  Widget _buildStatusBadge(String status) {
-    Color badgeColor;
-    IconData badgeIcon;
+  Future<void> fetchPengajuanData() async {
+    setState(() => isLoading = true); // Set state menjadi loading
+    try {
+      const String telepon = '085243861919';
 
-    switch (status.toLowerCase()) {
-      case 'pending':
-        badgeColor = Colors.orange;
-        badgeIcon = Icons.pending;
-        break;
-      case 'disetujui':
-        badgeColor = Colors.green;
-        badgeIcon = Icons.check_circle;
-        break;
-      case 'ditolak':
-        badgeColor = Colors.red;
-        badgeIcon = Icons.cancel;
-        break;
-      default:
-        badgeColor = Colors.grey;
-        badgeIcon = Icons.help;
-    }
+      // Memanggil repository untuk mendapatkan data
+      final data = await _repository.getRiwayatPengajuan(telepon);
 
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: badgeColor.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: badgeColor),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(badgeIcon, size: 16, color: badgeColor),
-          SizedBox(width: 4),
-          Text(
-            status,
-            style: TextStyle(
-              color: badgeColor,
-              fontWeight: FontWeight.bold,
-            ),
+      // Debug log untuk memeriksa isi data
+      print('Data yang diterima: $data');
+
+      // Pastikan data adalah List<Map<String, dynamic>> sebelum mapping
+      if (data is List<Map<String, dynamic>>) {
+        setState(() {
+          pengajuanData = data
+              .map((e) =>
+                  RiwayatPengajuanModel.fromJson(e as Map<String, dynamic>))
+              .toList(); // Mapping data ke model
+          isLoading = false; // Loading selesai
+        });
+      } else {
+        throw Exception('Format data tidak sesuai: $data');
+      }
+    } catch (e, stackTrace) {
+      // Log error untuk debugging
+      print('Error saat fetch data: $e');
+      print('StackTrace: $stackTrace');
+
+      // Handle error dengan menampilkan Snackbar
+      setState(() => isLoading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal memuat data: ${e.toString()}'),
+            behavior: SnackBarBehavior.floating,
           ),
-        ],
-      ),
-    );
+        );
+      }
+    }
   }
 
   @override
@@ -132,171 +69,196 @@ class _RiwayatPengajuanPageState extends State<RiwayatPengajuanPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Riwayat Pengajuan'),
-      ),
-      body: Stack(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: _isLoading
-                ? Center(child: CircularProgressIndicator())
-                : _pengajuanData.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.history, size: 64, color: Colors.grey),
-                            SizedBox(height: 16),
-                            Text(
-                              "Belum ada riwayat pengajuan",
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                            SizedBox(height: 24),
-                            ElevatedButton(
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => AjukanScreen(),
-                                  ),
-                                );
-                              },
-                              child: Text('Buat Pengajuan Baru'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Color(0xFF017964),
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: 24,
-                                  vertical: 12,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      )
-                    : Column(
-                        children: [
-                          GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => StatusPengajuanPage(
-                                    nama: _pengajuanData[0]['nama'] ?? '',
-                                    telepon: widget.telepon,
-                                    domisili:
-                                        _pengajuanData[0]['domisili'] ?? '',
-                                    nip: _pengajuanData[0]['nip'] ?? '',
-                                    nama_foto_ktp: _pengajuanData[0]
-                                            ['nama_foto_ktp'] ??
-                                        '',
-                                    npwpFileName: _pengajuanData[0]
-                                            ['nama_foto_npwp'] ??
-                                        '',
-                                    statusPengajuan:
-                                        _pengajuanData[0]['status'] ?? '',
-                                  ),
-                                ),
-                              );
-                            },
-                            child: Container(
-                              width: double.infinity,
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(12),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.1),
-                                    blurRadius: 10,
-                                    offset: Offset(0, 4),
-                                  ),
-                                ],
-                              ),
-                              padding: EdgeInsets.all(16.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        'Kode Pengajuan',
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          color: Colors.grey[600],
-                                        ),
-                                      ),
-                                      _buildStatusBadge(_pengajuanData[0]
-                                              ['tiket'] ??
-                                          'Pending'),
-                                    ],
-                                  ),
-                                  SizedBox(height: 8),
-                                  Text(
-                                    _pengajuanData[0]['tiket'].toString(),
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.black87,
-                                    ),
-                                  ),
-                                  SizedBox(height: 16),
-                                  Row(
-                                    children: [
-                                      Icon(Icons.calendar_today,
-                                          size: 16, color: Colors.grey[600]),
-                                      SizedBox(width: 8),
-                                      Text(
-                                        _pengajuanData[0]
-                                                ['tanggal_pengajuan'] ??
-                                            'Tidak Tersedia',
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          color: Colors.grey[600],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  SizedBox(height: 16),
-                                  Text(
-                                    'Tap untuk melihat detail pengajuan',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.blue,
-                                      fontStyle: FontStyle.italic,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          SizedBox(height: 24),
-                          ElevatedButton.icon(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => AjukanScreen(),
-                                ),
-                              );
-                            },
-                            icon: Icon(Icons.add),
-                            label: Text('Ajukan Pengajuan Baru'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Color(0xFF017964),
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 24,
-                                vertical: 12,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.refresh),
+            onPressed: fetchPengajuanData,
           ),
         ],
+      ),
+      body: RefreshIndicator(
+        onRefresh: fetchPengajuanData,
+        child: isLoading
+            ? Center(child: CircularProgressIndicator())
+            : pengajuanData.isEmpty
+                ? Center(
+                    child: Text(
+                      'Tidak ada riwayat pengajuan.',
+                      style: TextStyle(fontSize: 16, color: Colors.grey),
+                    ),
+                  )
+                : ListView.builder(
+                    itemCount: pengajuanData.length,
+                    itemBuilder: (context, index) {
+                      return ListTile(
+                        title: Text(pengajuanData[index].nama),
+                        subtitle: Text(
+                            'Tanggal: ${pengajuanData[index].tanggal} - Tiket: ${pengajuanData[index].tiket}'),
+                      );
+                    },
+                  ),
       ),
     );
   }
 }
+
+
+// import 'dart:math';
+
+// import 'package:flutter/material.dart';
+// import 'package:pensiunku/data/api/riwayat_ajukan_api.dart'; // API untuk mengambil data riwayat pengajuan
+// import 'package:pensiunku/model/riwayat_ajukan_model.dart'; // Model data pengajuan
+// import 'package:pensiunku/repository/riwayat_ajukan_repository.dart'; // Repository untuk menghubungkan UI dan API
+
+// class RiwayatPengajuanPage extends StatefulWidget {
+//   const RiwayatPengajuanPage({Key? key}) : super(key: key);
+
+//   @override
+//   _RiwayatPengajuanPageState createState() => _RiwayatPengajuanPageState();
+// }
+
+// class _RiwayatPengajuanPageState extends State<RiwayatPengajuanPage> {
+//   // Membuat instance repository
+//   final RiwayatPengajuanRepository _repository = RiwayatPengajuanRepository();
+
+//   // Variabel untuk menyimpan data pengajuan
+//   List<RiwayatPengajuanModel> pengajuanData = [];
+
+//   // Variabel untuk mengatur state loading
+//   bool isLoading = true;
+
+//   @override
+//   void initState() {
+//     super.initState();
+//     // Memanggil fungsi untuk mengambil data pengajuan saat widget pertama kali dibangun
+//     fetchPengajuanData();
+//   }
+
+//   // Fungsi untuk mengambil data pengajuan dari repository
+//   Future<void> fetchPengajuanData() async {
+//     // Menyetel state loading menjadi true saat data sedang dimuat
+//     setState(() => isLoading = true);
+
+//     try {
+//       // Mengambil nomor telepon (contoh saja, ganti sesuai sumber data)
+//       const String telepon = '085243861919';
+
+//       // Memanggil fungsi repository untuk mendapatkan data
+//       final data = await _repository.getRiwayatPengajuan(telepon);
+//       print('data yang diterima: $data');
+
+//       // Menyimpan data ke dalam state
+//       setState(() {
+//         pengajuanData = data.map((e) => RiwayatPengajuanModel.fromJson(e)).toList();
+//         isLoading = false; // Menyelesaikan proses loading
+//       });
+//     } catch (e, stackTrace) {
+//       print('Error: $e');
+//       print('StackTrace: $stackTrace');
+//       // Mengatasi error jika data gagal dimuat
+//       setState(() => isLoading = false);
+
+//       // Menampilkan pesan error menggunakan Snackbar
+//       if (mounted) {
+//         ScaffoldMessenger.of(context).showSnackBar(
+//           SnackBar(
+//             content: Text('Gagal memuat data: ${e.toString()}'),
+//             behavior: SnackBarBehavior.floating,
+//           ),
+//         );
+//       }
+//     }
+//   }
+
+//   // Widget untuk menampilkan pesan ketika data kosong
+//   Widget _buildEmptyState() {
+//     return Center(
+//       child: Column(
+//         mainAxisAlignment: MainAxisAlignment.center,
+//         children: [
+//           Icon(Icons.history, size: 64, color: Colors.grey), // Ikon riwayat
+//           SizedBox(height: 16),
+//           Text(
+//             'Belum ada riwayat pengajuan',
+//             style: TextStyle(
+//               fontSize: 16,
+//               fontWeight: FontWeight.w500,
+//               color: Colors.grey[600],
+//             ),
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+
+//   // Widget untuk menampilkan satu item data pengajuan
+//   Widget _buildPengajuanItem(RiwayatPengajuanModel pengajuan) {
+//     return Card(
+//       elevation: 5, // Efek bayangan pada card
+//       margin: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+//       child: ListTile(
+//         contentPadding: EdgeInsets.all(16),
+//         title: Text(
+//           'Tiket: ${pengajuan.tiket}',
+//           style: TextStyle(
+//             fontWeight: FontWeight.bold,
+//             fontSize: 16,
+//           ),
+//         ),
+//         subtitle: Column(
+//           crossAxisAlignment: CrossAxisAlignment.start,
+//           children: [
+//             SizedBox(height: 8),
+//             Text(
+//               'Nama: ${pengajuan.nama}', // Menampilkan nama pemohon
+//               style: TextStyle(
+//                 fontWeight: FontWeight.w500,
+//                 fontSize: 14,
+//               ),
+//             ),
+//             SizedBox(height: 4),
+//             Text(
+//               'Tanggal Pengajuan: ${pengajuan.tanggal}', // Menampilkan tanggal pengajuan
+//               style: TextStyle(fontSize: 14),
+//             ),
+//           ],
+//         ),
+//         onTap: () {
+//           // Aksi ketika item diklik (opsional, tambahkan navigasi jika perlu)
+//         },
+//       ),
+//     );
+//   }
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return Scaffold(
+//       appBar: AppBar(
+//         title: Text('Riwayat Pengajuan'), // Judul halaman
+//         actions: [
+//           // Tombol untuk refresh data
+//           IconButton(
+//             icon: Icon(Icons.refresh),
+//             onPressed: fetchPengajuanData,
+//           ),
+//         ],
+//       ),
+//       body: RefreshIndicator(
+//         onRefresh: fetchPengajuanData, // Menyegarkan data saat swipe ke bawah
+//         child: isLoading
+//             ? Center(
+//                 child: CircularProgressIndicator()) // Loader saat data dimuat
+//             : pengajuanData.isEmpty
+//                 ? _buildEmptyState() // Menampilkan pesan jika data kosong
+//                 : ListView.builder(
+//                     itemCount: pengajuanData.length, // Jumlah item data
+//                     padding: EdgeInsets.symmetric(vertical: 8),
+//                     itemBuilder: (context, index) {
+//                       // Membuat item untuk setiap data
+//                       return _buildPengajuanItem(pengajuanData[index]);
+//                     },
+//                   ),
+//       ),
+//     );
+//   }
+// }

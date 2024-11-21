@@ -154,9 +154,7 @@ class _AjukanOrangLainScreenState extends State<AjukanOrangLainScreen> {
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => RiwayatPengajuanPage(
-                      telepon: 'telepon',
-                    ),
+                    builder: (context) => RiwayatPengajuanPage(),
                   ),
                 );
               },

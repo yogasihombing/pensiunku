@@ -1,52 +1,40 @@
-// lib/model/riwayat_pengajuan_model.dart
-class RiwayatPengajuan {
-  final String? kodePengajuan;
-  final String? tanggalPengajuan;
-  final String? status;
-  final String? nama;
-  final String? telepon;
-  final String? domisili;
-  final String? nip;
-  final String? namaFotoKtp;
-  final String? namaFotoNpwp;
+class RiwayatPengajuanModel {
+  // Properti model yang sesuai dengan data API
+  final String id;
+  final String tiket;
+  final String nama;
+  final String telepon;
+  final String alamat;
+  final String nip;
+  final String tanggal;
 
-  RiwayatPengajuan({
-    this.kodePengajuan,
-    this.tanggalPengajuan, 
-    this.status,
-    this.nama,
-    this.telepon,
-    this.domisili,
-    this.nip,
-    this.namaFotoKtp,
-    this.namaFotoNpwp,
+  // Constructor untuk menginisialisasi properti model
+  RiwayatPengajuanModel({
+    required this.id,
+    required this.tiket,
+    required this.nama,
+    required this.telepon,
+    required this.alamat,
+    required this.nip,
+    required this.tanggal,
   });
 
-  factory RiwayatPengajuan.fromJson(Map<String, dynamic> json) {
-    return RiwayatPengajuan(
-      kodePengajuan: json['kode_pengajuan'],
-      tanggalPengajuan: json['tanggal_pengajuan'],
-      status: json['status'] ?? 'Pending',
-      nama: json['nama'],
-      telepon: json['telepon'],
-      domisili: json['domisili'],
-      nip: json['nip'],
-      namaFotoKtp: json['nama_foto_ktp'],
-      namaFotoNpwp: json['nama_foto_npwp'],
-    );
+  // Factory untuk membuat instance model dari JSON
+  factory RiwayatPengajuanModel.fromJson(Map<String, dynamic> json) {
+  if (!json.containsKey('id') ||
+      !json.containsKey('tiket') ||
+      !json.containsKey('nama')) {
+    throw Exception('Data JSON tidak lengkap: $json');
   }
+  return RiwayatPengajuanModel(
+    id: json['id'] ?? '',
+    tiket: json['tiket'] ?? '',
+    nama: json['nama'] ?? '',
+    telepon: json['telepon'] ?? '',
+    alamat: json['alamat'] ?? '',
+    nip: json['nip'] ?? '',
+    tanggal: json['tanggal'] ?? '',
+  );
+}
 
-  Map<String, dynamic> toJson() {
-    return {
-      'kode_pengajuan': kodePengajuan,
-      'tanggal_pengajuan': tanggalPengajuan,
-      'status': status,
-      'nama': nama,
-      'telepon': telepon,
-      'domisili': domisili,
-      'nip': nip,
-      'nama_foto_ktp': namaFotoKtp,
-      'nama_foto_npwp': namaFotoNpwp,
-    };
-  }
 }

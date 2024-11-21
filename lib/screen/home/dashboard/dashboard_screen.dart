@@ -19,7 +19,7 @@ import 'package:pensiunku/util/shared_preferences_util.dart';
 import 'package:pensiunku/widget/chip_tab.dart';
 import 'package:pensiunku/widget/error_card.dart';
 import 'package:pensiunku/widget/notification_icon.dart';
-import 'ajukan/ajukan_screen.dart';   
+import 'ajukan/ajukan_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   final void Function(BuildContext) onApplySubmission;
@@ -149,9 +149,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => RiwayatPengajuanPage(
-                    telepon: '085243861919',
-                  ),
+                  builder: (context) => RiwayatPengajuanPage(),
                 ),
               );
             },

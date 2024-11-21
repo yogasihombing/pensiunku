@@ -154,9 +154,7 @@ class _AjukanScreenState extends State<AjukanScreen> {
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => RiwayatPengajuanPage(
-                      telepon: '085243861919',
-                    ),
+                    builder: (context) => RiwayatPengajuanPage(),
                   ),
                 );
               },
