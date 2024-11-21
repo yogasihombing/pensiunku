@@ -1,9 +1,10 @@
 import 'dart:convert';
 import 'dart:io'; // Import the dart:io package
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 
 class AjukanApi {
-  final Dio _dio = Dio();
+  final Dio _dio = Dio(); // Inisialisasi objek Dio untuk melakukan HTTP request
 
   Future<bool> kirimPengajuan({
     required String nama,
@@ -18,19 +19,27 @@ class AjukanApi {
     required String namaFotoKarip,
   }) async {
     try {
-      // Read file KTP and encode it to base64
+      print('Memulai proses kirim pengajuan...'); // Print awal proses
+
+      // Membaca file KTP dan mengkonversi ke base64
+      print('Membaca file KTP: $fotoKTPPath');
       List<int> ktpBytes = await File(fotoKTPPath).readAsBytes();
       String base64KTP = base64Encode(ktpBytes);
+      print('Berhasil encode file KTP ke base64');
 
-      // Read file NPWP and encode it to base64
+      // Membaca file NPWP dan mengkonversi ke base64
+      print('Membaca file NPWP: $fotoNPWPPath');
       List<int> npwpBytes = await File(fotoNPWPPath).readAsBytes();
       String base64NPWP = base64Encode(npwpBytes);
+      print('Berhasil encode file NPWP ke base64');
 
-      // Read file NPWP and encode it to base64
+      // Membaca file Karip dan mengkonversi ke base64
+      print('Membaca file Karip: $fotoKaripPath');
       List<int> karipBytes = await File(fotoKaripPath).readAsBytes();
       String base64Karip = base64Encode(karipBytes);
+      print('Berhasil encode file Karip ke base64');
 
-      // Create JSON payload
+      // Membuat payload JSON untuk dikirim ke API
       Map<String, dynamic> formData = {
         "nama": nama,
         "telepon": telepon,
@@ -44,7 +53,9 @@ class AjukanApi {
         "nama_foto_karip": namaFotoKarip,
       };
 
-      // Send POST request
+      debugPrint('Mengirim request ke API...'); // Gunakan debugPrint
+
+      // Kirim request POST
       final response = await _dio.post(
         'https://api.pensiunku.id/new.php/pengajuan',
         data: formData,
@@ -56,13 +67,24 @@ class AjukanApi {
       );
 
       if (response.statusCode == 200) {
+        print('Pengajuan berhasil dikirim!'); // Print jika sukses
         return true; // Success
       } else {
-        print('Failed with status: ${response.statusCode}');
+        print('Gagal mengirim pengajuan. Status: ${response.statusCode}');
+        print(
+            'Response body: ${response.data}'); // Tambahan print untuk detail response
         return false;
       }
     } on DioError catch (e) {
-      print('Error: ${e.response?.statusCode} - ${e.message}');
+      // Tangani error dari Dio dengan detail yang lebih komprehensif
+      print('Error dalam pengiriman:');
+      print('Status Code: ${e.response?.statusCode}');
+      print('Error Message: ${e.message}');
+      print('Response Data: ${e.response?.data}');
+      return false;
+    } catch (e) {
+      // Tangani error umum yang mungkin terjadi
+      print('Error tidak terduga: $e');
       return false;
     }
   }

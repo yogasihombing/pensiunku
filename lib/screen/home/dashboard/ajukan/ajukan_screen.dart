@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:file_picker/file_picker.dart';
@@ -12,27 +11,33 @@ class AjukanScreen extends StatefulWidget {
 }
 
 class _AjukanScreenState extends State<AjukanScreen> {
+  // GlobalKey untuk form, digunakan untuk validasi
   final _formKey = GlobalKey<FormState>();
-  bool _isLoading = false;
+  bool _isLoading = false; // Flag untuk menandakan proses loading
   bool _isKtpUploading = false; // Tambahan untuk KTP
   bool _isNpwpUploading = false; // Tambahan untuk NPWP
   bool _isKaripUploading = false; // Tambahan Untuk SK Pensiun
+
+  // Variabel untuk melacak progres upload
   double _ktpUploadProgress = 0.0; // Progres upload KTP
   double _npwpUploadProgress = 0.0; // Progres upload NPWP
   double _karipUploadProgress = 0.0; // Progres upload SK Pensiun
 
-  // Controllers for the form fields
+  // Controller untuk input teks
   TextEditingController namaController = TextEditingController();
   TextEditingController teleponController = TextEditingController();
   TextEditingController domisiliController = TextEditingController();
   TextEditingController nipController = TextEditingController();
 
+  // Variabel untuk menyimpan path file
   String? filePathKTP;
   String? filePathNPWP;
   String? filePathKarip;
 
+  // Data Access Object untuk pengajuan
   AjukanDao ajukanDao = AjukanDao();
 
+  // Fungsi untuk memilih file
   Future<void> _pickFile(String label) async {
     FilePickerResult? result = await FilePicker.platform.pickFiles();
 
@@ -41,12 +46,17 @@ class _AjukanScreenState extends State<AjukanScreen> {
         if (label == 'KTP') {
           filePathKTP = result.files.single.path;
           _isKtpUploading = true; // Mulai upload KTP
+          print('KTP file picked: $filePathKTP'); // Tambah print untuk logging
         } else if (label == 'NPWP') {
           filePathNPWP = result.files.single.path;
           _isNpwpUploading = true; // Mulai upload NPWP
+          print(
+              'NPWP file picked: $filePathNPWP'); // Tambah print untuk logging
         } else if (label == 'Karip') {
           filePathKarip = result.files.single.path;
           _isKaripUploading = true; // Mulai Upload SK Pensiun
+          print(
+              'Karip file picked: $filePathKarip'); // Tambah print untuk logging
         }
       });
 
@@ -101,6 +111,14 @@ class _AjukanScreenState extends State<AjukanScreen> {
         _isLoading = true;
       });
 
+      // Cetak data yang akan dikirim untuk logging
+      print('Submitting pengajuan with data:');
+      print('Nama: ${namaController.text}');
+      print('Telepon: ${teleponController.text}');
+      print('Domisili: ${domisiliController.text}');
+      print('NIP: ${nipController.text}');
+
+      // Kirim pengajuan melalui DAO
       bool success = await ajukanDao.kirimPengajuan(
         nama: namaController.text,
         telepon: teleponController.text,
