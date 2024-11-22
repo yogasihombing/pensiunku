@@ -74,9 +74,9 @@ class _AjukanOrangLainScreenState extends State<AjukanOrangLainScreen> {
         if (seconds < 6) {
           seconds++;
           if (label == 'KTP') {
-            _ktpUploadProgress = seconds / 10; // Progres 10 detik untuk KTP
+            _ktpUploadProgress = seconds / 3; // Progres 10 detik untuk KTP
           } else if (label == 'NPWP') {
-            _npwpUploadProgress = seconds / 10; // Progres 10 detik untuk NPWP
+            _npwpUploadProgress = seconds / 5; // Progres 10 detik untuk NPWP
           } else if (label == 'Karip') {
             _karipUploadProgress =
                 seconds / 5; // Progres 5 detik untuk SK Pensiun
