@@ -71,10 +71,10 @@ class _AjukanOrangLainScreenState extends State<AjukanOrangLainScreen> {
     // Timer untuk mensimulasikan progres upload
     Timer.periodic(oneSec, (Timer timer) {
       setState(() {
-        if (seconds < 6) {
+        if (seconds < 5) {
           seconds++;
           if (label == 'KTP') {
-            _ktpUploadProgress = seconds / 3; // Progres 10 detik untuk KTP
+            _ktpUploadProgress = seconds / 5; // Progres 10 detik untuk KTP
           } else if (label == 'NPWP') {
             _npwpUploadProgress = seconds / 5; // Progres 10 detik untuk NPWP
           } else if (label == 'Karip') {
