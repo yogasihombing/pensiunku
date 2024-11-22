@@ -1,3 +1,4 @@
+
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -102,163 +103,69 @@ class _RiwayatPengajuanPageState extends State<RiwayatPengajuanPage> {
   }
 }
 
-
-// import 'dart:math';
-
 // import 'package:flutter/material.dart';
-// import 'package:pensiunku/data/api/riwayat_ajukan_api.dart'; // API untuk mengambil data riwayat pengajuan
-// import 'package:pensiunku/model/riwayat_ajukan_model.dart'; // Model data pengajuan
-// import 'package:pensiunku/repository/riwayat_ajukan_repository.dart'; // Repository untuk menghubungkan UI dan API
+// // import 'package:pensiunku/data/repository/riwayat_ajukan_repository.dart';
+// import 'package:pensiunku/model/riwayat_ajukan_model.dart';
+// import 'package:pensiunku/repository/riwayat_ajukan_repository.dart';
 
 // class RiwayatPengajuanPage extends StatefulWidget {
-//   const RiwayatPengajuanPage({Key? key}) : super(key: key);
+//   final String telepon;
+
+//   const RiwayatPengajuanPage({Key? key, required this.telepon})
+//       : super(key: key);
 
 //   @override
 //   _RiwayatPengajuanPageState createState() => _RiwayatPengajuanPageState();
 // }
 
 // class _RiwayatPengajuanPageState extends State<RiwayatPengajuanPage> {
-//   // Membuat instance repository
 //   final RiwayatPengajuanRepository _repository = RiwayatPengajuanRepository();
-
-//   // Variabel untuk menyimpan data pengajuan
-//   List<RiwayatPengajuanModel> pengajuanData = [];
-
-//   // Variabel untuk mengatur state loading
-//   bool isLoading = true;
+//   late Future<List<RiwayatPengajuanModel>> _riwayatFuture;
 
 //   @override
 //   void initState() {
 //     super.initState();
-//     // Memanggil fungsi untuk mengambil data pengajuan saat widget pertama kali dibangun
-//     fetchPengajuanData();
-//   }
-
-//   // Fungsi untuk mengambil data pengajuan dari repository
-//   Future<void> fetchPengajuanData() async {
-//     // Menyetel state loading menjadi true saat data sedang dimuat
-//     setState(() => isLoading = true);
-
-//     try {
-//       // Mengambil nomor telepon (contoh saja, ganti sesuai sumber data)
-//       const String telepon = '085243861919';
-
-//       // Memanggil fungsi repository untuk mendapatkan data
-//       final data = await _repository.getRiwayatPengajuan(telepon);
-//       print('data yang diterima: $data');
-
-//       // Menyimpan data ke dalam state
-//       setState(() {
-//         pengajuanData = data.map((e) => RiwayatPengajuanModel.fromJson(e)).toList();
-//         isLoading = false; // Menyelesaikan proses loading
-//       });
-//     } catch (e, stackTrace) {
-//       print('Error: $e');
-//       print('StackTrace: $stackTrace');
-//       // Mengatasi error jika data gagal dimuat
-//       setState(() => isLoading = false);
-
-//       // Menampilkan pesan error menggunakan Snackbar
-//       if (mounted) {
-//         ScaffoldMessenger.of(context).showSnackBar(
-//           SnackBar(
-//             content: Text('Gagal memuat data: ${e.toString()}'),
-//             behavior: SnackBarBehavior.floating,
-//           ),
-//         );
-//       }
-//     }
-//   }
-
-//   // Widget untuk menampilkan pesan ketika data kosong
-//   Widget _buildEmptyState() {
-//     return Center(
-//       child: Column(
-//         mainAxisAlignment: MainAxisAlignment.center,
-//         children: [
-//           Icon(Icons.history, size: 64, color: Colors.grey), // Ikon riwayat
-//           SizedBox(height: 16),
-//           Text(
-//             'Belum ada riwayat pengajuan',
-//             style: TextStyle(
-//               fontSize: 16,
-//               fontWeight: FontWeight.w500,
-//               color: Colors.grey[600],
-//             ),
-//           ),
-//         ],
-//       ),
-//     );
-//   }
-
-//   // Widget untuk menampilkan satu item data pengajuan
-//   Widget _buildPengajuanItem(RiwayatPengajuanModel pengajuan) {
-//     return Card(
-//       elevation: 5, // Efek bayangan pada card
-//       margin: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-//       child: ListTile(
-//         contentPadding: EdgeInsets.all(16),
-//         title: Text(
-//           'Tiket: ${pengajuan.tiket}',
-//           style: TextStyle(
-//             fontWeight: FontWeight.bold,
-//             fontSize: 16,
-//           ),
-//         ),
-//         subtitle: Column(
-//           crossAxisAlignment: CrossAxisAlignment.start,
-//           children: [
-//             SizedBox(height: 8),
-//             Text(
-//               'Nama: ${pengajuan.nama}', // Menampilkan nama pemohon
-//               style: TextStyle(
-//                 fontWeight: FontWeight.w500,
-//                 fontSize: 14,
-//               ),
-//             ),
-//             SizedBox(height: 4),
-//             Text(
-//               'Tanggal Pengajuan: ${pengajuan.tanggal}', // Menampilkan tanggal pengajuan
-//               style: TextStyle(fontSize: 14),
-//             ),
-//           ],
-//         ),
-//         onTap: () {
-//           // Aksi ketika item diklik (opsional, tambahkan navigasi jika perlu)
-//         },
-//       ),
-//     );
+//     _riwayatFuture = _repository.getRiwayatPengajuan(widget.telepon);
 //   }
 
 //   @override
 //   Widget build(BuildContext context) {
 //     return Scaffold(
 //       appBar: AppBar(
-//         title: Text('Riwayat Pengajuan'), // Judul halaman
-//         actions: [
-//           // Tombol untuk refresh data
-//           IconButton(
-//             icon: Icon(Icons.refresh),
-//             onPressed: fetchPengajuanData,
-//           ),
-//         ],
+//         title: Text('Riwayat Pengajuan'),
 //       ),
-//       body: RefreshIndicator(
-//         onRefresh: fetchPengajuanData, // Menyegarkan data saat swipe ke bawah
-//         child: isLoading
-//             ? Center(
-//                 child: CircularProgressIndicator()) // Loader saat data dimuat
-//             : pengajuanData.isEmpty
-//                 ? _buildEmptyState() // Menampilkan pesan jika data kosong
-//                 : ListView.builder(
-//                     itemCount: pengajuanData.length, // Jumlah item data
-//                     padding: EdgeInsets.symmetric(vertical: 8),
-//                     itemBuilder: (context, index) {
-//                       // Membuat item untuk setiap data
-//                       return _buildPengajuanItem(pengajuanData[index]);
-//                     },
-//                   ),
+//       body: FutureBuilder<List<RiwayatPengajuanModel>>(
+//         future: _riwayatFuture,
+//         builder: (context, snapshot) {
+//           if (snapshot.connectionState == ConnectionState.waiting) {
+//             return Center(child: CircularProgressIndicator());
+//           } else if (snapshot.hasError) {
+//             return Center(
+//               child: Text('Error: ${snapshot.error}'),
+//             );
+//           } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+//             return Center(
+//               child: Text('Tidak ada data pengajuan.'),
+//             );
+//           }
+
+//           final data = snapshot.data!;
+//           return ListView.builder(
+//             itemCount: data.length,
+//             itemBuilder: (context, index) {
+//               final pengajuan = data[index];
+//               return Card(
+//                 child: ListTile(
+//                   title: Text(pengajuan.nama),
+//                   subtitle: Text(
+//                       'Tiket: ${pengajuan.tiket}\nTanggal: ${pengajuan.tanggal}'),
+//                 ),
+//               );
+//             },
+//           );
+//         },
 //       ),
 //     );
 //   }
 // }
+
