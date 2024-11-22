@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:pensiunku/data/db/ajukan_dao.dart';
 import 'package:pensiunku/screen/home/submission/riwayat_pengajuan.dart';
@@ -72,7 +71,7 @@ class _AjukanScreenState extends State<AjukanScreen> {
     // Timer untuk mensimulasikan progres upload
     Timer.periodic(oneSec, (Timer timer) {
       setState(() {
-        if (seconds < 10) {
+        if (seconds < 6) {
           seconds++;
           if (label == 'KTP') {
             _ktpUploadProgress = seconds / 10; // Progres 10 detik untuk KTP
