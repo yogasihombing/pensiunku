@@ -1,16 +1,18 @@
 class RegisterController {
   bool isAllInputValid(
-      String inputName,
-      bool inputNameTouched,
-      // String inputEmail,
-      // bool inputEmailTouched,
-      // String inputBirthDate,
-      // bool inputBirthDateTouched,
-      // String inputJob,
-      // bool inputJobTouched,
-      ) {
+    String inputName,
+    bool inputNameTouched,
+    String inputPhone,
+    bool inputPhoneTouched,
+    // String inputEmail,
+    // bool inputEmailTouched,
+    // String inputBirthDate,
+    // bool inputBirthDateTouched,
+    // String inputJob,
+    // bool inputJobTouched,
+  ) {
     return getInputNameError(inputName, inputNameTouched) != null;
-    // getInputEmailError(inputEmail, inputEmailTouched) != null ||
+    getInputPhoneError(inputPhone, inputPhoneTouched) !=null;
     // getInputBirthDateError(inputBirthDate, inputBirthDateTouched) != null ||
     // getInputJobError(inputJob, inputJobTouched) != null;
   }
@@ -22,6 +24,17 @@ class RegisterController {
 
     if (inputName.isEmpty) {
       return "Nama harus diisi";
+    }
+    return null;
+  }
+
+  String? getInputPhoneError(String inputPhone, bool inputPhoneTouched) {
+    if (!inputPhoneTouched) {
+      return null;
+    }
+
+    if (inputPhone.isEmpty) {
+      return 'Nomor Telepon Harus diisi';
     }
     return null;
   }

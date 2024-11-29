@@ -21,59 +21,71 @@ import 'package:pensiunku/widget/error_card.dart';
 import 'package:pensiunku/widget/notification_icon.dart';
 import 'ajukan/ajukan_screen.dart';
 
+// Kelas utama DashboardScreen dengan StatefulWidget agar memiliki state yang dapat berubah
 class DashboardScreen extends StatefulWidget {
-  final void Function(BuildContext) onApplySubmission;
-  final void Function(int index) onChangeBottomNavIndex;
-  final ScrollController scrollController;
-  final int? walkthroughIndex;
+  // Properti untuk fungsi callback dan parameter lain yang digunakan oleh widget ini
+  final void Function(BuildContext)
+      onApplySubmission; // Callback saat pengajuan dilakukan
+  final void Function(int index)
+      onChangeBottomNavIndex; // Callback untuk mengubah indeks navigasi bawah
+  final ScrollController scrollController; // Mengontrol scroll di layar
+  final int? walkthroughIndex; // Indeks untuk walkthrough (opsional)
 
+// Constructor dengan parameter yang diperlukan
   const DashboardScreen({
     Key? key,
     required this.onApplySubmission,
     required this.onChangeBottomNavIndex,
     required this.scrollController,
     this.walkthroughIndex,
-  }) : super(key: key);
+  }) : super(key: key); // Memanggil constructor parent
 
+  // Membuat state untuk DashboardScreen
   @override
   _DashboardScreenState createState() => _DashboardScreenState();
 }
 
+// State dari DashboardScreen
 class _DashboardScreenState extends State<DashboardScreen> {
+  // Variabel untuk menyimpan indeks artikel dan event saat ini
   int _currentArticleIndex = 0;
   int _currenEventIndex = 0;
 
+  // Future untuk mendapatkan data artikel dan event secara asinkron
   late Future<ResultModel<List<ArticleCategoryModel>>>
       _futureDataArticleCategories;
   late List<ArticleCategoryModel> _articleCategories = [];
 
   late Future<ResultModel<List<EventModel>>> _futureDataEventModel;
   late List<EventModel> _EventModel = [];
-  bool _isLoading = false;
-  UserModel? _userModel;
+  bool _isLoading = false; // Menandai apakah data sedang dimuat
+  UserModel? _userModel; // Model pengguna (opsional)
 
-  final dataKey = new GlobalKey();
-  final double articleCarouselHeight = 200.0;
+  final dataKey = new GlobalKey(); // Key global untuk widget tertentu
+  final double articleCarouselHeight = 200.0; // Tinggi carousel artikel
 
+  // Daftar tipe simulasi kredit
   final List<String> simulationFormTypeTitle = [
     'KREDIT PRA-PENSIUN',
     'KREDIT PENSIUN',
     'KREDIT PLATINUM',
   ];
 
+  // Fungsi initState untuk inisialisasi data saat widget pertama kali dibangun
   @override
   void initState() {
     super.initState();
-    _refreshData();
+    _refreshData(); // Memuat data awal
   }
 
+  // Fungsi untuk memuat ulang data
   Future<void> _refreshData() async {
-    String? token = SharedPreferencesUtil()
-        .sharedPreferences
-        .getString(SharedPreferencesUtil.SP_KEY_TOKEN);
+    String? token = SharedPreferencesUtil().sharedPreferences.getString(
+        SharedPreferencesUtil.SP_KEY_TOKEN); // Mendapatkan token pengguna
 
     UserRepository().getOne(token!);
 
+// Memuat kategori artikel dan menangani error
     _futureDataArticleCategories =
         ArticleRepository().getAllCategories().then((value) {
       if (value.error != null) {
@@ -81,19 +93,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
             context: context,
             builder: (_) => AlertDialog(
                   content: Text(value.error.toString(),
-                      style: TextStyle(color: Colors.white)),
+                      style: TextStyle(
+                          color: Colors.white)), // Menampilkan pesan error
                   backgroundColor: Colors.greenAccent,
                   elevation: 24.0,
                 ));
       } else {
         setState(() {
-          _articleCategories = value.data!;
+          _articleCategories = value.data!; // Memperbarui kategori artikel
+          print(value);
         });
       }
       return value;
     });
   }
 
+// Daftar nama program dan gambar untuk carousel
   final List<String> programList = [
     'Pra-Pensiun',
     'Pensiun',
@@ -106,25 +121,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
     'assets/application_screen/SLIDER-03.png',
   ];
 
+// Fungsi build untuk menggambar UI
   @override
   Widget build(BuildContext context) {
-    ThemeData theme = Theme.of(context);
+    ThemeData theme = Theme.of(context); // Tema aplikasi
 
     // Widget Dimensions
     Size screenSize = MediaQuery.of(context).size;
 
-    double articleCardSize = screenSize.width * 0.45;
-    double articleCarouselHeight = articleCardSize + 70;
+    double articleCardSize = screenSize.width * 0.45; // Ukuran kartu artikel
+    double articleCarouselHeight =
+        articleCardSize + 70; // Tinggi carousel artikel
 
+    // Scaffold sebagai struktur dasar layar
     return Scaffold(
       appBar: AppBar(
+        // Bar atas dengan logo dan tombol notifikasi
         title: SizedBox(
           height: AppBar().preferredSize.height * 0.4,
           child: Image.asset('assets/logo_name_white.png'),
         ),
         actions: [
           IconButton(
-            tooltip: 'Notifikasi',
+            tooltip: 'Notifikasi', // Tooltip untuk notifikasi
             onPressed: () {
               Navigator.of(context)
                   .pushNamed(
@@ -134,24 +153,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               )
                   .then((newIndex) {
-                _refreshData();
+                _refreshData(); // Refresh data saat kembali dari notifikasi
                 if (newIndex is int) {
-                  widget.onChangeBottomNavIndex(newIndex);
+                  widget.onChangeBottomNavIndex(
+                      newIndex); // Update navigasi bawah
                 }
               });
             },
-            icon: NotificationCounter(),
+            icon: NotificationCounter(), // Ikon notifikasi dengan penghitung
           ),
           IconButton(
-            tooltip: 'Riwayat',
+            tooltip: 'Riwayat', // Tooltip untuk riwayat
             onPressed: () {
               // Lakukan navigasi ke RiwayatPengajuanPage dengan data yang dibutuhkan
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => RiwayatPengajuanPage(),
-                ),
-              );
             },
             icon: Image.asset(
               'assets/icon/submission_icon.png', // Path ke file gambar
@@ -161,19 +175,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         ],
       ),
+      // Body layar dengan RefreshIndicator untuk refresh manual
       body: RefreshIndicator(
-        onRefresh: _refreshData,
+        onRefresh: _refreshData, // Fungsi refresh data
         child: SingleChildScrollView(
           child: Column(
             children: [
               SizedBox(height: 5),
-              // Header image
+              // Gambar header
               Container(
                 width: double.infinity,
                 margin: EdgeInsets.all(2),
                 padding: EdgeInsets.all(8),
                 child: Image.asset(
-                  'assets/dashboard_screen/image_1.png',
+                  'assets/dashboard_screen/image_1.png', // Gambar header
                   fit: BoxFit.cover,
                 ),
               ),
@@ -468,6 +483,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  // Fungsi untuk mengatur visibilitas tombol
   void _onShowButton(showButton, onPageChanged) {
     if (onPageChanged == Center) {
       showButton == true;

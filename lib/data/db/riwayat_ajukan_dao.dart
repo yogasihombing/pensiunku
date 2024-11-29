@@ -1,49 +1,17 @@
-
-
 import 'package:pensiunku/data/api/riwayat_ajukan_api.dart';
-import 'package:pensiunku/model/riwayat_ajukan_model.dart';
 
 class RiwayatPengajuanDao {
-  // Membuat instance API untuk berkomunikasi dengan server
-  final RiwayatPengajuanApi _api = RiwayatPengajuanApi();
+  final RiwayatPengajuanApi api = RiwayatPengajuanApi();
 
-  // Fungsi untuk mengambil dan memproses data dari API
-  Future<List<RiwayatPengajuanModel>> fetchPengajuan(String telepon) async {
+  Future<List<Map<String, dynamic>>> getPengajuanData(String telepon) async {
+    print('DAO: Mengambil data dari API untuk telepon: $telepon');
     try {
-      print('Meminta data ke API...');
-      // Memanggil API untuk mendapatkan data mentah
-      final data = await _api.getRiwayatPengajuan(telepon);
-      print('Data mentah dari API: $data');
-      // Mapping data mentah ke dalam bentuk model
-      return data.map((e) => RiwayatPengajuanModel.fromJson(e)).toList();
+      final data = await api.fetchPengajuan(telepon);
+      print('DAO: Data diterima dari API: $data');
+      return data.cast<Map<String, dynamic>>(); // Pastikan respons bisa dicasting
     } catch (e) {
-      print('Error di DAO: $e');
-      // Melempar error jika terjadi masalah
+      print('DAO: Error saat mengambil data - $e');
       rethrow;
     }
   }
 }
-
-// import 'package:pensiunku/data/api/riwayat_ajukan_api.dart';
-// import 'package:pensiunku/model/riwayat_ajukan_model.dart';
-
-// // Kelas DAO bertugas mengolah data dari API
-// class RiwayatPengajuanDao {
-//   // Membuat instance API untuk komunikasi dengan server
-//   final RiwayatPengajuanApi _api = RiwayatPengajuanApi();
-
-//   // Fungsi untuk mengambil dan memproses data dari API
-//   Future<List<RiwayatPengajuanModel>> fetchPengajuan(String telepon) async {
-//     try {
-//       print('Meminta data ke API...');
-//       // Memanggil API dan mendapatkan data mentah
-//       final data = await _api.getRiwayatPengajuan(telepon);
-//       print('Data mentah dari API: $data');
-//       // Mapping data mentah ke dalam bentuk model
-//       return data.map((e) => RiwayatPengajuanModel.fromJson(e)).toList();
-//     } catch (e) {
-//       print('Error di DAO: $e');
-//       rethrow;
-//     }
-//   }
-// }

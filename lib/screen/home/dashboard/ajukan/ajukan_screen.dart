@@ -171,7 +171,9 @@ class _AjukanScreenState extends State<AjukanScreen> {
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => RiwayatPengajuanPage(),
+                    builder: (context) => RiwayatPengajuanPage(
+                      onChangeBottomNavIndex: (index) => 1,
+                    ),
                   ),
                 );
               },
@@ -409,5 +411,17 @@ class _AjukanScreenState extends State<AjukanScreen> {
     domisiliController.dispose();
     nipController.dispose();
     super.dispose();
+  }
+
+  void _resetForm() {
+    setState(() {
+      namaController.clear();
+      teleponController.clear();
+      domisiliController.clear();
+      nipController.clear();
+      filePathKTP = null;
+      filePathNPWP = null;
+      filePathKarip = null;
+    });
   }
 }

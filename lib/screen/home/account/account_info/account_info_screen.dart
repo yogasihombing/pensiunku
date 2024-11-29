@@ -106,7 +106,7 @@ class _AccountInfoScreenState extends State<AccountInfoScreen> {
     var formData = {
       'username': _inputName,
       'email': _inputEmail,
-      'telepon': _inputPhone,
+      'phone': _inputPhone, //telepon diganti ke phone
       'tanggal_lahir': _inputBirthDate != null
           ? DateFormat('yyyy-MM-dd').format(_inputBirthDate!)
           : null,

@@ -1,79 +1,46 @@
-
-
-import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class RiwayatPengajuanApi {
-  final String _baseUrl = 'https://api.pensiunku.id/new.php/getPengajuan';
+  final String baseUrl = 'https://api.pensiunku.id/new.php';
 
-  Future<List<Map<String, dynamic>>> getRiwayatPengajuan(String telepon) async {
+// fetchpengajuan method
+  Future<List<dynamic>> fetchPengajuan(String telepon) async {
+    final url = Uri.parse('$baseUrl/getPengajuan');
+    final startTime = DateTime.now();
+    print('API: Mengirim POST request ke $url dengan telepon: $telepon');
+
     try {
+      // POST Request
       final response = await http.post(
-        Uri.parse(_baseUrl),
+        url,
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'telepon': telepon}),
+        body: jsonEncode({
+          'telepon': telepon,
+        }),
       );
-      print('Response status: ${response.statusCode}');
-      print('Response API: ${response.body}');
-
+      // Response Handling
       if (response.statusCode == 200) {
-        final decoded = jsonDecode(response.body);
-        // Validasi field `data` apakah berupa List
-        if (decoded is Map<String, dynamic> && decoded['data'] is List) {
-          return List<Map<String, dynamic>>.from(decoded['data']);
+        print('API: Response berhasil diterima: ${response.body}');
+        final responseData = jsonDecode(response.body);
+
+        // Pastikan data berada pada key yang benar: text > data
+        if (responseData is Map &&
+            responseData['text'] is Map &&
+            responseData['text']['data'] is List) {
+          return responseData['text']['data'] as List<dynamic>;
         } else {
-          throw Exception('Format data API tidak sesuai: ${decoded}');
+          throw Exception('Format respons tidak sesuai: ${response.body}');
         }
       } else {
-        throw Exception(
-            'Error ${response.statusCode}: ${response.reasonPhrase}');
+        print('API: Error response - ${response.statusCode}: ${response.body}');
+        throw Exception('Failed to fetch data from API');
       }
+
+      // Error Handling
     } catch (e) {
-      print('Error di API: $e');
+      print('API: Error saat fetch data - $e');
       rethrow;
     }
   }
 }
-
-// import 'package:http/http.dart' as http;
-// import 'dart:convert';
-
-// // Kelas untuk berkomunikasi langsung dengan API
-// class RiwayatPengajuanApi {
-//   // URL base API
-//   final String _baseUrl = 'https://api.pensiunku.id/new.php/getPengajuan';
-
-//   // Fungsi untuk mengambil data riwayat pengajuan berdasarkan nomor telepon
-//   Future<List<Map<String, dynamic>>> getRiwayatPengajuan(String telepon) async {
-//     try {
-//       // Kirim permintaan POST ke API
-//       final response = await http.post(
-//         Uri.parse(_baseUrl),
-//         headers: {'Content-Type': 'application/json'}, // Header wajib JSON
-//         body: jsonEncode({'telepon': telepon}), // Data dikirim dalam bentuk JSON
-//       );
-
-//       print('Response status: ${response.statusCode}');
-//       print('Response API: ${response.body}');
-
-//       // Periksa jika status kode HTTP adalah 200 (berhasil)
-//       if (response.statusCode == 200) {
-//         // Decode JSON ke dalam format Dart
-//         final decoded = jsonDecode(response.body);
-
-//         // Periksa apakah field `data` adalah daftar
-//         if (decoded is Map<String, dynamic> && decoded['data'] is List) {
-//           return List<Map<String, dynamic>>.from(decoded['data']);
-//         } else {
-//           throw Exception('Format data API tidak sesuai: ${decoded}');
-//         }
-//       } else {
-//         throw Exception(
-//             'Error ${response.statusCode}: ${response.reasonPhrase}');
-//       }
-//     } catch (e) {
-//       print('Error di API: $e');
-//       rethrow;
-//     }
-//   }
-// }

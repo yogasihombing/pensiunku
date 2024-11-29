@@ -22,6 +22,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _inputNameTouched = false;
   late TextEditingController _inputNameController;
 
+  String _inputPhone = '';
+  bool _inputPhoneTouched = false;
+  late TextEditingController _inputPhoneController;
+
   // String _inputEmail = '';
   // bool _inputEmailTouched = false;
   // late TextEditingController _inputEmailController;
@@ -46,6 +50,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
           _inputNameTouched = true;
         });
       });
+
+    _inputPhoneController = TextEditingController()
+      ..addListener(() {
+        setState(() {
+          _inputPhone = _inputPhoneController.text;
+          _inputPhoneTouched = true;
+        });
+      });
     // _inputEmailController = TextEditingController()
     //   ..addListener(() {
     //     setState(() {
@@ -64,6 +76,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   void dispose() {
     _inputNameController.dispose();
+    _inputPhoneController.dispose();
     // _inputEmailController.dispose();
     // _inputReferralController.dispose();
     super.dispose();
@@ -73,6 +86,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   _register() {
     setState(() {
       _inputNameTouched = true;
+      _inputPhoneTouched = true;
       // _inputEmailTouched = true;
       // _inputBirthDateTouched = true;
       // _inputJobTouched = true;
@@ -80,6 +94,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (_controller.isAllInputValid(
       _inputName,
       _inputNameTouched,
+      _inputPhone,
+      _inputPhoneTouched,
       // _inputEmail,
       // _inputEmailTouched,
       // _inputBirthDate,
@@ -98,6 +114,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     var data = {
       'username': _inputName,
+      'phone': _inputPhone,
       // 'email': _inputEmail,
       // 'tanggal_lahir': _inputBirthDate,
       // 'pekerjaan': _inputJob,
@@ -133,6 +150,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget build(BuildContext context) {
     String? inputNameError =
         _controller.getInputNameError(_inputName, _inputNameTouched);
+    String? inputPhoneError =
+        _controller.getInputPhoneError(_inputPhone, _inputPhoneTouched);
     // String? inputEmailError =
     //     _controller.getInputEmailError(_inputEmail, _inputEmailTouched);
     // String? inputBirthDateError = _controller.getInputBirthDateError(
@@ -161,7 +180,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   enabled: !_isLoading,
                   errorText: inputNameError,
                   borderRadius: 36.0,
-                  hintText: 'Nama',
+                  hintText: 'Nama Lengkap',
                   useLabel: false,
                   fillColor: Colors.white,
                   contentPadding: EdgeInsets.symmetric(
@@ -169,6 +188,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     vertical: 20.0,
                   ),
                 ),
+
+                //dev by yoga
+                // SizedBox(height: 24.0),
+                // CustomTextField(
+                //   controller: _inputPhoneController,
+                //   labelText: '',
+                //   keyboardType: TextInputType.number,
+                //   enabled: !_isLoading,
+                //   errorText: inputPhoneError,
+                //   borderRadius: 36.0,
+                //   hintText: 'Phone',
+                //   useLabel: false,
+                //   fillColor: Colors.white,
+                //   contentPadding: EdgeInsets.symmetric(
+                //     horizontal: 24.0,
+                //     vertical: 20.0,
+                //   ),
+                // ),
                 // SizedBox(height: 24.0),
                 // CustomTextField(
                 //   controller: _inputEmailController,
@@ -264,6 +301,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 //   ),
                 // ),
                 SizedBox(height: 24.0),
+
                 ElevatedButtonLoading(
                   text: 'Daftar',
                   onTap: _register,

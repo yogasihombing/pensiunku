@@ -1,3 +1,149 @@
+import 'package:flutter/material.dart';
+import 'package:pensiunku/model/riwayat_ajukan_model.dart';
+
+class StatusPengajuanPage extends StatelessWidget {
+  final RiwayatPengajuanModel pengajuan;
+
+  const StatusPengajuanPage({Key? key, required this.pengajuan})
+      : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    // Warna untuk memberikan kesan elegan
+    const Color primaryColor = Color(0xFF4A90E2); // Warna biru elegan
+    const Color secondaryColor = Color(0xFFF5F5F5); // Latar belakang lembut
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Status Pengajuan'),
+        backgroundColor: primaryColor,
+      ),
+      body: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header dengan tampilan elegan
+              Card(
+                shape: RoundedRectangleBorder(
+                  borderRadius:
+                      BorderRadius.circular(12), // Membuat Card Melengkung
+                ),
+                elevation: 4, // Bayangan untuk kesan mewah
+                color: primaryColor,
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(children: [
+                    Text(
+                      'Pengajuan Anda',
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white, // Kontras dengan background
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Detail informasi tentang status pengajuan Anda.',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.white.withOpacity(0.8),
+                      ),
+                    ),
+                  ]),
+                ),
+              ),
+              const SizedBox(height: 20),
+              // Detail data
+              Card(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 3,
+                child: ListTile(
+                  leading: const Icon(Icons.person, color: primaryColor),
+                  title: const Text('Nama Pemohon'),
+                  subtitle: Text(
+                    pengajuan.nama,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              // Detail data
+              Card(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 3,
+                child: ListTile(
+                  leading: const Icon(Icons.person, color: primaryColor),
+                  title: const Text('Kode Tiket'),
+                  subtitle: Text(
+                    pengajuan.tiket,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+              Card(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 3,
+                child: ListTile(
+                  leading: const Icon(Icons.person, color: primaryColor),
+                  title: const Text('Tanggal Pengajuan'),
+                  subtitle: Text(
+                    pengajuan.tanggal,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              // Arti Kode Tiket
+              Card(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                color: secondaryColor,
+                elevation: 3,
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Arti Kode Tiket',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: primaryColor,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        '- **AB**: Pengajuan diterima dan dalam proses verifikasi.\n'
+                        '- **CD**: Pengajuan membutuhkan dokumen tambahan.\n'
+                        '- **EF**: Pengajuan disetujui dan sedang dalam proses pencairan.\n'
+                        '- **GH**: Pengajuan ditolak. Silakan hubungi layanan pelanggan.',
+                        style: TextStyle(fontSize: 16, color: Colors.black87),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            ],
+          )),
+    );
+  }
+}
+
+
+// Text('Nama: ${pengajuan.nama}', style: TextStyle(fontSize: 18)),
+//                   Text('Kode Tiket: ${pengajuan.tiket}',
+//                       style: TextStyle(fontSize: 18)),
+//                   Text('Tanggal: ${pengajuan.tanggal}',
+//                       style: TextStyle(fontSize: 18)),
 // import 'package:flutter/material.dart';
 
 // class StatusPengajuanPage extends StatefulWidget {

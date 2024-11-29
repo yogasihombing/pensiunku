@@ -10,6 +10,7 @@
 //           ),
 
 import 'package:flutter/material.dart';
+import 'package:pensiunku/screen/home/submission/riwayat_pengajuan.dart';
 import 'package:pensiunku/widget/floating_bottom_navigation_bar_item.dart';
 
 class FloatingBottomNavigationBar extends StatelessWidget {
@@ -77,11 +78,13 @@ class FloatingBottomNavigationBar extends StatelessWidget {
                 // ),
                 FloatingBottomNavigationBarItem(
                   onTap: () {
-                    onTapItem(1);
+                    onTapItem(1); // Tetap memanggil fungsi callback
                   },
-                  text: 'Riayat Pengajuan',
-                  assetNameInactive: 'assets/icon/submission_icon.png',
-                  assetNameActive: 'assets/icon/submission_icon_active.png',
+                  text: 'Riwayat Pengajuan',
+                  assetNameInactive: 'assets/icon/application_icon.png',
+                  assetNameActive: 'assets/icon/application_icon_active.png',
+                  // assetNameInactive: 'assets/icon/submission_icon.png',
+                  // assetNameActive: 'assets/icon/submission_icon_active.png',
                   isActive: currentIndex == 1,
                 ),
                 FloatingBottomNavigationBarItem(

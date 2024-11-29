@@ -167,6 +167,8 @@ flutter:
     - assets/icon/icon_points.png
     - assets/icon/icon_forum.png
     - assets/icon/live_chat.png
+    - assets/icon/submission_icon.png
+    - assets/icon/submission_icon_active.png
     - assets/halopensiun/banner.png
     - assets/toko/alamat.png
     - assets/toko/history.png

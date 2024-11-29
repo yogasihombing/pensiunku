@@ -170,7 +170,9 @@ class _AjukanOrangLainScreenState extends State<AjukanOrangLainScreen> {
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => RiwayatPengajuanPage(),
+                    builder: (context) => RiwayatPengajuanPage(
+                      onChangeBottomNavIndex: (index) => 1,
+                    ),
                   ),
                 );
               },
