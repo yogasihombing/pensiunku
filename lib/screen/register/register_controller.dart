@@ -1,22 +1,28 @@
 class RegisterController {
+  // Memastikan semua input valid
   bool isAllInputValid(
     String inputName,
     bool inputNameTouched,
     String inputPhone,
     bool inputPhoneTouched,
-    // String inputEmail,
-    // bool inputEmailTouched,
+    String inputCity,
+    bool inputCityTouched,
+    String inputEmail,
+    bool inputEmailTouched,
     // String inputBirthDate,
     // bool inputBirthDateTouched,
     // String inputJob,
     // bool inputJobTouched,
   ) {
     return getInputNameError(inputName, inputNameTouched) != null;
-    getInputPhoneError(inputPhone, inputPhoneTouched) !=null;
+    getInputPhoneError(inputPhone, inputPhoneTouched) != null;
+    getInputCityError(inputCity, inputCityTouched) != null;
+    getInputEmailError(inputEmail, inputEmailTouched) != null;
     // getInputBirthDateError(inputBirthDate, inputBirthDateTouched) != null ||
     // getInputJobError(inputJob, inputJobTouched) != null;
   }
 
+  // Validasi Nama Lengkap
   String? getInputNameError(String inputName, bool inputNameTouched) {
     if (!inputNameTouched) {
       return null;
@@ -28,6 +34,7 @@ class RegisterController {
     return null;
   }
 
+  // Validasi nomor telepon
   String? getInputPhoneError(String inputPhone, bool inputPhoneTouched) {
     if (!inputPhoneTouched) {
       return null;
@@ -39,6 +46,19 @@ class RegisterController {
     return null;
   }
 
+  // Validasi Kota domisili
+  String? getInputCityError(String inputCity, bool inputCityTouched) {
+    if (!inputCityTouched) {
+      return null;
+    }
+
+    if (inputCity.isEmpty) {
+      return 'Kota Domisili Harus diisi';
+    }
+    return null;
+  }
+
+  // Validasi email
   String? getInputEmailError(String inputEmail, bool inputEmailTouched) {
     if (!inputEmailTouched) {
       return null;

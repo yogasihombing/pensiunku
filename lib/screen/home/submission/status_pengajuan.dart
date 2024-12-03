@@ -10,12 +10,12 @@ class StatusPengajuanPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Warna untuk memberikan kesan elegan
-    const Color primaryColor = Color(0xFF4A90E2); // Warna biru elegan
+    const Color primaryColor = Color(0xFF017964); // Warna biru elegan
     const Color secondaryColor = Color(0xFFF5F5F5); // Latar belakang lembut
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Status Pengajuan'),
+        title: const Text('Pengajuan Anda'),
         backgroundColor: primaryColor,
       ),
       body: SingleChildScrollView(
@@ -23,82 +23,68 @@ class StatusPengajuanPage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header dengan tampilan elegan
+              // Detail data
               Card(
                 shape: RoundedRectangleBorder(
-                  borderRadius:
-                      BorderRadius.circular(12), // Membuat Card Melengkung
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                elevation: 4, // Bayangan untuk kesan mewah
-                color: primaryColor,
+                elevation: 3,
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
-                  child: Column(children: [
-                    Text(
-                      'Pengajuan Anda',
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white, // Kontras dengan background
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.person, color: primaryColor),
+                          const SizedBox(width: 8),
+                          const Text(
+                            'Nama Pemohon: ',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          Text(
+                            pengajuan.nama,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Detail informasi tentang status pengajuan Anda.',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.white.withOpacity(0.8),
+                      const Divider(),
+                      Row(
+                        children: [
+                          const Icon(Icons.confirmation_number,
+                              color: primaryColor),
+                          const SizedBox(width: 8),
+                          const Text(
+                            'Kode Pengajuan: ',
+                            style: TextStyle(fontWeight: FontWeight.normal),
+                          ),
+                          Text(
+                            pengajuan.tiket,
+                            style:
+                                const TextStyle(fontWeight: FontWeight.normal),
+                          ),
+                        ],
                       ),
-                    ),
-                  ]),
-                ),
-              ),
-              const SizedBox(height: 20),
-              // Detail data
-              Card(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                elevation: 3,
-                child: ListTile(
-                  leading: const Icon(Icons.person, color: primaryColor),
-                  title: const Text('Nama Pemohon'),
-                  subtitle: Text(
-                    pengajuan.nama,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+                      const Divider(),
+                      Row(
+                        children: [
+                          const Icon(Icons.calendar_today, color: primaryColor),
+                          const SizedBox(width: 8),
+                          const Text(
+                            'Tanggal Pengajuan: ',
+                            style: TextStyle(fontWeight: FontWeight.normal),
+                          ),
+                          Text(
+                            pengajuan.tanggal,
+                            style:
+                                const TextStyle(fontWeight: FontWeight.normal),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
-              // Detail data
-              Card(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                elevation: 3,
-                child: ListTile(
-                  leading: const Icon(Icons.person, color: primaryColor),
-                  title: const Text('Kode Tiket'),
-                  subtitle: Text(
-                    pengajuan.tiket,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ),
-              Card(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                elevation: 3,
-                child: ListTile(
-                  leading: const Icon(Icons.person, color: primaryColor),
-                  title: const Text('Tanggal Pengajuan'),
-                  subtitle: Text(
-                    pengajuan.tanggal,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ),
+
               const SizedBox(height: 20),
               // Arti Kode Tiket
               Card(
@@ -112,21 +98,43 @@ class StatusPengajuanPage extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Arti Kode Tiket',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: primaryColor,
+                      Align(
+                        alignment: Alignment.center,
+                        child: const Text(
+                          'Pemberkasan',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: primaryColor,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 8),
                       const Text(
-                        '- **AB**: Pengajuan diterima dan dalam proses verifikasi.\n'
-                        '- **CD**: Pengajuan membutuhkan dokumen tambahan.\n'
-                        '- **EF**: Pengajuan disetujui dan sedang dalam proses pencairan.\n'
-                        '- **GH**: Pengajuan ditolak. Silakan hubungi layanan pelanggan.',
-                        style: TextStyle(fontSize: 16, color: Colors.black87),
+                        'Mohon Siapkan Dokumen Berikut:',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        '1. Kartu Tanda Penduduk (KTP)\n'
+                        '2. Kartu Keluarga\n'
+                        '3. Kartu Nomor Pokok Wajib Pajak (NPWP)\n'
+                        '4. Kartu Identitas Pensiunan (KARIP)\n'
+                        '5. SK Pensiun (Untuk Pensiunan)\n'
+                        '6. SK 80 atau SK 100 (Untuk Pra Pensiun)\n'
+                        '7. Buku Tabungan\n'
+                        '8. Cover Buku Tabungan Bank Asal\n'
+                        '9. Rekening Koran Tiga Bulan Terakhir (Rekening Penerima Gaji Pensiun)\n'
+                        '10. Slip Gaji Pensiun 2 Bulan Terakhir\n'
+                        '11. 2 Lembar Pas Foto Nasabah\n'
+                        '12. Surat Permohonan Pelunasan dipercepat yang telah ditandatangani (Bila Take Over)\n'
+                        '13. Surat Keterangan Kematian (Apabila Pemohon Pensiunan Janda atau Duda)\n'
+                        '14. Surat Pernyataan Tidak Menikah Kembali (Pemohon Janda atau Duda)',
+                        style: TextStyle(fontSize: 14, color: Colors.black87),
                       ),
                     ],
                   ),

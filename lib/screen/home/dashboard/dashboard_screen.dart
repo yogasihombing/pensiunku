@@ -162,17 +162,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
             },
             icon: NotificationCounter(), // Ikon notifikasi dengan penghitung
           ),
-          IconButton(
-            tooltip: 'Riwayat', // Tooltip untuk riwayat
-            onPressed: () {
-              // Lakukan navigasi ke RiwayatPengajuanPage dengan data yang dibutuhkan
-            },
-            icon: Image.asset(
-              'assets/icon/submission_icon.png', // Path ke file gambar
-              // width: 24, // Sesuaikan ukuran gambar
-              // height: 24,
-            ),
-          ),
+          // IconButton(
+          //   tooltip: 'Riwayat', // Tooltip untuk riwayat
+          //   onPressed: () {
+          //     // Lakukan navigasi ke RiwayatPengajuanPage dengan data yang dibutuhkan
+          //   },
+          //   icon: Image.asset(
+          //     'assets/icon/submission_icon.png', // Path ke file gambar
+          //     // width: 24, // Sesuaikan ukuran gambar
+          //     // height: 24,
+          //   ),
+          // ),
         ],
       ),
       // Body layar dengan RefreshIndicator untuk refresh manual

@@ -32,6 +32,7 @@ class _RiwayatPengajuanPageState extends State<RiwayatPengajuanPage> {
 
     UserRepository().getOne(token!).then((value) {
       telepon = value.data?.phone ?? '';
+      print(value.data);
       fetchPengajuanData(telepon); // Memanggil fungsi untuk mengambil data
     });
   }
@@ -73,7 +74,7 @@ class _RiwayatPengajuanPageState extends State<RiwayatPengajuanPage> {
     return Scaffold(
       appBar: WidgetUtil.getNewAppBar(
         context,
-        'Riwayat Pengajuanx',
+        'Riwayat Pengajuan',
         1,
         (newIndex) {
           widget.onChangeBottomNavIndex(newIndex);
@@ -90,10 +91,16 @@ class _RiwayatPengajuanPageState extends State<RiwayatPengajuanPage> {
             ? const Center(
                 child: CircularProgressIndicator()) // Loader saat loading
             : pengajuanData.isEmpty
-                ? const Center(
-                    child: Text(
-                        'Tidak ada riwayat pengajuan.'), // Pesan jika data kosong
-                  )
+                // Tambahkan ListView agar RefreshIndicator bekerja meskipun data kosong
+                ? ListView(children: const [
+                    SizedBox(
+                      height: 400,
+                      child: const Center(
+                        child: Text(
+                            'Tidak ada riwayat pengajuan.'), // Pesan jika data kosong
+                      ),
+                    ),
+                  ])
                 : ListView.builder(
                     itemCount: pengajuanData.length, // Jumlah data
                     itemBuilder: (context, index) {
