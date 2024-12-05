@@ -7,19 +7,19 @@ import 'package:pensiunku/repository/article_repository.dart';
 import 'package:pensiunku/repository/result_model.dart';
 import 'package:pensiunku/repository/user_repository.dart';
 import 'package:pensiunku/screen/article/article_screen.dart';
-import 'package:pensiunku/screen/home/dashboard/ajukan/ajukanoranglain_screen.dart';
+import 'package:pensiunku/screen/home/dashboard/ajukan/pengajuan_orang_lain_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/article_list.dart';
 import 'package:pensiunku/screen/home/dashboard/event/event_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/forum/forum_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/halopensiun/halopensiun_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/icon_menu.dart';
-import 'package:pensiunku/screen/home/submission/riwayat_pengajuan.dart';
+import 'package:pensiunku/screen/home/submission/riwayat_pengajuan_orang_lain.dart';
 import 'package:pensiunku/screen/notification/notification_screen.dart';
 import 'package:pensiunku/util/shared_preferences_util.dart';
 import 'package:pensiunku/widget/chip_tab.dart';
 import 'package:pensiunku/widget/error_card.dart';
 import 'package:pensiunku/widget/notification_icon.dart';
-import 'ajukan/ajukan_screen.dart';
+import 'ajukan/pengajuan_anda_screen.dart';
 
 // Kelas utama DashboardScreen dengan StatefulWidget agar memiliki state yang dapat berubah
 class DashboardScreen extends StatefulWidget {
@@ -262,7 +262,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     onTap: () {
                                       Navigator.of(context)
                                           .push(MaterialPageRoute(
-                                        builder: (context) => AjukanScreen(),
+                                        builder: (context) => PengajuanAndaScreen(),
                                       ));
                                     },
                                     child: Container(
@@ -298,7 +298,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       Navigator.of(context)
                                           .push(MaterialPageRoute(
                                         builder: (context) =>
-                                            AjukanOrangLainScreen(),
+                                            PengajuanOrangLainScreen(),
                                       ));
                                     },
                                     child: Container(

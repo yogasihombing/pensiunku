@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:pensiunku/model/riwayat_ajukan_model.dart';
+import 'package:pensiunku/model/riwayat_pengajuan_model.dart';
 
-class StatusPengajuanPage extends StatelessWidget {
-  final RiwayatPengajuanModel pengajuan;
+class StatusPengajuanOrangLainScreen extends StatelessWidget {
+  final RiwayatPengajuanOrangLainModel pengajuanOrangLain;
 
-  const StatusPengajuanPage({Key? key, required this.pengajuan})
+  const StatusPengajuanOrangLainScreen({Key? key, required this.pengajuanOrangLain})
       : super(key: key);
 
   @override
@@ -15,7 +15,7 @@ class StatusPengajuanPage extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Pengajuan Anda'),
+        title: const Text('Pengajuan Orang Lain'),
         backgroundColor: primaryColor,
       ),
       body: SingleChildScrollView(
@@ -42,7 +42,7 @@ class StatusPengajuanPage extends StatelessWidget {
                             style: TextStyle(fontWeight: FontWeight.bold),
                           ),
                           Text(
-                            pengajuan.nama,
+                            pengajuanOrangLain.nama,
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                         ],
@@ -58,7 +58,7 @@ class StatusPengajuanPage extends StatelessWidget {
                             style: TextStyle(fontWeight: FontWeight.normal),
                           ),
                           Text(
-                            pengajuan.tiket,
+                            pengajuanOrangLain.tiket,
                             style:
                                 const TextStyle(fontWeight: FontWeight.normal),
                           ),
@@ -74,7 +74,7 @@ class StatusPengajuanPage extends StatelessWidget {
                             style: TextStyle(fontWeight: FontWeight.normal),
                           ),
                           Text(
-                            pengajuan.tanggal,
+                            pengajuanOrangLain.tanggal,
                             style:
                                 const TextStyle(fontWeight: FontWeight.normal),
                           ),

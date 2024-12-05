@@ -1,12 +1,12 @@
 import 'dart:convert';
 import 'dart:io'; // Import the dart:io package
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/cupertino.dart';
 
-class AjukanApi {
+class PengajuanOrangLainApi {
   final Dio _dio = Dio(); // Inisialisasi objek Dio untuk melakukan HTTP request
 
-  Future<bool> kirimPengajuan({
+  Future<bool> kirimPengajuanOrangLain({
     required String nama,
     required String telepon,
     required String domisili,
@@ -19,27 +19,27 @@ class AjukanApi {
     required String namaFotoKarip,
   }) async {
     try {
-      print('Memulai proses kirim pengajuan...'); // Print awal proses
+      debugPrint('Memulai proses kirim pengajuan...'); // Print awal proses
 
       // Membaca file KTP dan mengkonversi ke base64
-      print('Membaca file KTP: $fotoKTPPath');
+      debugPrint('Membaca file KTP: $fotoKTPPath');
       List<int> ktpBytes = await File(fotoKTPPath).readAsBytes();
       String base64KTP = base64Encode(ktpBytes);
-      print('Berhasil encode file KTP ke base64');
+      debugPrint('Berhasil encode file KTP ke base64');
 
-      // Membaca file NPWP dan mengkonversi ke base64
-      print('Membaca file NPWP: $fotoNPWPPath');
+      // Read file NPWP and encode it to base64
+      debugPrint('Membaca file NPWP: $fotoNPWPPath');
       List<int> npwpBytes = await File(fotoNPWPPath).readAsBytes();
       String base64NPWP = base64Encode(npwpBytes);
-      print('Berhasil encode file NPWP ke base64');
+      debugPrint('Berhasil encode file NPWP ke base64');
 
-      // Membaca file Karip dan mengkonversi ke base64
-      print('Membaca file Karip: $fotoKaripPath');
+      // Read file SK Pensiun and encode it to base64
+      debugPrint('Membaca file Karip: $fotoKaripPath');
       List<int> karipBytes = await File(fotoKaripPath).readAsBytes();
       String base64Karip = base64Encode(karipBytes);
-      print('Berhasil encode file Karip ke base64');
+      debugPrint('Berhasil encode file Karip ke base64');
 
-      // Membuat payload JSON untuk dikirim ke API
+      // Create JSON payload
       Map<String, dynamic> formData = {
         "nama": nama,
         "telepon": telepon,
@@ -57,7 +57,7 @@ class AjukanApi {
 
       // Kirim request POST
       final response = await _dio.post(
-        'https://api.pensiunku.id/new.php/pengajuan',
+        'https://api.pensiunku.id/new.php/pengajuanOther',
         data: formData,
         options: Options(
           headers: {

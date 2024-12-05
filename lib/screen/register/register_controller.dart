@@ -3,21 +3,12 @@ class RegisterController {
   bool isAllInputValid(
     String inputName,
     bool inputNameTouched,
-    String inputPhone,
-    bool inputPhoneTouched,
-    String inputCity,
-    bool inputCityTouched,
-    String inputEmail,
-    bool inputEmailTouched,
     // String inputBirthDate,
     // bool inputBirthDateTouched,
     // String inputJob,
     // bool inputJobTouched,
   ) {
     return getInputNameError(inputName, inputNameTouched) != null;
-    getInputPhoneError(inputPhone, inputPhoneTouched) != null;
-    getInputCityError(inputCity, inputCityTouched) != null;
-    getInputEmailError(inputEmail, inputEmailTouched) != null;
     // getInputBirthDateError(inputBirthDate, inputBirthDateTouched) != null ||
     // getInputJobError(inputJob, inputJobTouched) != null;
   }

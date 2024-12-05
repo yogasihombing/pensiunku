@@ -1,18 +1,18 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:pensiunku/data/db/ajukanoranglain_dao.dart';
-import 'package:pensiunku/screen/home/submission/riwayat_pengajuan.dart';
+import 'package:pensiunku/data/db/pengajuan_anda_dao.dart';
+import 'package:pensiunku/screen/home/submission/riwayat_pengajuan_anda.dart';
 
-class AjukanOrangLainScreen extends StatefulWidget {
+class PengajuanAndaScreen extends StatefulWidget {
   @override
-  _AjukanOrangLainScreenState createState() => _AjukanOrangLainScreenState();
+  _PengajuanAndaScreenState createState() => _PengajuanAndaScreenState();
 }
 
-class _AjukanOrangLainScreenState extends State<AjukanOrangLainScreen> {
+class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
   // GlobalKey untuk form, digunakan untuk validasi
   final _formKey = GlobalKey<FormState>();
-  bool _isLoading = false;
+  bool _isLoading = false; // Flag untuk menandakan proses loading
   bool _isKtpUploading = false; // Tambahan untuk KTP
   bool _isNpwpUploading = false; // Tambahan untuk NPWP
   bool _isKaripUploading = false; // Tambahan Untuk SK Pensiun
@@ -22,7 +22,7 @@ class _AjukanOrangLainScreenState extends State<AjukanOrangLainScreen> {
   double _npwpUploadProgress = 0.0; // Progres upload NPWP
   double _karipUploadProgress = 0.0; // Progres upload SK Pensiun
 
-  // Controllers for the form fields
+  // Controller untuk input teks
   TextEditingController namaController = TextEditingController();
   TextEditingController teleponController = TextEditingController();
   TextEditingController domisiliController = TextEditingController();
@@ -34,7 +34,7 @@ class _AjukanOrangLainScreenState extends State<AjukanOrangLainScreen> {
   String? filePathKarip;
 
   // Data Access Object untuk pengajuan
-  AjukanOrangLainDao ajukanOrangLainDao = AjukanOrangLainDao();
+  PengajuanAndaDao pengajuanAndaDao = PengajuanAndaDao();
 
   // Fungsi untuk memilih file
   Future<void> _pickFile(String label) async {
@@ -71,15 +71,15 @@ class _AjukanOrangLainScreenState extends State<AjukanOrangLainScreen> {
     // Timer untuk mensimulasikan progres upload
     Timer.periodic(oneSec, (Timer timer) {
       setState(() {
-        if (seconds < 5) {
+        if (seconds < 6) {
           seconds++;
           if (label == 'KTP') {
-            _ktpUploadProgress = seconds / 5; // Progres 10 detik untuk KTP
+            _ktpUploadProgress = seconds / 10; // Progres 10 detik untuk KTP
           } else if (label == 'NPWP') {
-            _npwpUploadProgress = seconds / 5; // Progres 10 detik untuk NPWP
+            _npwpUploadProgress = seconds / 10; // Progres 10 detik untuk NPWP
           } else if (label == 'Karip') {
             _karipUploadProgress =
-                seconds / 5; // Progres 5 detik untuk SK Pensiun
+                seconds / 10; // Progres 10 detik untuk SK Pensiun
           }
         } else {
           timer.cancel();
@@ -100,7 +100,7 @@ class _AjukanOrangLainScreenState extends State<AjukanOrangLainScreen> {
     });
   }
 
-  Future<void> _submitPengajuan() async {
+  Future<void> _submitPengajuanAnda() async {
     if (_formKey.currentState!.validate() &&
         filePathKTP != null &&
         filePathNPWP != null &&
@@ -117,7 +117,7 @@ class _AjukanOrangLainScreenState extends State<AjukanOrangLainScreen> {
       print('NIP: ${nipController.text}');
 
       // Kirim pengajuan melalui DAO
-      bool success = await ajukanOrangLainDao.kirimPengajuan(
+      bool success = await PengajuanAndaDao.kirimPengajuanAnda(
         nama: namaController.text,
         telepon: teleponController.text,
         domisili: domisiliController.text,
@@ -136,7 +136,7 @@ class _AjukanOrangLainScreenState extends State<AjukanOrangLainScreen> {
       });
 
       if (success) {
-        _showCustomDialog('Sukses', 'Pengajuan Orang Lain berhasil dikirim',
+        _showCustomDialog('Sukses', 'Pengajuan berhasil dikirim',
             Icons.check_circle, Colors.green);
       } else {
         _showCustomDialog(
@@ -170,7 +170,7 @@ class _AjukanOrangLainScreenState extends State<AjukanOrangLainScreen> {
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => RiwayatPengajuanPage(
+                    builder: (context) => RiwayatPengajuanAndaScreen(
                       onChangeBottomNavIndex: (index) => 1,
                     ),
                   ),
@@ -188,7 +188,13 @@ class _AjukanOrangLainScreenState extends State<AjukanOrangLainScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Form Pengajuan Orang lain'),
+        title: Text('Form Pengajuan Anda'),
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -338,9 +344,9 @@ class _AjukanOrangLainScreenState extends State<AjukanOrangLainScreen> {
                             ),
                     ],
                   ),
-                  SizedBox(height: 16.0),
+                  SizedBox(height: 18.0),
 
-                  // SK Pensiun Upload Field
+                  // Karip Upload Field
                   Row(
                     children: [
                       Expanded(
@@ -388,8 +394,8 @@ class _AjukanOrangLainScreenState extends State<AjukanOrangLainScreen> {
                   SizedBox(height: 24.0),
 
                   ElevatedButton(
-                    onPressed: _submitPengajuan,
-                    child: Text('Ajukan Orang Lain Sekarang'),
+                    onPressed: _submitPengajuanAnda,
+                    child: Text('Ajukan Sekarang'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Color(0xFF017964),
                     ),
@@ -410,5 +416,17 @@ class _AjukanOrangLainScreenState extends State<AjukanOrangLainScreen> {
     domisiliController.dispose();
     nipController.dispose();
     super.dispose();
+  }
+
+  void _resetForm() {
+    setState(() {
+      namaController.clear();
+      teleponController.clear();
+      domisiliController.clear();
+      nipController.clear();
+      filePathKTP = null;
+      filePathNPWP = null;
+      filePathKarip = null;
+    });
   }
 }

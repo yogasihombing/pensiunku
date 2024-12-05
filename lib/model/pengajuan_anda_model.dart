@@ -1,4 +1,4 @@
-class AjukanModel {
+class PengajuanAndaModel {
   final String nama;
   final String telepon;
   final String domisili;
@@ -10,7 +10,7 @@ class AjukanModel {
   final String fotoKaripPath;
   final String namaFotoKarip;
 
-  AjukanModel({
+  PengajuanAndaModel({
     required this.nama,
     required this.telepon,
     required this.domisili,

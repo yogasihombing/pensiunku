@@ -1,10 +1,11 @@
-import 'package:pensiunku/model/ajukan_model.dart';
-import 'package:pensiunku/repository/ajukan_repository.dart';
+import 'package:pensiunku/model/pengajuan_orang_lain_model.dart';
+import 'package:pensiunku/repository/pengajuan_orang_lain_repository.dart';
 
-class AjukanDao {
-  final AjukanRepository _ajukanRepository = AjukanRepository();
+class PengajuanOrangLainDao {
+  static final PengajuanOrangLainRepository _pengajuanOrangLainRepository =
+      PengajuanOrangLainRepository();
 
-  Future<bool> kirimPengajuan({
+  static Future<bool> kirimPengajuanOrangLain({
     required String nama,
     required String telepon,
     required String domisili,
@@ -17,7 +18,7 @@ class AjukanDao {
     required String namaFotoKarip,
   }) async {
     // Create the AjukanModel with all the necessary data
-    AjukanModel ajukan = AjukanModel(
+    PengajuanOrangLainModel pengajuanOrangLain = PengajuanOrangLainModel(
       nama: nama,
       telepon: telepon,
       domisili: domisili,
@@ -31,8 +32,8 @@ class AjukanDao {
     );
 
     // Call the repository to send the data
-    return await _ajukanRepository.kirimPengajuan(ajukan);
+    return await _pengajuanOrangLainRepository.kirimPengajuanOrangLain(pengajuanOrangLain);
   }
 
-  fetchRiwayatPengajuan(String telepon) {}
+  fetchRiwayatPengajuanOrangLain(String telepon) {}
 }

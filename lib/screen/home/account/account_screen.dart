@@ -2,6 +2,7 @@ import 'dart:developer';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:pensiunku/data/api/riwayat_pengajuan_anda_api.dart';
 import 'package:pensiunku/model/ktp_model.dart';
 import 'package:pensiunku/model/referral_model.dart';
 import 'package:pensiunku/repository/referral_repository.dart';
@@ -12,6 +13,8 @@ import 'package:pensiunku/screen/home/account/faq/faq_screen.dart';
 import 'package:pensiunku/screen/home/account/referral/confirm_ktp_referral_screen.dart';
 import 'package:pensiunku/screen/home/account/referral/referral_screen.dart';
 import 'package:pensiunku/screen/home/account/referral/referral_success_screen.dart';
+import 'package:pensiunku/screen/home/submission/riwayat_pengajuan_orang_lain.dart';
+import 'package:pensiunku/screen/home/submission/riwayat_pengajuan_anda.dart';
 import 'package:pensiunku/util/shared_preferences_util.dart';
 import 'package:pensiunku/util/widget_util.dart';
 import 'package:pensiunku/widget/grey_button.dart';
@@ -69,6 +72,18 @@ class _AccountScreenState extends State<AccountScreen> {
             }
           });
         },
+      },
+      {
+        'title': 'Pengajuan Anda',
+        'onTap': () {
+          Navigator.of(context)
+              .pushNamed(RiwayatPengajuanAndaScreen.ROUTE_NAME)
+              .then((newIndex) {
+            if (newIndex is int) {
+              widget.onChangeBottomNavIndex(newIndex);
+            }
+          });
+        }
       },
       {
         'title': 'FAQ',

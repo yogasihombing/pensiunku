@@ -16,6 +16,8 @@ import 'package:pensiunku/screen/home/dashboard/event/event_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/forum/forum_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/halopensiun/halopensiun_screen.dart';
 import 'package:pensiunku/screen/home/home_screen.dart';
+import 'package:pensiunku/screen/home/submission/riwayat_pengajuan_orang_lain.dart';
+import 'package:pensiunku/screen/home/submission/riwayat_pengajuan_anda.dart';
 import 'package:pensiunku/screen/init/init_screen.dart';
 import 'package:pensiunku/screen/notification/notification_screen.dart';
 import 'package:pensiunku/screen/otp/otp_code_screen.dart';
@@ -148,9 +150,7 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      
       initialRoute: InitScreen.ROUTE_NAME,
-      
       onGenerateRoute: (RouteSettings settings) {
         Widget page;
         switch (settings.name) {
@@ -196,6 +196,11 @@ class MyApp extends StatelessWidget {
             break;
           case AccountInfoScreen.ROUTE_NAME:
             page = AccountInfoScreen();
+            break;
+          case RiwayatPengajuanAndaScreen.ROUTE_NAME:
+            page = RiwayatPengajuanAndaScreen(
+              onChangeBottomNavIndex: (int index) {},
+            );
             break;
           case WelcomeScreen.ROUTE_NAME:
             page = WelcomeScreen();

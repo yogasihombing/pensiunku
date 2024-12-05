@@ -1,11 +1,11 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
-class RiwayatPengajuanApi {
+class RiwayatPengajuanAndaApi {
   final String baseUrl = 'https://api.pensiunku.id/new.php';
 
 // fetchpengajuan method
-  Future<List<dynamic>> fetchPengajuan(String telepon) async {
+  Future<List<dynamic>> fetchPengajuanAnda(String telepon) async {
     final url = Uri.parse('$baseUrl/getPengajuan');
     final startTime = DateTime.now();
     print('API: Mengirim POST request ke $url dengan telepon: $telepon');

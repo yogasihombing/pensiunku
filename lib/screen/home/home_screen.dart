@@ -5,7 +5,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:pensiunku/data/api/riwayat_ajukan_api.dart';
+import 'package:pensiunku/data/api/riwayat_pengajuan_orang_lain_api.dart';
 import 'package:pensiunku/model/monitoring_pengajuan_model.dart';
 import 'package:pensiunku/model/submission_model.dart';
 import 'package:pensiunku/repository/monitoring_repository.dart';
@@ -13,7 +13,7 @@ import 'package:pensiunku/repository/user_repository.dart';
 import 'package:pensiunku/screen/home/account/account_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/dashboard_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/usaha_screen.dart';
-import 'package:pensiunku/screen/home/submission/riwayat_pengajuan.dart';
+import 'package:pensiunku/screen/home/submission/riwayat_pengajuan_orang_lain.dart';
 import 'package:pensiunku/screen/home/test.dart';
 import 'package:pensiunku/screen/home/update_dialog.dart';
 import 'package:pensiunku/screen/notification/notification_screen.dart';
@@ -368,7 +368,7 @@ class _HomeScreenState extends State<HomeScreen> {
           scrollController: _dashboardScrollController,
         );
       case 1:
-        return RiwayatPengajuanPage(
+        return RiwayatPengajuanOrangLainScreen(
           onChangeBottomNavIndex: (newIndex) {
             setState(() {
               _currentIndex = newIndex;
