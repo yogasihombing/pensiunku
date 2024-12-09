@@ -1,6 +1,8 @@
 import 'dart:async';
+// import 'dart:html';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:pensiunku/data/db/pengajuan_anda_dao.dart';
 import 'package:pensiunku/screen/home/submission/riwayat_pengajuan_anda.dart';
 
@@ -12,6 +14,7 @@ class PengajuanAndaScreen extends StatefulWidget {
 class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
   // GlobalKey untuk form, digunakan untuk validasi
   final _formKey = GlobalKey<FormState>();
+  final ImagePicker _picker = ImagePicker();
   bool _isLoading = false; // Flag untuk menandakan proses loading
   bool _isKtpUploading = false; // Tambahan untuk KTP
   bool _isNpwpUploading = false; // Tambahan untuk NPWP
@@ -29,111 +32,53 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
   TextEditingController nipController = TextEditingController();
 
   // Variabel untuk menyimpan path file
-  String? filePathKTP;
-  String? filePathNPWP;
-  String? filePathKarip;
+  String? fileKTP;
+  String? fileNPWP;
+  String? fileKarip;
 
   // Data Access Object untuk pengajuan
   PengajuanAndaDao pengajuanAndaDao = PengajuanAndaDao();
 
   // Fungsi untuk memilih file
-  Future<void> _pickFile(String label) async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles();
+  Future<void> _pickImage(String label) async {
+    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
 
-    if (result != null) {
-      setState(() {
-        if (label == 'KTP') {
-          filePathKTP = result.files.single.path;
-          _isKtpUploading = true; // Mulai upload KTP
-          print('KTP file picked: $filePathKTP'); // Tambah print untuk logging
-        } else if (label == 'NPWP') {
-          filePathNPWP = result.files.single.path;
-          _isNpwpUploading = true; // Mulai upload NPWP
-          print(
-              'NPWP file picked: $filePathNPWP'); // Tambah print untuk logging
-        } else if (label == 'Karip') {
-          filePathKarip = result.files.single.path;
-          _isKaripUploading = true; // Mulai Upload SK Pensiun
-          print(
-              'Karip file picked: $filePathKarip'); // Tambah print untuk logging
-        }
-      });
-
-      // Simulasikan proses upload file dengan timer
-      _simulateUpload(label);
+// Debugging untuk mengetahui tipe objek yang dikembalikan
+    print('Image object type: ${image.runtimeType}');
+    if (image == null) {
+      print('No image selected.');
+      return;
     }
-  }
-
-  void _simulateUpload(String label) {
-    const oneSec = Duration(seconds: 1);
-    int seconds = 0;
-
-    // Timer untuk mensimulasikan progres upload
-    Timer.periodic(oneSec, (Timer timer) {
-      setState(() {
-        if (seconds < 6) {
-          seconds++;
-          if (label == 'KTP') {
-            _ktpUploadProgress = seconds / 10; // Progres 10 detik untuk KTP
-          } else if (label == 'NPWP') {
-            _npwpUploadProgress = seconds / 10; // Progres 10 detik untuk NPWP
-          } else if (label == 'Karip') {
-            _karipUploadProgress =
-                seconds / 10; // Progres 10 detik untuk SK Pensiun
-          }
-        } else {
-          timer.cancel();
-          setState(() {
-            if (label == 'KTP') {
-              _isKtpUploading = false;
-              _ktpUploadProgress = 0.0; // Reset progres setelah selesai
-            } else if (label == 'NPWP') {
-              _isNpwpUploading = false;
-              _npwpUploadProgress = 0.0; // Reset progres setelah selesai
-            } else if (label == 'Karip') {
-              _isKaripUploading = false;
-              _karipUploadProgress = 0.0; // Reset progres setelah selesai
-            }
-          });
-        }
-      });
-    });
+    // Setelah memastikan image bukan null
+    print('Image path: ${image.path}');
   }
 
   Future<void> _submitPengajuanAnda() async {
     if (_formKey.currentState!.validate() &&
-        filePathKTP != null &&
-        filePathNPWP != null &&
-        filePathKarip != null) {
-      setState(() {
-        _isLoading = true;
-      });
-
-      // Cetak data yang akan dikirim untuk logging
-      print('Submitting pengajuan with data:');
+        fileKTP != null &&
+        fileNPWP != null &&
+        fileKarip != null) {
+      // proses pengajuan
       print('Nama: ${namaController.text}');
       print('Telepon: ${teleponController.text}');
       print('Domisili: ${domisiliController.text}');
       print('NIP: ${nipController.text}');
+      print('File KTP: ${fileKTP!}');
+      print('File NPWP: ${fileNPWP!}');
+      print('File Karip: ${fileKarip!}');
 
-      // Kirim pengajuan melalui DAO
       bool success = await PengajuanAndaDao.kirimPengajuanAnda(
         nama: namaController.text,
         telepon: teleponController.text,
         domisili: domisiliController.text,
         nip: nipController.text,
-        fotoKTP: filePathKTP!,
-        namaFotoKTP: filePathKTP!.split('/').last,
-        fotoNPWP: filePathNPWP!,
-        namaFotoNPWP: filePathNPWP!.split('/').last,
-        fotoKarip: filePathKarip!,
-        namaFotoKarip: filePathKarip!.split('/').last,
+        fotoKTP: fileKTP!,
+        namaFotoKTP: fileKTP!.split('/').last,
+        fotoNPWP: fileNPWP!,
+        namaFotoNPWP: fileNPWP!.split('/').last,
+        fotoKarip: fileKarip!,
+        namaFotoKarip: fileKarip!.split('/').last,
       );
-
-      // Set loading state to false
-      setState(() {
-        _isLoading = false;
-      });
 
       if (success) {
         _showCustomDialog('Sukses', 'Pengajuan berhasil dikirim',
@@ -144,6 +89,114 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
       }
     }
   }
+  // Fungsi untuk memilih file
+  // Future<void> _pickFile(String label) async {
+  //   FilePickerResult? result = await FilePicker.platform.pickFiles();
+
+  //   if (result != null) {
+  //     setState(() {
+  //       if (label == 'KTP') {
+  //         filePathKTP = result.files.single.path;
+  //         _isKtpUploading = true; // Mulai upload KTP
+  //         print('KTP file picked: $filePathKTP'); // Tambah print untuk logging
+  //       } else if (label == 'NPWP') {
+  //         filePathNPWP = result.files.single.path;
+  //         _isNpwpUploading = true; // Mulai upload NPWP
+  //         print(
+  //             'NPWP file picked: $filePathNPWP'); // Tambah print untuk logging
+  //       } else if (label == 'Karip') {
+  //         filePathKarip = result.files.single.path;
+  //         _isKaripUploading = true; // Mulai Upload SK Pensiun
+  //         print(
+  //             'Karip file picked: $filePathKarip'); // Tambah print untuk logging
+  //       }
+  //     });
+
+  //     // Simulasikan proses upload file dengan timer
+  //     _simulateUpload(label);
+  //   }
+  // }
+
+  // void _simulateUpload(String label) {
+  //   const oneSec = Duration(seconds: 1);
+  //   int seconds = 0;
+
+  //   // Timer untuk mensimulasikan progres upload
+  //   Timer.periodic(oneSec, (Timer timer) {
+  //     setState(() {
+  //       if (seconds < 6) {
+  //         seconds++;
+  //         if (label == 'KTP') {
+  //           _ktpUploadProgress = seconds / 10; // Progres 10 detik untuk KTP
+  //         } else if (label == 'NPWP') {
+  //           _npwpUploadProgress = seconds / 10; // Progres 10 detik untuk NPWP
+  //         } else if (label == 'Karip') {
+  //           _karipUploadProgress =
+  //               seconds / 10; // Progres 10 detik untuk SK Pensiun
+  //         }
+  //       } else {
+  //         timer.cancel();
+  //         setState(() {
+  //           if (label == 'KTP') {
+  //             _isKtpUploading = false;
+  //             _ktpUploadProgress = 0.0; // Reset progres setelah selesai
+  //           } else if (label == 'NPWP') {
+  //             _isNpwpUploading = false;
+  //             _npwpUploadProgress = 0.0; // Reset progres setelah selesai
+  //           } else if (label == 'Karip') {
+  //             _isKaripUploading = false;
+  //             _karipUploadProgress = 0.0; // Reset progres setelah selesai
+  //           }
+  //         });
+  //       }
+  //     });
+  //   });
+  // }
+
+  // Future<void> _submitPengajuanAnda() async {
+  //   if (_formKey.currentState!.validate() &&
+  //       filePathKTP != null &&
+  //       filePathNPWP != null &&
+  //       filePathKarip != null) {
+  //     setState(() {
+  //       _isLoading = true;
+  //     });
+
+  //     // Cetak data yang akan dikirim untuk logging
+  //     print('Submitting pengajuan with data:');
+  //     print('Nama: ${namaController.text}');
+  //     print('Telepon: ${teleponController.text}');
+  //     print('Domisili: ${domisiliController.text}');
+  //     print('NIP: ${nipController.text}');
+
+  //     // Kirim pengajuan melalui DAO
+  //     bool success = await PengajuanAndaDao.kirimPengajuanAnda(
+  //       nama: namaController.text,
+  //       telepon: teleponController.text,
+  //       domisili: domisiliController.text,
+  //       nip: nipController.text,
+  //       fotoKTP: filePathKTP!,
+  //       namaFotoKTP: filePathKTP!.split('/').last,
+  //       fotoNPWP: filePathNPWP!,
+  //       namaFotoNPWP: filePathNPWP!.split('/').last,
+  //       fotoKarip: filePathKarip!,
+  //       namaFotoKarip: filePathKarip!.split('/').last,
+  //     );
+
+  //     // Set loading state to false
+  //     setState(() {
+  //       _isLoading = false;
+  //     });
+
+  //     if (success) {
+  //       _showCustomDialog('Sukses', 'Pengajuan berhasil dikirim',
+  //           Icons.check_circle, Colors.green);
+  //     } else {
+  //       _showCustomDialog(
+  //           'Gagal', 'Gagal mengirim pengajuan', Icons.error, Colors.red);
+  //     }
+  //   }
+  // }
 
   void _showCustomDialog(
       String title, String message, IconData icon, Color iconColor) {
@@ -261,9 +314,8 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
                       Expanded(
                         child: TextFormField(
                           controller: TextEditingController(
-                            text: filePathKTP != null
-                                ? filePathKTP!.split('/').last
-                                : '',
+                            text:
+                                fileKTP != null ? fileKTP!.split('/').last : '',
                           ),
                           decoration: InputDecoration(
                             labelText: 'KTP',
@@ -271,7 +323,7 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
                           ),
                           readOnly: true,
                           validator: (value) {
-                            if (filePathKTP == null || filePathKTP!.isEmpty) {
+                            if (fileKTP == null || fileKTP!.isEmpty) {
                               return 'Harap upload dokumen KTP';
                             }
                             return null;
@@ -290,7 +342,7 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
                               ),
                             )
                           : ElevatedButton(
-                              onPressed: () => _pickFile('KTP'),
+                              onPressed: () => _pickImage('KTP'),
                               child: Text('Upload'),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Color(0xFF017964),
@@ -307,8 +359,8 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
                       Expanded(
                         child: TextFormField(
                           controller: TextEditingController(
-                            text: filePathNPWP != null
-                                ? filePathNPWP!.split('/').last
+                            text: fileNPWP != null
+                                ? fileNPWP!.split('/').last
                                 : '',
                           ),
                           decoration: InputDecoration(
@@ -317,7 +369,7 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
                           ),
                           readOnly: true,
                           validator: (value) {
-                            if (filePathNPWP == null || filePathNPWP!.isEmpty) {
+                            if (fileNPWP == null || fileNPWP!.isEmpty) {
                               return 'Harap upload dokumen NPWP';
                             }
                             return null;
@@ -336,7 +388,7 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
                               ),
                             )
                           : ElevatedButton(
-                              onPressed: () => _pickFile('NPWP'),
+                              onPressed: () => _pickImage('NPWP'),
                               child: Text('Upload'),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Color(0xFF017964),
@@ -352,8 +404,8 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
                       Expanded(
                         child: TextFormField(
                           controller: TextEditingController(
-                            text: filePathKarip != null
-                                ? filePathKarip!.split('/').last
+                            text: fileKarip != null
+                                ? fileKarip!.split('/').last
                                 : '',
                           ),
                           decoration: InputDecoration(
@@ -362,8 +414,7 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
                           ),
                           readOnly: true,
                           validator: (value) {
-                            if (filePathKarip == null ||
-                                filePathKarip!.isEmpty) {
+                            if (fileKarip == null || fileKarip!.isEmpty) {
                               return 'Harap upload dokumen SK Pensiun';
                             }
                             return null;
@@ -382,7 +433,7 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
                               ),
                             )
                           : ElevatedButton(
-                              onPressed: () => _pickFile('Karip'),
+                              onPressed: () => _pickImage('Karip'),
                               child: Text('Upload'),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Color(0xFF017964),
@@ -424,9 +475,9 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
       teleponController.clear();
       domisiliController.clear();
       nipController.clear();
-      filePathKTP = null;
-      filePathNPWP = null;
-      filePathKarip = null;
+      fileKTP = null;
+      fileNPWP = null;
+      fileKarip = null;
     });
   }
 }

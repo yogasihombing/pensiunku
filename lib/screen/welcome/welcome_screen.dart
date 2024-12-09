@@ -28,21 +28,22 @@ class _WelcomeScreenState extends State<WelcomeScreen>
 
   final contents = [
     {
-      'title': 'Pengajuan',
-      'subtitle': 'Dari Rumah',
+      'title': 'Proses Mudah',
+      'subtitle': 'Semua Dari Rumah',
       'text':
-          'Anda hanya perlu dirumah dan tak perlu repot-repot datang ke Bank untuk mengantri ataupun berkonsultasi.',
+          'Gak perlu jauh-jauh! semua bisa kamu buat mudah dan lakukan dari rumah. #Ajukandarirumah',
     },
     {
       'title': 'Kredit Sampai Dengan',
       'subtitle': '500 Juta',
-      'text': 'Nikmati Plafond pengajuan yang besar hingga 500 Juta!',
+      'text':
+          'Limit Kredit besar dengan segudang keuntungan lain yang bisa kamu dapatkan!',
     },
     {
       'title': 'Tenor Hingga',
       'subtitle': '15 Tahun',
       'text':
-          'Tak perlu khawatir, atur jangka waktu pinjaman Anda secara suka - suka dan manfaatkan jangka waktu panjang hingga 15 tahun',
+          'Tak perlu khawatir, atur jangka waktu pinjamanmu sesuai dengan keinginanmu.',
     },
   ];
 
@@ -124,7 +125,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
       theme.textTheme.caption,
     );
     double indicatorHeight = backdropHeight +
-        32.0 +
+        27.0 +
         titleSize.height +
         subtitleSize.height +
         16.0 +
@@ -249,39 +250,52 @@ class _WelcomeScreenState extends State<WelcomeScreen>
               onTap: _onNextPageOrFinish,
               borderRadius: BorderRadius.circular(36.0),
               child: Ink(
-                decoration: BoxDecoration(
-                  color: theme.primaryColor,
-                  borderRadius: BorderRadius.circular(36.0),
-                ),
-                child: _currentIndex >= 2
-                    ? Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16.0,
-                          vertical: 15.0,
-                        ),
-                        child: Text(
-                          'Daftar',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 13,
-                            height: 1,
-                            letterSpacing: 0.5,
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ))
-                    : Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16.0,
-                          vertical: 2.0,
-                        ),
-                        child: Icon(
-                          Icons.arrow_right_alt_rounded,
-                          size: 40.0,
-                          color: Colors.white,
-                        ),
+                  decoration: BoxDecoration(
+                    color: theme.primaryColor,
+                    borderRadius: BorderRadius.circular(36.0),
+                  ),
+                  child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16.0,
+                        vertical: 15.0,
                       ),
-              ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            _currentIndex < 2 ? 'Lanjutkan' : 'Daftar',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 13,
+                              height: 1,
+                              letterSpacing: 0.5,
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          if (_currentIndex < 2) ...[
+                            SizedBox(width: 8.0),
+                            Icon(
+                              Icons.arrow_forward_ios_rounded,
+                              size: 16.0,
+                              color: Colors.white,
+                            )
+                          ]
+                        ],
+                      ))
+                  // : Padding(
+                  //     padding: const EdgeInsets.symmetric(
+                  //       horizontal: 16.0,
+                  //       vertical: 2.0,
+                  //     ),
+                  //     child: Icon(
+                  //       Icons.arrow_right_alt_rou nded,
+                  //       size: 40.0,
+                  //       color: Colors.white,
+                  //     ),
+                  //   ),
+                  ),
             )
           : null,
     );

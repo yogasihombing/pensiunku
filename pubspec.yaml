@@ -20,7 +20,8 @@ version: 1.0.0+1
 # version: 1.1.0+13
 
 environment:
-  sdk: ">=2.18.6 <3.0.0"
+  sdk: ">=2.12.0 <3.0.0"
+  # sdk: ">=2.18.6 <3.0.0"
 
 dependencies:
   flutter:
@@ -57,7 +58,7 @@ dependencies:
   firebase_core: ^2.8.0 # Updated to a compatible version
   firebase_messaging: ^14.3.0 # Updated to a compatible version
   age_calculator: ^1.0.0
-  image_picker: ^0.8.4+2
+  image_picker: ^0.8.4+11
   restart_app: ^1.1.0
   new_version: ^0.3.1
   month_picker_dialog: ^0.4.0

@@ -23,6 +23,7 @@ class _PengajuanOrangLainScreenState extends State<PengajuanOrangLainScreen> {
   double _karipUploadProgress = 0.0; // Progres upload SK Pensiun
 
   // Controllers for the form fields
+  TextEditingController idUserController = TextEditingController();
   TextEditingController namaController = TextEditingController();
   TextEditingController teleponController = TextEditingController();
   TextEditingController domisiliController = TextEditingController();
@@ -111,6 +112,7 @@ class _PengajuanOrangLainScreenState extends State<PengajuanOrangLainScreen> {
 
       // Cetak data yang akan dikirim untuk logging
       print('Submitting pengajuan with data:');
+      debugPrint('idUser: ${idUserController.text}');
       print('Nama: ${namaController.text}');
       print('Telepon: ${teleponController.text}');
       print('Domisili: ${domisiliController.text}');
@@ -118,6 +120,7 @@ class _PengajuanOrangLainScreenState extends State<PengajuanOrangLainScreen> {
 
       // Kirim pengajuan melalui DAO
       bool success = await PengajuanOrangLainDao.kirimPengajuanOrangLain(
+        idUser: idUserController.text,
         nama: namaController.text,
         telepon: teleponController.text,
         domisili: domisiliController.text,

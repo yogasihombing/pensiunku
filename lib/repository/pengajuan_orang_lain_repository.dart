@@ -7,6 +7,7 @@ class PengajuanOrangLainRepository {
   Future<bool> kirimPengajuanOrangLain(
       PengajuanOrangLainModel pengajuanOrangLain) async {
     return await _pengajuanOrangLainApi.kirimPengajuanOrangLain(
+      idUser: pengajuanOrangLain.idUser,
       nama: pengajuanOrangLain.nama,
       telepon: pengajuanOrangLain.telepon,
       domisili: pengajuanOrangLain.domisili,

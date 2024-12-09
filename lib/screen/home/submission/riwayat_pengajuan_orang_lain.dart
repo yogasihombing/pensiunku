@@ -112,7 +112,7 @@ class _RiwayatPengajuanOrangLainScreenState
                       final pengajuanOrangLain = pengajuanOrangLainData[
                           index]; // Mendefinisikan variabel pengajuan
                       return Card(
-                        margin: const EdgeInsets.all(8.0),
+                        margin: const EdgeInsets.all(10.0),
                         child: ListTile(
                           leading: CircleAvatar(
                             child: Text(
@@ -121,7 +121,12 @@ class _RiwayatPengajuanOrangLainScreenState
                                   .toUpperCase(), // Inisial dari tiket
                             ),
                           ),
-                          title: Text(pengajuanOrangLain.nama), // Nama pemohon
+                          title: Text(
+                            pengajuanOrangLain.nama,
+                            style: const TextStyle(
+                                color: Colors.black,
+                                fontWeight: FontWeight.bold),
+                          ), // Nama pemohon
                           subtitle: Text(
                               'Tanggal: ${pengajuanOrangLain.tanggal}'), // Tanggal pengajuan
                           trailing: Text(

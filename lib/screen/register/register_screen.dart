@@ -29,9 +29,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _inputNameTouched = false;
   late TextEditingController _inputNameController;
 
+  // Variabel dan controller untuk input Email
+  String _inputEmail = '';
+  bool _inputEmailTouched = false;
+  late TextEditingController _inputEmailController;
+
 // Variabel untuk menyimpan input kode referal (jika ada).
-  String _inputReferral = '';
-  // late TextEditingController _inputReferralController;
+  // String _inputReferral = '';
+  // // late TextEditingController _inputReferralController;
 
   @override
   void initState() {
@@ -46,12 +51,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
           _inputNameTouched = true;
         });
       });
+
+    //Menginisialisasi controller Email listener untuk mengupdate state.
+    _inputEmailController = TextEditingController()
+      ..addListener(() {
+        setState(() {
+          _inputEmail = _inputEmailController.text;
+          _inputEmailTouched = true;
+        });
+      });
   }
 
   // Membersihkan controller dari memori saat widget dihancurkan.
   @override
   void dispose() {
     _inputNameController.dispose();
+    _inputEmailController.dispose();
     // _inputReferralController.dispose();
     super.dispose();
   }
@@ -61,17 +76,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
   _register() {
     setState(() {
       _inputNameTouched = true;
+      _inputEmailTouched = true;
     });
-    if (_controller.isAllInputValid(
-      _inputName,
-      _inputNameTouched,
-    )) {
-      print('Validasi gagal:');
-      print(
-          '- Nama Lengkap: ${_controller.getInputNameError(_inputName, _inputNameTouched)}');
-      return; // Jika input valid, lanjut ke proses berikutnya.
+    if (_controller.getInputNameError(_inputName, _inputNameTouched) != null) {
+      return; // Jika validasi gagal. hentikan Proses.
     }
-    // Menandai bahwa proses sedang berlangsung.
+    // Email tetap Optional.
+    if (_controller.getInputEmailError(_inputEmail, _inputEmailTouched) !=
+        null) {
+      print(
+          '- Email tidak valid: ${_controller.getInputEmailError(_inputEmail, _inputEmailTouched)}');
+    }
+    // Proses dilanjutkan jika validasi nama lolos.
     setState(() {
       _isLoading = true;
     });
@@ -83,12 +99,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
     // Membuat data pengguna dari input yang diterima.
     var data = {
       'username': _inputName,
+      'email': _inputEmail.isNotEmpty ? _inputEmail : null,
     };
-
-    // Menambahkan kode referal ke data jika tidak kosong.
-    if (_inputReferral.trim().isNotEmpty) {
-      data['referal'] = _inputReferral;
-    }
 
     UserRepository().updateOne(token!, data).then((result) {
       setState(() {
@@ -109,6 +121,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   elevation: 24.0,
                 ));
       }
+    }).catchError((e) {
+      setState(() {
+        _isLoading = false;
+      });
     });
     showDialog(
         context: context,
@@ -148,7 +164,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   labelText: '',
                   keyboardType: TextInputType.name,
                   enabled: !_isLoading,
-                  errorText: inputNameError,
+                  errorText:
+                      inputNameError, //Menampilkan pesan error jika nama kosong.
                   borderRadius: 36.0,
                   hintText: 'Nama Lengkap',
                   useLabel: false,
@@ -158,7 +175,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     vertical: 20.0,
                   ),
                 ),
+                SizedBox(height: 24.0),
 
+                // Input untuk Email
+                CustomTextField(
+                  controller: _inputEmailController,
+                  labelText: '',
+                  keyboardType: TextInputType.emailAddress,
+                  enabled: !_isLoading,
+                  borderRadius: 36.0,
+                  hintText: 'Email (Optional)',
+                  useLabel: false,
+                  fillColor: Colors.white,
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 24.0,
+                    vertical: 20.0,
+                  ),
+                ),
                 SizedBox(height: 24.0),
                 // Tombol untuk memulai proses pendaftaran
                 ElevatedButtonLoading(

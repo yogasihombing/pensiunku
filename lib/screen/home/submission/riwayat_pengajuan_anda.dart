@@ -126,7 +126,13 @@ class _RiwayatPengajuanAndaScreenState
                                   .toUpperCase(), // Inisial dari tiket
                             ),
                           ),
-                          title: Text(pengajuanAnda.nama), // Nama pemohon
+                          title: Text(
+                            pengajuanAnda.nama,
+                            style: const TextStyle(
+                              color: Colors.black,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ), // Nama pemohon
                           subtitle: Text(
                               'Tanggal: ${pengajuanAnda.tanggal}'), // Tanggal pengajuan
                           trailing: Text(

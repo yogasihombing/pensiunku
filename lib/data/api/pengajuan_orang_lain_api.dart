@@ -7,6 +7,7 @@ class PengajuanOrangLainApi {
   final Dio _dio = Dio(); // Inisialisasi objek Dio untuk melakukan HTTP request
 
   Future<bool> kirimPengajuanOrangLain({
+    required String idUser,
     required String nama,
     required String telepon,
     required String domisili,
@@ -41,6 +42,7 @@ class PengajuanOrangLainApi {
 
       // Create JSON payload
       Map<String, dynamic> formData = {
+        "id_user": idUser,
         "nama": nama,
         "telepon": telepon,
         "domisili": domisili,
@@ -62,29 +64,30 @@ class PengajuanOrangLainApi {
         options: Options(
           headers: {
             "Content-Type": "application/json",
+            "Accept": "application/json", 
           },
         ),
       );
 
       if (response.statusCode == 200) {
-        print('Pengajuan berhasil dikirim!'); // Print jika sukses
+        debugPrint('Pengajuan berhasil dikirim!'); // Print jika sukses
         return true; // Success
       } else {
-        print('Gagal mengirim pengajuan. Status: ${response.statusCode}');
-        print(
+        debugPrint('Gagal mengirim pengajuan. Status: ${response.statusCode}');
+        debugPrint(
             'Response body: ${response.data}'); // Tambahan print untuk detail response
         return false;
       }
     } on DioError catch (e) {
       // Tangani error dari Dio dengan detail yang lebih komprehensif
-      print('Error dalam pengiriman:');
-      print('Status Code: ${e.response?.statusCode}');
-      print('Error Message: ${e.message}');
-      print('Response Data: ${e.response?.data}');
+      debugPrint('Error dalam pengiriman:');
+      debugPrint('Status Code: ${e.response?.statusCode}');
+      debugPrint('Error Message: ${e.message}');
+      debugPrint('Response Data: ${e.response?.data}');
       return false;
     } catch (e) {
       // Tangani error umum yang mungkin terjadi
-      print('Error tidak terduga: $e');
+      debugPrint('Error tidak terduga: $e');
       return false;
     }
   }
