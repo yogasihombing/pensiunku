@@ -6,7 +6,8 @@ import 'package:pensiunku/screen/home/submission/riwayat_pengajuan_orang_lain.da
 
 class PengajuanOrangLainScreen extends StatefulWidget {
   @override
-  _PengajuanOrangLainScreenState createState() => _PengajuanOrangLainScreenState();
+  _PengajuanOrangLainScreenState createState() =>
+      _PengajuanOrangLainScreenState();
 }
 
 class _PengajuanOrangLainScreenState extends State<PengajuanOrangLainScreen> {
@@ -290,7 +291,7 @@ class _PengajuanOrangLainScreenState extends State<PengajuanOrangLainScreen> {
                               onPressed: () => _pickFile('KTP'),
                               child: Text('Upload'),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Color(0xFF017964),
+                                primary: Color(0xFF017964),
                               ),
                             ),
                     ],
@@ -336,7 +337,7 @@ class _PengajuanOrangLainScreenState extends State<PengajuanOrangLainScreen> {
                               onPressed: () => _pickFile('NPWP'),
                               child: Text('Upload'),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Color(0xFF017964),
+                                primary: Color(0xFF017964),
                               ),
                             ),
                     ],
@@ -382,7 +383,7 @@ class _PengajuanOrangLainScreenState extends State<PengajuanOrangLainScreen> {
                               onPressed: () => _pickFile('Karip'),
                               child: Text('Upload'),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Color(0xFF017964),
+                                primary: Color(0xFF017964),
                               ),
                             ),
                     ],
@@ -394,7 +395,7 @@ class _PengajuanOrangLainScreenState extends State<PengajuanOrangLainScreen> {
                     onPressed: _submitPengajuanOrangLain,
                     child: Text('Ajukan Orang Lain Sekarang'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Color(0xFF017964),
+                      primary: Color(0xFF017964),
                     ),
                   ),
                 ],

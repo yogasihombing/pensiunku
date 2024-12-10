@@ -54,7 +54,7 @@ class ElevatedButtonSecond extends StatelessWidget {
     return ElevatedButton(
       onPressed: !disabled ? onTap : null,
       style: ElevatedButton.styleFrom(
-        backgroundColor: Color(0xff16826e), // Background color
+        primary: Color(0xff16826e), // Background color
       ),
       child: !isLoading
           ? Text(

@@ -345,7 +345,7 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
                               onPressed: () => _pickImage('KTP'),
                               child: Text('Upload'),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Color(0xFF017964),
+                                primary: Color(0xFF017964),
                               ),
                             ),
                     ],
@@ -391,7 +391,7 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
                               onPressed: () => _pickImage('NPWP'),
                               child: Text('Upload'),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Color(0xFF017964),
+                                primary: Color(0xFF017964),
                               ),
                             ),
                     ],
@@ -436,7 +436,7 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
                               onPressed: () => _pickImage('Karip'),
                               child: Text('Upload'),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Color(0xFF017964),
+                                primary: Color(0xFF017964),
                               ),
                             ),
                     ],
@@ -448,7 +448,7 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
                     onPressed: _submitPengajuanAnda,
                     child: Text('Ajukan Sekarang'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Color(0xFF017964),
+                      primary: Color(0xFF017964),
                     ),
                   ),
                 ],
