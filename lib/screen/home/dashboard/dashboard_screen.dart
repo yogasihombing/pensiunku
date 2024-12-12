@@ -1,5 +1,6 @@
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
+import 'package:pensiunku/data/api/pengajuan_orang_lain_api.dart';
 import 'package:pensiunku/model/article_model.dart';
 import 'package:pensiunku/model/event_model.dart';
 import 'package:pensiunku/model/user_model.dart';
@@ -14,12 +15,14 @@ import 'package:pensiunku/screen/home/dashboard/forum/forum_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/halopensiun/halopensiun_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/icon_menu.dart';
 import 'package:pensiunku/screen/home/submission/riwayat_pengajuan_orang_lain.dart';
+import 'package:pensiunku/screen/home/submission/status_pengajuan_orang_lain.dart';
+import 'package:pensiunku/screen/home/dashboard/ajukan/pengajuan_anda_screen.dart';
 import 'package:pensiunku/screen/notification/notification_screen.dart';
 import 'package:pensiunku/util/shared_preferences_util.dart';
 import 'package:pensiunku/widget/chip_tab.dart';
 import 'package:pensiunku/widget/error_card.dart';
 import 'package:pensiunku/widget/notification_icon.dart';
-import 'ajukan/pengajuan_anda_screen.dart';
+
 
 // Kelas utama DashboardScreen dengan StatefulWidget agar memiliki state yang dapat berubah
 class DashboardScreen extends StatefulWidget {
@@ -262,7 +265,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     onTap: () {
                                       Navigator.of(context)
                                           .push(MaterialPageRoute(
-                                        builder: (context) => PengajuanAndaScreen(),
+                                        builder: (context) =>
+                                            PengajuanAndaScreen(),
                                       ));
                                     },
                                     child: Container(

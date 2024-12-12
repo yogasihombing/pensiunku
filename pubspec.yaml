@@ -33,6 +33,7 @@ dependencies:
   cupertino_icons: ^1.0.2
   introduction_screen: ^2.1.0
   shared_preferences: ^2.0.6
+  # otp_autofill: ^4.1.0
   otp_autofill: ^1.1.0
   pin_code_fields: ^7.3.0
   flutter_launcher_icons: ^0.9.2
