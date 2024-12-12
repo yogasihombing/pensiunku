@@ -265,7 +265,7 @@ class _PengajuanOrangLainScreenState extends State<PengajuanOrangLainScreen> {
                               onPressed: () => _pickImage('KTP'),
                               child: Text('Upload'),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Color(0xFF017964),
+                                primary: Color(0xFF017964),
                               ),
                             ),
                     ],
@@ -311,7 +311,7 @@ class _PengajuanOrangLainScreenState extends State<PengajuanOrangLainScreen> {
                               onPressed: () => _pickImage('NPWP'),
                               child: Text('Upload'),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Color(0xFF017964),
+                                primary: Color(0xFF017964),
                               ),
                             ),
                     ],
@@ -356,7 +356,7 @@ class _PengajuanOrangLainScreenState extends State<PengajuanOrangLainScreen> {
                               onPressed: () => _pickImage('Karip'),
                               child: Text('Upload'),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Color(0xFF017964),
+                                primary: Color(0xFF017964),
                               ),
                             ),
                     ],
@@ -368,7 +368,7 @@ class _PengajuanOrangLainScreenState extends State<PengajuanOrangLainScreen> {
                     onPressed: _submitPengajuanOrangLain,
                     child: Text('Ajukan Orang Lain Sekarang'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Color(0xFF017964),
+                      primary: Color(0xFF017964),
                     ),
                   ),
                 ],
