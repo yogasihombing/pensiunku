@@ -199,6 +199,12 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
         namaController.text = value.data?.username ?? '';
         teleponController.text = value.data?.phone ?? '';
       });
+      // Cek apakah id_user ada
+      if (value.data?.id != null) {
+        print('ID User: ${value.data?.id}');
+      } else {
+        print('ID User tidak tersedia.');
+      }
       return value;
     });
   }

@@ -13,7 +13,6 @@ import 'package:pensiunku/screen/home/account/faq/faq_screen.dart';
 import 'package:pensiunku/screen/home/account/referral/confirm_ktp_referral_screen.dart';
 import 'package:pensiunku/screen/home/account/referral/referral_screen.dart';
 import 'package:pensiunku/screen/home/account/referral/referral_success_screen.dart';
-import 'package:pensiunku/screen/home/submission/riwayat_pengajuan_orang_lain.dart';
 import 'package:pensiunku/screen/home/submission/riwayat_pengajuan_anda.dart';
 import 'package:pensiunku/util/shared_preferences_util.dart';
 import 'package:pensiunku/util/widget_util.dart';
@@ -50,6 +49,7 @@ class _AccountScreenState extends State<AccountScreen> {
     String? token = SharedPreferencesUtil()
         .sharedPreferences
         .getString(SharedPreferencesUtil.SP_KEY_TOKEN);
+        
 
     ReferralRepository().getAll(token!).then((result) {
       setState(() {

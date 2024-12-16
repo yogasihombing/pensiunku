@@ -3,7 +3,7 @@ import 'dart:io'; // Import the dart:io package
 import 'package:dio/adapter.dart';
 import 'package:dio/dio.dart';
 
-class PengajuanAndaApi { 
+class PengajuanAndaApi {
   final Dio _dio; // Inisialisasi objek Dio untuk melakukan HTTP request
 
   PengajuanAndaApi()
@@ -74,14 +74,23 @@ class PengajuanAndaApi {
         if (responseData is String) {
           responseData = jsonDecode(response.data);
         }
-        // Pastikan response.data memiliki struktur seperti {"text": {"message": "success"}}
         if (responseData is Map) {
-          final text = responseData['text'];
-          if (text is Map && text['message'] == 'success') {
-            print('Pesan dari server: ${text['message']}');
-            return true; // Menandakan pengajuan berhasil
+          // Log seluruh respons
+          print('Data lengkap dari respons API: $responseData');
+          // Memeriksa apakah ID User tersedia ###
+          if (responseData.containsKey('id_user')) {
+            final idUser = responseData['id_user'];
+            print('Pengajuan berhasil! ID User Anda: $idUser');
           } else {
-            print('Struktur respon tidak sesuai atau pesan tidak sukses.');
+            print('Pengajuan berhasil, tetapi ID User tidak tersedia.');
+          }
+          // Validasi pesan sukses
+          if (responseData['text'] is Map &&
+              responseData['text']['message'] == 'success') {
+            print('Pesan dari server: ${responseData['text']['message']}');
+            return true;
+          } else {
+            print('Pesan tidak sukses atau struktur tidak sesuai.');
           }
         } else {
           print('Data respons bukan dalam format Map.');

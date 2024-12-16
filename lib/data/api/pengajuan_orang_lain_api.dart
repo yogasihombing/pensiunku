@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io'; // Import the dart:io package
 import 'package:dio/adapter.dart';
 import 'package:dio/dio.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class PengajuanOrangLainApi {
   final Dio _dio; // Inisialisasi objek Dio untuk melakukan HTTP request
@@ -22,7 +22,7 @@ class PengajuanOrangLainApi {
   }
 
   Future<bool> kirimPengajuanOrangLain({
-    required String idUser,
+    // required String id,
     required String nama,
     required String telepon,
     required String domisili,
@@ -35,10 +35,11 @@ class PengajuanOrangLainApi {
     required String namaFotoKarip,
   }) async {
     try {
-      if (idUser.isEmpty) {
-        print('Error: ID User tidak boleh kosong.');
-        return false;
-      }
+      // String id = await getLoggedInId();
+      // if (id.isEmpty) {
+      //   print('Error: ID User tidak boleh kosong.');
+      //   return false;
+      // }
 
       print('Memulai proses kirim pengajuan Orang Lain...');
       // Encode file ke Base64
@@ -50,7 +51,7 @@ class PengajuanOrangLainApi {
       // Buat payload JSON
       Map<String, dynamic> formData = {
         // kiri adalah prameter API kanan value yg akan dikirim
-        'id_user': idUser,
+        // 'id_user': id, // Catatan ID pengguna login
         'nama': nama,
         'telepon': telepon,
         'domisili': domisili,
@@ -96,4 +97,15 @@ class PengajuanOrangLainApi {
     }
     return false;
   }
+
+  // Future<String> getLoggedInId() async {
+  //   SharedPreferences prefs = await SharedPreferences.getInstance();
+  //   String? id = prefs.getString('id_user');
+  //   if (id == null || id.isEmpty) {
+  //     print('Error: Tidak ada User ID yang tersimpan.');
+  //     return '';
+  //   }
+  //   print('ID User yang login: $id');
+  //   return id;
+  // }
 }
