@@ -2,7 +2,6 @@ import 'dart:developer';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:pensiunku/data/api/riwayat_pengajuan_anda_api.dart';
 import 'package:pensiunku/model/ktp_model.dart';
 import 'package:pensiunku/model/referral_model.dart';
 import 'package:pensiunku/repository/referral_repository.dart';
@@ -49,7 +48,6 @@ class _AccountScreenState extends State<AccountScreen> {
     String? token = SharedPreferencesUtil()
         .sharedPreferences
         .getString(SharedPreferencesUtil.SP_KEY_TOKEN);
-        
 
     ReferralRepository().getAll(token!).then((result) {
       setState(() {
@@ -180,7 +178,7 @@ class _AccountScreenState extends State<AccountScreen> {
     return WillPopScope(
       onWillPop: () async {
         widget.onChangeBottomNavIndex(0);
-        return false;
+        return true;
       },
       child: Scaffold(
         appBar: WidgetUtil.getNewAppBar(
@@ -191,7 +189,8 @@ class _AccountScreenState extends State<AccountScreen> {
             widget.onChangeBottomNavIndex(newIndex);
           },
           () {
-            widget.onChangeBottomNavIndex(0);
+            Navigator.of(context).pop(); // Kembali ke halaman sebelumnya
+            // widget.onChangeBottomNavIndex(0);
           },
         ),
         body: Padding(
