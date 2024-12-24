@@ -2,7 +2,6 @@ import 'dart:developer';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:pensiunku/data/api/riwayat_pengajuan_anda_api.dart';
 import 'package:pensiunku/model/ktp_model.dart';
 import 'package:pensiunku/model/referral_model.dart';
 import 'package:pensiunku/repository/referral_repository.dart';
@@ -13,7 +12,6 @@ import 'package:pensiunku/screen/home/account/faq/faq_screen.dart';
 import 'package:pensiunku/screen/home/account/referral/confirm_ktp_referral_screen.dart';
 import 'package:pensiunku/screen/home/account/referral/referral_screen.dart';
 import 'package:pensiunku/screen/home/account/referral/referral_success_screen.dart';
-import 'package:pensiunku/screen/home/submission/riwayat_pengajuan_orang_lain.dart';
 import 'package:pensiunku/screen/home/submission/riwayat_pengajuan_anda.dart';
 import 'package:pensiunku/util/shared_preferences_util.dart';
 import 'package:pensiunku/util/widget_util.dart';
@@ -180,7 +178,7 @@ class _AccountScreenState extends State<AccountScreen> {
     return WillPopScope(
       onWillPop: () async {
         widget.onChangeBottomNavIndex(0);
-        return false;
+        return true;
       },
       child: Scaffold(
         appBar: WidgetUtil.getNewAppBar(
@@ -191,7 +189,8 @@ class _AccountScreenState extends State<AccountScreen> {
             widget.onChangeBottomNavIndex(newIndex);
           },
           () {
-            widget.onChangeBottomNavIndex(0);
+            Navigator.of(context).pop(); // Kembali ke halaman sebelumnya
+            // widget.onChangeBottomNavIndex(0);
           },
         ),
         body: Padding(

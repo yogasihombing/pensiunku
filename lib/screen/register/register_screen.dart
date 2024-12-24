@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:pensiunku/repository/user_repository.dart';
 import 'package:pensiunku/screen/home/home_screen.dart';
 import 'package:pensiunku/screen/register/register_controller.dart';
+import 'package:pensiunku/screen/register/register_success_screen.dart';
 import 'package:pensiunku/util/shared_preferences_util.dart';
 import 'package:pensiunku/widget/custom_text_field.dart';
 import 'package:pensiunku/widget/elevated_button_loading.dart';
@@ -109,7 +110,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       });
       if (result.isSuccess) {
         print('Data Berhasil disimpan: $data');
-        Navigator.of(context).pushReplacementNamed(HomeScreen.ROUTE_NAME);
+        Navigator.of(context).pushReplacementNamed(RegisterSuccessScreen.ROUTE_NAME);
       } else {
         print('Error berhasil disimpan: $data');
         showDialog(
@@ -139,34 +140,68 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Memvalidasi error pada input nama dan telepon
+    // Memvalidasi error pada input nama
     String? inputNameError =
         _controller.getInputNameError(_inputName, _inputNameTouched);
+
     return Scaffold(
-      // Warna latar belakang halaman.
-      backgroundColor: Color(0xfff6f6f6),
-      body: SingleChildScrollView(
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
+      body: Container(
+        // Memastikan latar belakang gradien memenuhi layar penuh
+        width: double.infinity,
+        height: double.infinity,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.white,
+              Colors.white,
+              Color.fromARGB(255, 138, 217, 165),
+            ],
+            stops: [0.0, 0.5, 1.0],
+          ),
+        ),
+        child: Center(
+          child: SingleChildScrollView(
+            padding: EdgeInsets.symmetric(horizontal: 24.0, vertical: 48.0),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                SizedBox(height: 24.0),
-                SizedBox(
-                  height: 180,
-                  child: Image.asset('assets/register_screen/image_1.png'),
-                  // Menampilkan Gambar Header
+                // Gambar Header
+                Image.asset(
+                  'assets/register_screen/pensiunku.png',
+                  height: 45,
+                ),
+                SizedBox(height: 60.0),
+
+                // Teks judul
+                Text(
+                  'Masukkan E-Mail anda',
+                  style: TextStyle(
+                    fontSize: 20.0,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
+               
+                Text(
+                  '(Untuk Pemulihan Akun)',
+                  style: TextStyle(
+                    fontSize: 15.0,
+                    fontWeight: FontWeight.normal,
+                    color: Colors.black26,
+                  ),
                 ),
                 SizedBox(height: 24.0),
-                // Input untuk nama Lengkap
+
+                // Input Nama Lengkap
                 CustomTextField(
                   controller: _inputNameController,
                   labelText: '',
                   keyboardType: TextInputType.name,
                   enabled: !_isLoading,
-                  errorText:
-                      inputNameError, //Menampilkan pesan error jika nama kosong.
-                  borderRadius: 36.0,
+                  errorText: inputNameError,
+                  borderRadius: 12.0,
                   hintText: 'Nama Lengkap',
                   useLabel: false,
                   fillColor: Colors.white,
@@ -175,16 +210,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     vertical: 20.0,
                   ),
                 ),
-                SizedBox(height: 24.0),
+                SizedBox(height: 16.0),
 
-                // Input untuk Email
+                // Input Email
                 CustomTextField(
                   controller: _inputEmailController,
                   labelText: '',
                   keyboardType: TextInputType.emailAddress,
                   enabled: !_isLoading,
-                  borderRadius: 36.0,
-                  hintText: 'Email (Optional)',
+                  borderRadius: 12.0,
+                  hintText: 'E-Mail',
                   useLabel: false,
                   fillColor: Colors.white,
                   contentPadding: EdgeInsets.symmetric(
@@ -192,15 +227,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     vertical: 20.0,
                   ),
                 ),
-                SizedBox(height: 24.0),
-                // Tombol untuk memulai proses pendaftaran
+                SizedBox(height: 32.0),
+
+                // Tombol Daftar
                 ElevatedButtonLoading(
-                  text: 'Daftar',
+                  text: 'DAFTAR',
                   onTap: _register,
                   isLoading: _isLoading,
                   disabled: _isLoading,
                 ),
-                SizedBox(height: 16.0),
               ],
             ),
           ),

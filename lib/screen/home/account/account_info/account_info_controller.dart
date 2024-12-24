@@ -5,12 +5,10 @@ class AccountInfoController {
     String inputName,
     String inputPhone,
     String inputEmail,
-    String inputJob,
   ) {
     return getInputNameError(inputName) != null ||
         getInputPhoneError(inputPhone) != null ||
-        getInputEmailError(inputEmail) != null ||
-        getInputJobError(inputJob) != null;
+        getInputEmailError(inputEmail) != null;
   }
 
   String? getInputNameError(String inputName) {
@@ -36,13 +34,6 @@ class AccountInfoController {
       if (!EmailValidator.validate(inputEmail.trim())) {
         return "Email harus valid";
       }
-    }
-    return null;
-  }
-
-  String? getInputJobError(String inputJob) {
-    if (inputJob.isEmpty) {
-      return "Pekerjaan harus diisi";
     }
     return null;
   }

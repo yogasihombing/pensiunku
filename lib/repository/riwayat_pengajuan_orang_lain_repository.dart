@@ -1,5 +1,5 @@
 import 'package:pensiunku/data/db/riwayat_pengajuan_orang_lain_dao.dart';
-import 'package:pensiunku/model/riwayat_pengajuan_model.dart';
+import 'package:pensiunku/model/riwayat_pengajuan_orang_lain_model.dart';
 
 class RiwayatPengajuanOrangLainRepository {
   final RiwayatPengajuanOrangLainDao dao = RiwayatPengajuanOrangLainDao();

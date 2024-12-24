@@ -25,17 +25,9 @@ import 'package:pensiunku/screen/otp/otp_screen.dart';
 import 'package:pensiunku/screen/permission/permission_screen.dart';
 import 'package:pensiunku/screen/register/prepare_register_screen.dart';
 import 'package:pensiunku/screen/register/register_screen.dart';
+import 'package:pensiunku/screen/register/register_success_screen.dart';
 import 'package:pensiunku/screen/selfie/prepare_selfie_screen.dart';
 import 'package:pensiunku/screen/selfie/preview_selfie_screen.dart';
-import 'package:pensiunku/screen/toko/add_shipping_address_screen.dart';
-import 'package:pensiunku/screen/toko/barang_screen.dart';
-import 'package:pensiunku/screen/toko/checkout_screen.dart';
-import 'package:pensiunku/screen/toko/expedition_screen.dart';
-import 'package:pensiunku/screen/toko/history_screen.dart';
-import 'package:pensiunku/screen/toko/kategori_screen.dart';
-import 'package:pensiunku/screen/toko/keranjang_screen.dart';
-import 'package:pensiunku/screen/toko/shipping_address_screen.dart';
-import 'package:pensiunku/screen/toko/toko_screen.dart';
 import 'package:pensiunku/screen/web_view/web_view_screen.dart';
 import 'package:pensiunku/screen/welcome/welcome_screen.dart';
 import 'screen/common/gallery_youtube_fullscreen.dart';
@@ -70,7 +62,7 @@ class MyApp extends StatelessWidget {
       title: 'Pensiunku',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        fontFamily: 'San Fransisco',
+        fontFamily: 'Poppins',
         primaryColor: primaryColor,
         primarySwatch: MaterialColor(
           0xff16826e,
@@ -244,6 +236,9 @@ class MyApp extends StatelessWidget {
           case RegisterScreen.ROUTE_NAME:
             page = RegisterScreen();
             break;
+          case RegisterSuccessScreen.ROUTE_NAME:
+            page = RegisterSuccessScreen();
+            break;
           case WebViewScreen.ROUTE_NAME:
             final args = settings.arguments as WebViewScreenArguments;
             page = WebViewScreen(
@@ -303,51 +298,6 @@ class MyApp extends StatelessWidget {
             page = ArticleDetailScreen(
               articleId: args.articleId,
             );
-            break;
-          case TokoScreen.ROUTE_NAME:
-            final args = settings.arguments as TokoScreenArguments;
-            page = TokoScreen(
-              categoryId: args.categoryId,
-            );
-            break;
-          case BarangScreen.ROUTE_NAME:
-            final args = settings.arguments as BarangScreenArguments;
-            page = BarangScreen(
-              barangId: args.barangId,
-              barang: args.barang,
-            );
-            break;
-          case KeranjangScreen.ROUTE_NAME:
-            page = KeranjangScreen();
-            break;
-          case CheckoutScreen.ROUTE_NAME:
-            page = CheckoutScreen();
-            break;
-          case ShippingAddressScreen.ROUTE_NAME:
-            page = ShippingAddressScreen();
-            break;
-          case ForumScreen.ROUTE_NAME:
-            page = ForumScreen();
-            break;
-          case AddShippingAddressScreen.ROUTE_NAME:
-            final args = settings.arguments as AddShippingAddressArguments;
-            page = AddShippingAddressScreen(
-              shippingAddressId: args.shippingAddressId,
-            );
-            break;
-          case ExpeditionScreen.ROUTE_NAME:
-            final args = settings.arguments as ExpeditionScreenArguments;
-            page = ExpeditionScreen(
-              destination: args.destination,
-              origin: args.origin,
-              weight: args.weight,
-            );
-            break;
-          case CategoryScreen.ROUTE_NAME:
-            page = CategoryScreen();
-            break;
-          case HistoryScreen.ROUTE_NAME:
-            page = HistoryScreen();
             break;
           default:
             page = Container();

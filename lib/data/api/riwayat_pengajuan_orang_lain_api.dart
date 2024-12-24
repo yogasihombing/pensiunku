@@ -6,7 +6,7 @@ class RiwayatPengajuanOrangLainApi {
 
 // fetchpengajuan method
   Future<List<dynamic>> fetchPengajuanOrangLain(String telepon) async {
-    final url = Uri.parse('$baseUrl/getPengajuan');
+    final url = Uri.parse('$baseUrl/getPengajuanOther');
     final startTime = DateTime.now();
     print('API: Mengirim POST request ke $url dengan telepon: $telepon');
 

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:pensiunku/model/riwayat_pengajuan_model.dart';
+import 'package:pensiunku/model/riwayat_pengajuan_orang_lain_model.dart';
 
 class StatusPengajuanOrangLainScreen extends StatelessWidget {
   final RiwayatPengajuanOrangLainModel pengajuanOrangLain;

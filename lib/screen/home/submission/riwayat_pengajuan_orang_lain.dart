@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:pensiunku/model/riwayat_pengajuan_model.dart';
+import 'package:pensiunku/model/riwayat_pengajuan_orang_lain_model.dart';
 import 'package:pensiunku/repository/riwayat_pengajuan_orang_lain_repository.dart';
 import 'package:pensiunku/repository/user_repository.dart';
 import 'package:pensiunku/screen/home/submission/status_pengajuan_orang_lain.dart';
