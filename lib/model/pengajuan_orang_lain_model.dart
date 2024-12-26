@@ -1,5 +1,5 @@
 class PengajuanOrangLainModel {
-  // final String id;
+  final String id;
   final String nama;
   final String telepon;
   final String domisili;
@@ -12,7 +12,7 @@ class PengajuanOrangLainModel {
   final String namaFotoKarip;
 
   PengajuanOrangLainModel({
-    // required this.id,
+    required this.id,
     required this.nama,
     required this.telepon,
     required this.domisili,

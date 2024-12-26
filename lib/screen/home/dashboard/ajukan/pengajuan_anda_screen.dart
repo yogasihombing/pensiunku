@@ -28,6 +28,7 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
   bool _isKaripUploading = false; // Tambahan Untuk SK Pensiun
   // Deklarasi Future yang akan digunakan untuk menyimpan data asinkron // untuk mengambil data pengguna (1 yoga)
   late Future<ResultModel<UserModel>> _futureData;
+    UserModel? _userModel; // Model pengguna (opsional)
 
   // Variabel untuk melacak progres upload
   double _ktpUploadProgress = 0.0; // Progres upload KTP
@@ -184,6 +185,7 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
         .getString(SharedPreferencesUtil.SP_KEY_TOKEN);
 
     _futureData = UserRepository().getOne(token!).then((value) {
+      
       if (value.error != null) {
         showDialog(
             context: context,
@@ -198,7 +200,12 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
       setState(() {
         namaController.text = value.data?.username ?? '';
         teleponController.text = value.data?.phone ?? '';
+            //  _userModel = result.data;
+      
+            // // Tambahkan log ini untuk melihat ID di konsol
+            // print('User ID: ${_userModel?.id}');
       });
+    
       // Cek apakah id_user ada
       if (value.data?.id != null) {
         print('ID User: ${value.data?.id}');

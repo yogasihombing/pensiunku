@@ -2,7 +2,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:pensiunku/data/db/pengajuan_orang_lain_dao.dart';
+import 'package:pensiunku/model/user_model.dart';
+import 'package:pensiunku/repository/result_model.dart';
+import 'package:pensiunku/repository/user_repository.dart';
 import 'package:pensiunku/screen/home/submission/riwayat_pengajuan_orang_lain.dart';
+import 'package:pensiunku/util/shared_preferences_util.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class PengajuanOrangLainScreen extends StatefulWidget {
@@ -19,6 +23,8 @@ class _PengajuanOrangLainScreenState extends State<PengajuanOrangLainScreen> {
   bool _isKtpUploading = false; // Tambahan untuk KTP
   bool _isNpwpUploading = false; // Tambahan untuk NPWP
   bool _isKaripUploading = false; // Tambahan Untuk SK Pensiun
+  UserModel? _userModel;
+  late Future<ResultModel<UserModel>> _future;
 
   // Variabel untuk melacak progres upload
   double _ktpUploadProgress = 0.0; // Progres upload KTP
@@ -41,19 +47,31 @@ class _PengajuanOrangLainScreenState extends State<PengajuanOrangLainScreen> {
   @override
   void initState() {
     super.initState();
-    _getId(); // Ambil ID User
+    _loadUserData();
   }
 
-  Future<void> _getId() async {
-    final prefs = await SharedPreferences.getInstance();
-    final storedId = prefs.getString('id_user');
-    debugPrint('Stored ID User: $storedId');
-    setState(() {
-      id = storedId;
-      idController.text = storedId ?? ''; // Sinkronkan ke controller
-      id = prefs.getString('id_user');
+  Future<void> _loadUserData() async {
+  String? token = SharedPreferencesUtil()
+      .sharedPreferences
+      .getString(SharedPreferencesUtil.SP_KEY_TOKEN);
+
+  if (token != null) {
+    _future = UserRepository().getOne(token);
+    _future.then((result) {
+      if (result.error == null) {
+        setState(() {
+          _userModel = result.data;
+          print('User ID: ${_userModel?.id}');
+        });
+      } else {
+        print('Gagal mendapatkan data pengguna: ${result.error}');
+      }
     });
+  } else {
+    print('Token tidak tersedia.');
   }
+}
+
 
   // Data Access Object untuk pengajuan
   PengajuanOrangLainDao pengajuanOrangLainDao = PengajuanOrangLainDao();
@@ -94,15 +112,16 @@ class _PengajuanOrangLainScreenState extends State<PengajuanOrangLainScreen> {
   }
 
   Future<void> _submitPengajuanOrangLain() async {
-    if (idController.text.isEmpty) {
-      debugPrint('Error: ID User tidak ditemukan.');
-      _showCustomDialog(
-          'Gagal',
-          'ID User tidak ditemukan. Silahkan coba lagi. ',
-          Icons.error,
-          Colors.red);
-      return;
-    }
+    // if (idController.text.isEmpty) {
+    //   debugPrint(idController.text);
+    //   debugPrint('Error: ID User tidak ditemukan.');
+    //   _showCustomDialog(
+    //       'Gagal',
+    //       'ID User tidak ditemukan. Silahkan coba lagi. ',
+    //       Icons.error,
+    //       Colors.red);
+    //   return;
+    // }
 
     if (_formKey.currentState!.validate() &&
         fileKTP != null &&
@@ -114,7 +133,7 @@ class _PengajuanOrangLainScreenState extends State<PengajuanOrangLainScreen> {
 
       // Cetak data yang akan dikirim untuk logging
       print('Submitting pengajuan with data:');
-      debugPrint('id_user: ${idController.text}');
+      debugPrint('id_usersssss: ${_userModel?.id}');
       print('Nama: ${namaController.text}');
       print('Telepon: ${teleponController.text}');
       print('Domisili: ${domisiliController.text}');
@@ -122,7 +141,7 @@ class _PengajuanOrangLainScreenState extends State<PengajuanOrangLainScreen> {
 
       // Kirim pengajuan melalui DAO
       bool success = await PengajuanOrangLainDao.kirimPengajuanOrangLain(
-        // id: idController.text,
+        id: "${_userModel?.id}",
         nama: namaController.text,
         telepon: teleponController.text,
         domisili: domisiliController.text,
