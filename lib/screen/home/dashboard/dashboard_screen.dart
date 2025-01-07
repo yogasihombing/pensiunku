@@ -90,6 +90,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
         if (result.error == null) {
           setState(() {
             _userModel = result.data;
+
+            // Tambahkan log ini untuk melihat ID di konsol
+            print('User ID: ${_userModel?.id}');
           });
         }
       });
@@ -211,13 +214,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildGreeting() {
-    return const Text(
-      'Selamat Pagi, Fajrul',
-      style: TextStyle(
-        fontSize: 16,
-        fontWeight: FontWeight.w500,
-        color: Colors.black87,
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Selamat Pagi, ${_userModel?.username ?? 'Pengguna'}',
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: Colors.black,
+          ),
+        ),
+        Text(
+          'ID: ${_userModel?.id ?? 'Tidak tersedia'}',
+          style: const TextStyle(
+            fontSize: 10,
+            color: Colors.black87,
+          ),
+        ),
+      ],
     );
   }
 
@@ -253,7 +268,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
               const Spacer(),
               const Text(
-                'Rp. 12.000.000',
+                'Rp 0',
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
@@ -269,15 +284,33 @@ class _DashboardScreenState extends State<DashboardScreen> {
               primary: const Color.fromARGB(148, 159, 221, 159),
               minimumSize: const Size(double.infinity, 24),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(12),
               ),
             ),
-            child: Text(
-              'AKTIFKAN PENSIUNKU SEKARANG',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: Colors.green[900],
+            child: RichText(
+              text: TextSpan(
+                text: 'AKTIFKAN ',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.normal,
+                  color: Colors.green[900],
+                ),
+                children: [
+                  TextSpan(
+                    text: 'PENSIUNKU+',
+                    style: TextStyle(
+                      fontWeight:
+                          FontWeight.bold, // Bold hanya untuk "Pensiunku+"
+                    ),
+                  ),
+                  TextSpan(
+                    text: ' SEKARANG',
+                    style: TextStyle(
+                      fontWeight:
+                          FontWeight.normal, // Normal untuk bagian lainnya
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -329,7 +362,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         Expanded(
           child: _buildActionButton(
             context,
-            'assets/dashboard_screen/pengajuanAnda.png', // Ganti dengan path ikon yang sesuai
+            'assets/dashboard_screen/pengajuanAnda.png',
             'AJUKAN\nKREDIT\nPENSIUN',
             () => Navigator.of(context).push(
               MaterialPageRoute(
@@ -342,7 +375,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         Expanded(
           child: _buildActionButton(
             context,
-            'assets/dashboard_screen/mitra.png', // Ganti dengan path ikon yang sesuai
+            'assets/dashboard_screen/mitra.png',
             'AJUKAN\nMITRA\nPENSIUNKU+',
             () => Navigator.of(context).push(
               MaterialPageRoute(

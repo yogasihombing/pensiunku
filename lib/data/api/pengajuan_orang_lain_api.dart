@@ -2,10 +2,11 @@ import 'dart:convert';
 import 'dart:io'; // Import the dart:io package
 import 'package:dio/adapter.dart';
 import 'package:dio/dio.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:pensiunku/model/user_model.dart';
 
 class PengajuanOrangLainApi {
   final Dio _dio; // Inisialisasi objek Dio untuk melakukan HTTP request
+  UserModel? _userModel; // Model pengguna (opsional)
 
   PengajuanOrangLainApi()
       : _dio = Dio(BaseOptions(
@@ -22,7 +23,7 @@ class PengajuanOrangLainApi {
   }
 
   Future<bool> kirimPengajuanOrangLain({
-    // required String id,
+    required String id,
     required String nama,
     required String telepon,
     required String domisili,
@@ -48,10 +49,12 @@ class PengajuanOrangLainApi {
       String base64Karip =
           base64Encode(await File(fotoKaripPath).readAsBytes());
 
+      // print('ini yoga: ${jsonEncode(_userModel)}');
+      // String id = "${_userModel?.id}";
       // Buat payload JSON
       Map<String, dynamic> formData = {
         // kiri adalah prameter API kanan value yg akan dikirim
-        // 'id_user': id, // Catatan ID pengguna login
+        'id_user': id, // Catatan ID pengguna login
         'nama': nama,
         'telepon': telepon,
         'domisili': domisili,
@@ -97,15 +100,4 @@ class PengajuanOrangLainApi {
     }
     return false;
   }
-
-  // Future<String> getLoggedInId() async {
-  //   SharedPreferences prefs = await SharedPreferences.getInstance();
-  //   String? id = prefs.getString('id_user');
-  //   if (id == null || id.isEmpty) {
-  //     print('Error: Tidak ada User ID yang tersimpan.');
-  //     return '';
-  //   }
-  //   print('ID User yang login: $id');
-  //   return id;
-  // }
 }

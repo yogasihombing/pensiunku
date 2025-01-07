@@ -6,7 +6,7 @@ class PengajuanOrangLainDao {
       PengajuanOrangLainRepository();
 
   static Future<bool> kirimPengajuanOrangLain({
-    // required String id,
+    required String id,
     required String nama,
     required String telepon,
     required String domisili,
@@ -20,7 +20,7 @@ class PengajuanOrangLainDao {
   }) async {
     // Create the AjukanModel with all the necessary data
     PengajuanOrangLainModel pengajuanOrangLain = PengajuanOrangLainModel(
-      // id: id,
+      id: id,
       nama: nama,
       telepon: telepon,
       domisili: domisili,
@@ -34,7 +34,8 @@ class PengajuanOrangLainDao {
     );
 
     // Call the repository to send the data
-    return await _pengajuanOrangLainRepository.kirimPengajuanOrangLain(pengajuanOrangLain);
+    return await _pengajuanOrangLainRepository
+        .kirimPengajuanOrangLain(pengajuanOrangLain);
   }
 
   fetchRiwayatPengajuanOrangLain(String telepon) {}

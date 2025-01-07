@@ -194,6 +194,11 @@ class MyApp extends StatelessWidget {
               onChangeBottomNavIndex: (int index) {},
             );
             break;
+          case RiwayatPengajuanOrangLainScreen.ROUTE_NAME:
+            page = RiwayatPengajuanOrangLainScreen(
+              onChangeBottomNavIndex: (int index) {},
+            );
+            break;
           case WelcomeScreen.ROUTE_NAME:
             page = WelcomeScreen();
             break;
@@ -286,6 +291,9 @@ class MyApp extends StatelessWidget {
             break;
           case HalopensiunScreen.ROUTE_NAME:
             page = HalopensiunScreen();
+            break;
+          case ForumScreen.ROUTE_NAME:
+            page = ForumScreen();
             break;
           case ArticleScreen.ROUTE_NAME:
             final args = settings.arguments as ArticleScreenArguments;
