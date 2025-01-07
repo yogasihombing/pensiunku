@@ -59,9 +59,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   UserModel? _userModel; // Model pengguna (opsional)
   late Future<ResultModel<UserModel>> _future;
 
-    // Controller untuk input teks
+  // Controller untuk input teks
   TextEditingController namaController = TextEditingController();
-
 
   final dataKey = new GlobalKey(); // Key global untuk widget tertentu
   final double articleCarouselHeight = 200.0; // Tinggi carousel artikel
@@ -81,8 +80,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   // Fungsi untuk memuat ulang data
   Future<void> _refreshData() async {
-    String? token = SharedPreferencesUtil().sharedPreferences.getString(
-        SharedPreferencesUtil.SP_KEY_TOKEN);
+    String? token = SharedPreferencesUtil()
+        .sharedPreferences
+        .getString(SharedPreferencesUtil.SP_KEY_TOKEN);
 
     if (token != null) {
       _future = UserRepository().getOne(token);
@@ -266,7 +266,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ElevatedButton(
             onPressed: () {},
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color.fromARGB(148, 159, 221, 159),
+              primary: const Color.fromARGB(148, 159, 221, 159),
               minimumSize: const Size(double.infinity, 24),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
@@ -293,7 +293,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         color: const Color(0xFF017964), // Latar hijau tua
         borderRadius: BorderRadius.circular(24), // Radius sudut kontainer
       ),
-      child: DottedBorder(
+      child: DotteddBorder(
         borderType: BorderType.RRect, // Bentuk border melengkung
         radius: const Radius.circular(24), // Radius sudut yang sama
         dashPattern: [3, 3], // Pola putus-putus (6px garis, 3px jarak)
