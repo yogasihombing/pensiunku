@@ -25,6 +25,9 @@ dependencies:
     sdk: flutter
 
   # UI Components
+  awesome_dialog: ^3.0.2
+  get: ^4.6.5
+  fluttertoast: ^8.0.8
   cupertino_icons: ^1.0.2
   introduction_screen: ^2.1.0
   shared_preferences: ^2.0.6

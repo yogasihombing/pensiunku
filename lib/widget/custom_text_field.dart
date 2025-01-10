@@ -7,6 +7,7 @@ class CustomTextField extends StatefulWidget {
   final void Function(String)? onChanged;
   final bool enabled;
   final bool useLabel;
+  // final bool readOnly;
   final String? hintText;
   final int? minLines;
   final int? maxLines;
@@ -26,6 +27,7 @@ class CustomTextField extends StatefulWidget {
     Key? key,
     required this.labelText,
     this.keyboardType,
+    // required this.readOnly,
     this.onChanged,
     this.enabled = true,
     this.useLabel = true,

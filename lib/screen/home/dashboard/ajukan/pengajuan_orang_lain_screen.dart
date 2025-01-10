@@ -10,6 +10,7 @@ import 'package:pensiunku/util/shared_preferences_util.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class PengajuanOrangLainScreen extends StatefulWidget {
+  static const String ROUTE_NAME = '/pengajuan_orang_lain';
   @override
   _PengajuanOrangLainScreenState createState() =>
       _PengajuanOrangLainScreenState();
@@ -51,27 +52,26 @@ class _PengajuanOrangLainScreenState extends State<PengajuanOrangLainScreen> {
   }
 
   Future<void> _loadUserData() async {
-  String? token = SharedPreferencesUtil()
-      .sharedPreferences
-      .getString(SharedPreferencesUtil.SP_KEY_TOKEN);
+    String? token = SharedPreferencesUtil()
+        .sharedPreferences
+        .getString(SharedPreferencesUtil.SP_KEY_TOKEN);
 
-  if (token != null) {
-    _future = UserRepository().getOne(token);
-    _future.then((result) {
-      if (result.error == null) {
-        setState(() {
-          _userModel = result.data;
-          print('User ID: ${_userModel?.id}');
-        });
-      } else {
-        print('Gagal mendapatkan data pengguna: ${result.error}');
-      }
-    });
-  } else {
-    print('Token tidak tersedia.');
+    if (token != null) {
+      _future = UserRepository().getOne(token);
+      _future.then((result) {
+        if (result.error == null) {
+          setState(() {
+            _userModel = result.data;
+            print('User ID: ${_userModel?.id}');
+          });
+        } else {
+          print('Gagal mendapatkan data pengguna: ${result.error}');
+        }
+      });
+    } else {
+      print('Token tidak tersedia.');
+    }
   }
-}
-
 
   // Data Access Object untuk pengajuan
   PengajuanOrangLainDao pengajuanOrangLainDao = PengajuanOrangLainDao();

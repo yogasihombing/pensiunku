@@ -1,6 +1,8 @@
 import 'dart:developer';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:pensiunku/data/api/user_api.dart';
 import 'package:pensiunku/data/db/app_database.dart';
 import 'package:pensiunku/model/user_model.dart';
@@ -193,6 +195,47 @@ class UserRepository extends BaseRepository {
       },
       errorMessage: 'Gagal menyimpan data user. Tolong periksa Internet Anda.',
     );
+  }
+
+  Future<ResultModel<bool>> userExists(String phone) async {
+    try {
+      // Mengirimkan parameter 'telepon' sesuai dengan API
+      Response response = await api.checkUserExists(phone);
+      var responseJson = response.data;
+
+      // Log respons untuk debugging
+      log('Response: $responseJson');
+
+      // Periksa status respons
+      if (responseJson['status'] == 'success' && responseJson['data'] != null) {
+        bool exists = responseJson['data']['exists'];
+
+        if (!exists) {
+          return ResultModel(
+            isSuccess: false,
+            error:
+                "Nomor Anda belum terdaftar. Silakan daftar terlebih dahulu.",
+            data: exists,
+          );
+        }
+
+        return ResultModel(
+          isSuccess: true,
+          data: exists,
+        );
+      } else {
+        return ResultModel(
+          isSuccess: false,
+          error: 'Gagal memeriksa status pengguna.',
+        );
+      }
+    } catch (e) {
+      log('Error: $e');
+      return ResultModel(
+        isSuccess: false,
+        error: 'Terjadi kesalahan saat memeriksa status pengguna.',
+      );
+    }
   }
 
   Future<ResultModel<bool>> saveFcmToken(String token, String fcmToken) async {

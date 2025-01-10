@@ -306,7 +306,7 @@ class _AccountInfoScreenState extends State<AccountInfoScreen> {
             labelText: '',
             hintText: 'No. Handphone',
             keyboardType: TextInputType.phone,
-            enabled: !_isLoading,
+            enabled: false,
             errorText: inputPhoneError,
             borderRadius: 36.0,
             contentPadding: const EdgeInsets.symmetric(

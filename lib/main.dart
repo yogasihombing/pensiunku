@@ -2,6 +2,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:pensiunku/data/api/pengajuan_anda_api.dart';
 import 'package:pensiunku/screen/article/article_detail_screen.dart';
 import 'package:pensiunku/screen/article/article_screen.dart';
 import 'package:pensiunku/screen/common/galery_fullscreen.dart';
@@ -12,6 +13,7 @@ import 'package:pensiunku/screen/home/account/faq/faq_screen.dart';
 import 'package:pensiunku/screen/home/account/referral/confirm_ktp_referral_screen.dart';
 import 'package:pensiunku/screen/home/account/referral/referral_screen.dart';
 import 'package:pensiunku/screen/home/account/referral/referral_success_screen.dart';
+import 'package:pensiunku/screen/home/dashboard/ajukan/pengajuan_anda_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/event/event_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/forum/forum_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/halopensiun/halopensiun_screen.dart';
@@ -32,6 +34,7 @@ import 'package:pensiunku/screen/web_view/web_view_screen.dart';
 import 'package:pensiunku/screen/welcome/welcome_screen.dart';
 import 'screen/common/gallery_youtube_fullscreen.dart';
 import 'screen/home/dashboard/event/event_detail_screen.dart';
+import 'screen/home/dashboard/pensiunku_plus/aktifkan_pensiunku_plus_screen.dart';
 import 'screen/home/dashboard/usaha_detail_screen.dart';
 import 'screen/home/dashboard/usaha_screen.dart';
 
@@ -189,6 +192,9 @@ class MyApp extends StatelessWidget {
           case AccountInfoScreen.ROUTE_NAME:
             page = AccountInfoScreen();
             break;
+          case AktifkanPensiunkuPlusScreen.ROUTE_NAME:
+            page = AktifkanPensiunkuPlusScreen();
+            break;
           case RiwayatPengajuanAndaScreen.ROUTE_NAME:
             page = RiwayatPengajuanAndaScreen(
               onChangeBottomNavIndex: (int index) {},
@@ -198,6 +204,9 @@ class MyApp extends StatelessWidget {
             page = RiwayatPengajuanOrangLainScreen(
               onChangeBottomNavIndex: (int index) {},
             );
+            break;
+          case PengajuanAndaScreen.ROUTE_NAME:
+            page = PengajuanAndaScreen();
             break;
           case WelcomeScreen.ROUTE_NAME:
             page = WelcomeScreen();

@@ -1,3 +1,4 @@
+import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:dotted_border/dotted_border.dart';
 import 'package:flutter/material.dart';
@@ -17,6 +18,7 @@ import 'package:pensiunku/screen/home/dashboard/forum/forum_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/halopensiun/halopensiun_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/icon_menu.dart';
 import 'package:pensiunku/screen/home/dashboard/ajukan/pengajuan_anda_screen.dart';
+import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/aktifkan_pensiunku_plus_screen.dart';
 import 'package:pensiunku/screen/notification/notification_screen.dart';
 import 'package:pensiunku/util/shared_preferences_util.dart';
 import 'package:pensiunku/widget/notification_icon.dart';
@@ -58,6 +60,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool _isLoading = false; // Menandai apakah data sedang dimuat
   UserModel? _userModel; // Model pengguna (opsional)
   late Future<ResultModel<UserModel>> _future;
+  bool _isActivated = false; // Menambahkan variabel aktifasi
 
   // Controller untuk input teks
   TextEditingController namaController = TextEditingController();
@@ -90,6 +93,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
         if (result.error == null) {
           setState(() {
             _userModel = result.data;
+            _isActivated = _userModel?.isActivated ??
+                false; // Mengecek status aktifasi dari user
 
             // Tambahkan log ini untuk melihat ID di konsol
             print('User ID: ${_userModel?.id}');
@@ -169,7 +174,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     _buildBottomSectionTitle(),
                     const SizedBox(height: 12),
                     _buildActionButtons(context),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 11),
                     _buildHeaderImage(),
                     const SizedBox(height: 2),
                     _buildMenuFeatures(),
@@ -279,7 +284,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
           const SizedBox(height: 8),
           ElevatedButton(
-            onPressed: () {},
+            onPressed: () {
+              // Arahkan ke halaman AktifkanPensiunkuPlusScreen
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => AktifkanPensiunkuPlusScreen()),
+              );
+            },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color.fromARGB(148, 159, 221, 159),
               minimumSize: const Size(double.infinity, 24),
@@ -377,11 +389,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
             context,
             'assets/dashboard_screen/mitra.png',
             'AJUKAN\nMITRA\nPENSIUNKU+',
-            () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => PengajuanOrangLainScreen(),
-              ),
-            ),
+            _isActivated // Periksa apakah sudah diaktifkan
+                ? () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => PengajuanOrangLainScreen(),
+                      ),
+                    )
+                : () => _showActivationAlert(context), // Gunakan fungsi alert
           ),
         ),
       ],
@@ -554,6 +568,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
       ],
     );
+  }
+
+  void _showActivationAlert(BuildContext context) {
+    AwesomeDialog(
+      context: context,
+      dialogType: DialogType.warning, // Ikon peringatan
+      animType: AnimType.bottomSlide, // Animasi pop-up
+      title: 'Akses Ditolak',
+      desc:
+          'Silakan aktifkan Pensiunku+ terlebih dahulu untuk mengakses fitur ini.',
+      btnCancelText: 'Batal',
+      btnOkText: 'Aktifkan',
+      btnCancelOnPress: () {
+        // Tutup dialog
+      },
+      btnOkOnPress: () {
+        // Arahkan ke halaman aktivasi
+        Navigator.pushNamed(context, '/AktifkanPensiunkuPlusScreen');
+      },
+    ).show(); // Tampilkan dialog
   }
 
   void _onShowButton(showButton, onPageChanged) {

@@ -1,7 +1,10 @@
+import 'dart:convert';
+
+import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:pensiunku/repository/user_repository.dart';
 import 'package:pensiunku/screen/otp/otp_code_screen.dart';
-import 'package:pensiunku/widget/elevated_button_loading.dart';
+import 'package:http/http.dart' as http;
 
 /// OTP Screen
 ///
@@ -15,17 +18,11 @@ class OtpScreen extends StatefulWidget {
 }
 
 class _OtpScreenState extends State<OtpScreen> {
-  /// Whether the screen is loading or not
   bool _isLoading = false;
-
-  /// User phone number
   String _inputPhone = '';
-
-  /// Is input phone number touched
   bool _inputPhoneTouched = false;
-
-  /// Input phone number controller
   late TextEditingController _inputPhoneController;
+  bool _isLoginMode = true;
 
   @override
   void initState() {
@@ -45,8 +42,98 @@ class _OtpScreenState extends State<OtpScreen> {
     super.dispose();
   }
 
-  /// Send OTP to user phone number
-  _sendOtp() {
+  Future<bool?> _checkPhoneNumber() async {
+    final url = Uri.parse('https://api.pensiunku.id/new.php/cekNomorTelepon');
+    final body = json.encode({'phone': _inputPhone});
+
+    try {
+      print(
+          'Mengirim permintaan ke server: $url dengan data: $body'); // Debug log
+
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: body,
+      );
+
+      print('Status kode respons: ${response.statusCode}');
+      print('Isi respons: ${response.body}'); // Debug log
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        print('Data yang diterima: $data'); // Debug log
+
+        final message = data['text']?['message'];
+        print('Message dari respons: $message');
+
+        if (message == 'success') {
+          print('Nomor terdaftar di sistem.');
+
+          if (_isLoginMode) {
+            // Jika mode LOGIN, langsung kirim OTP
+            return true; // Nomor terdaftar
+          } else {
+            // Jika mode DAFTAR, tampilkan dialog bahwa nomor sudah terdaftar
+            AwesomeDialog(
+              context: context,
+              dialogType: DialogType.info,
+              animType: AnimType.scale,
+              title: 'Nomor Sudah Terdaftar',
+              desc:
+                  'Nomor telepon ini sudah terdaftar. Silakan pilih menu LOGIN untuk masuk.',
+              btnOkOnPress: () {
+                setState(() => _isLoginMode = true); // Alihkan ke mode LOGIN
+              },
+              btnOkText: 'Pilih Login',
+              btnCancelOnPress: () {},
+              btnCancelText: 'Kembali',
+            ).show();
+            return false; // Jangan lanjut ke _sendOtp
+          }
+        } else {
+          print('Nomor tidak terdaftar di sistem.');
+
+          if (_isLoginMode) {
+            // Jika mode LOGIN, tampilkan dialog bahwa nomor belum terdaftar
+            AwesomeDialog(
+              context: context,
+              dialogType: DialogType.info,
+              animType: AnimType.scale,
+              title: 'Nomor Belum Terdaftar',
+              desc:
+                  'Nomor telepon ini belum terdaftar. Silakan pilih menu DAFTAR untuk membuat akun baru.',
+              btnOkOnPress: () {
+                setState(() => _isLoginMode = false); // Alihkan ke mode DAFTAR
+              },
+              btnOkText: 'Pilih Daftar',
+              btnCancelOnPress: () {},
+              btnCancelText: 'Kembali',
+            ).show();
+            return false; // Jangan lanjut ke _sendOtp
+          } else {
+            // Jika mode DAFTAR, lanjut ke _sendOtp
+            return true;
+          }
+        }
+      } else {
+        print('Respons tidak sukses, status kode: ${response.statusCode}');
+        throw Exception('Kesalahan Server');
+      }
+    } catch (e) {
+      print('Terjadi kesalahan: $e'); // Debug log
+      AwesomeDialog(
+        context: context,
+        dialogType: DialogType.error,
+        animType: AnimType.scale,
+        title: 'Kesalahan',
+        desc: 'Tidak dapat terhubung ke server. Coba lagi nanti.',
+        btnOkOnPress: () {},
+      ).show();
+      return null; // Kesalahan jaringan
+    }
+  }
+
+  void _sendOtp() async {
     setState(() {
       _inputPhoneTouched = true;
     });
@@ -59,11 +146,28 @@ class _OtpScreenState extends State<OtpScreen> {
       _isLoading = true;
     });
 
+    final isRegistered = await _checkPhoneNumber();
+
+    if (isRegistered == null) {
+      setState(() {
+        _isLoading = false;
+      });
+      return;
+    }
+
+    if (!isRegistered) {
+      // Dialog atau logika tambahan sudah diatur di `_checkPhoneNumber`
+      setState(() {
+        _isLoading = false;
+      });
+      return;
+    }
+
+    // Jika nomor valid sesuai logika, lanjut kirim OTP
     UserRepository().sendOtp(_inputPhone).then((result) {
       setState(() {
         _isLoading = false;
       });
-
       if (result.isSuccess) {
         Navigator.of(context).pushNamed(
           OtpCodeScreen.ROUTE_NAME,
@@ -85,7 +189,6 @@ class _OtpScreenState extends State<OtpScreen> {
     });
   }
 
-  /// Get user input phone's error. Returns null if phone number is valid.
   String? _getInputPhoneError() {
     if (!_inputPhoneTouched) return null;
 
@@ -109,7 +212,7 @@ class _OtpScreenState extends State<OtpScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          // Background gradient - full layar
+          // Background gradient
           Positioned.fill(
             child: Container(
               decoration: BoxDecoration(
@@ -117,9 +220,9 @@ class _OtpScreenState extends State<OtpScreen> {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Colors.white, // Hijau muda (atas)
-                    Colors.white, // Kuning pucat (tengah)
-                    Color.fromARGB(255, 138, 217, 165), // Hijau muda (bawah)
+                    Colors.white,
+                    Colors.white,
+                    Color.fromARGB(255, 138, 217, 165),
                   ],
                   stops: [0.0, 0.5, 1.0],
                 ),
@@ -144,49 +247,10 @@ class _OtpScreenState extends State<OtpScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       SizedBox(height: 60.0),
-                      SizedBox(
-                        height: 35,
-                        child: Image.asset('assets/otp_screen/pensiunku.png'),
-                      ),
+                      Image.asset('assets/otp_screen/pensiunku.png',
+                          height: 35),
                       SizedBox(height: 80.0),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          GestureDetector(
-                            onTap: () {
-                              // Navigasi ke page MASUK (sementara kosong)
-                            },
-                            child: Text(
-                              'MASUK',
-                              style: TextStyle(
-                                fontSize: 24.0,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black26,
-                              ),
-                            ),
-                          ),
-                          Text(
-                            ' / ',
-                            style: TextStyle(
-                              fontSize: 24.0,
-                              color: Colors.black,
-                            ),
-                          ),
-                          GestureDetector(
-                            onTap: () {
-                              // Navigasi ke page DAFTAR (sementara kosong)
-                            },
-                            child: Text(
-                              'DAFTAR',
-                              style: TextStyle(
-                                fontSize: 24.0,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                      _buildModeToggle(),
 
                       SizedBox(height: 8.0),
                       Text(
@@ -197,7 +261,7 @@ class _OtpScreenState extends State<OtpScreen> {
                         ),
                       ),
                       SizedBox(height: 12.0),
-                      // Input Phone Field
+
                       TextField(
                         controller: _inputPhoneController,
                         keyboardType: TextInputType.phone,
@@ -209,16 +273,18 @@ class _OtpScreenState extends State<OtpScreen> {
                           ),
                         ),
                       ),
+
                       SizedBox(height: 12.0),
 
-                      // Tombol Daftar
                       ElevatedButton(
                         onPressed: _isLoading ? null : _sendOtp,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.orange,
                           foregroundColor: Colors.white,
                           padding: EdgeInsets.symmetric(
-                              vertical: 12.0, horizontal: 24.0),
+                            vertical: 12.0,
+                            horizontal: 24.0,
+                          ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(24.0),
                           ),
@@ -226,7 +292,7 @@ class _OtpScreenState extends State<OtpScreen> {
                         child: _isLoading
                             ? CircularProgressIndicator(color: Colors.white)
                             : Text(
-                                'DAFTAR',
+                                _isLoginMode ? 'MASUK' : 'DAFTAR',
                                 style: TextStyle(
                                   fontSize: 16.0,
                                   fontWeight: FontWeight.bold,
@@ -236,30 +302,39 @@ class _OtpScreenState extends State<OtpScreen> {
                       SizedBox(height: 120.0),
 
                       // Informasi Footer
-                      Text(
-                        'Tidak bisa mengakses nomor telepon anda?',
-                        style: TextStyle(
-                          color: Colors.grey,
-                          fontSize: 12.0,
+                      if (_isLoginMode)
+                        Column(
+                          children: [
+                            Text(
+                              'Tidak bisa mengakses nomor telepon anda?',
+                              style: TextStyle(
+                                color: Colors.grey,
+                                fontSize: 12.0,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            SizedBox(height: 2.0),
+                          ],
                         ),
-                        textAlign: TextAlign.center,
-                      ),
+
                       SizedBox(height: 2.0),
 
                       // Tombol Pemulihan Akun
-                      TextButton(
-                        onPressed: () {
-                          // Pemulihan akun handler
-                        },
-                        child: Text(
-                          'PEMULIHAN AKUN',
-                          style: TextStyle(
-                            color: Colors.orange,
-                            fontSize: 14.0,
-                            fontWeight: FontWeight.bold,
+                      if (_isLoginMode)
+                        TextButton(
+                          onPressed: () {
+                            // Pemulihan akun handler
+                          },
+                          child: Text(
+                            'PEMULIHAN AKUN',
+                            style: TextStyle(
+                              color: Colors.orange,
+                              fontSize: 14.0,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
-                      ),
+
                       SizedBox(height: 24.0),
                     ],
                   ),
@@ -269,6 +344,31 @@ class _OtpScreenState extends State<OtpScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildModeToggle() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        GestureDetector(
+          onTap: () => setState(() => _isLoginMode = true),
+          child: Text('MASUK', style: _getModeStyle(_isLoginMode)),
+        ),
+        Text(' / '),
+        GestureDetector(
+          onTap: () => setState(() => _isLoginMode = false),
+          child: Text('DAFTAR', style: _getModeStyle(!_isLoginMode)),
+        ),
+      ],
+    );
+  }
+
+  TextStyle _getModeStyle(bool isActive) {
+    return TextStyle(
+      fontSize: 24.0,
+      fontWeight: FontWeight.bold,
+      color: isActive ? Colors.black : Colors.black26,
     );
   }
 }
