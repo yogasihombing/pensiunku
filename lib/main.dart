@@ -6,10 +6,12 @@ import 'package:pensiunku/data/api/pengajuan_anda_api.dart';
 import 'package:pensiunku/screen/article/article_detail_screen.dart';
 import 'package:pensiunku/screen/article/article_screen.dart';
 import 'package:pensiunku/screen/common/galery_fullscreen.dart';
+import 'package:pensiunku/screen/home/account/TNC/term_and_condition.dart';
 import 'package:pensiunku/screen/home/account/account_info/account_info_screen.dart';
 import 'package:pensiunku/screen/home/account/customer_support/customer_support_screen.dart';
 import 'package:pensiunku/screen/home/account/faq/faq_detail_screen.dart';
 import 'package:pensiunku/screen/home/account/faq/faq_screen.dart';
+import 'package:pensiunku/screen/home/account/privacy_policy/privacy_policy.dart';
 import 'package:pensiunku/screen/home/account/referral/confirm_ktp_referral_screen.dart';
 import 'package:pensiunku/screen/home/account/referral/referral_screen.dart';
 import 'package:pensiunku/screen/home/account/referral/referral_success_screen.dart';
@@ -180,7 +182,13 @@ class MyApp extends StatelessWidget {
               referralModel: args.referralModel,
               onSuccess: args.onSuccess,
             );
+            break;
 
+          case TermAndConditionScreen.ROUTE_NAME:
+            page = TermAndConditionScreen();
+            break;
+          case PrivacyPolicyScreen.ROUTE_NAME:
+            page = PrivacyPolicyScreen();
             break;
           case PrepareSelfieScreen.ROUTE_NAME:
             final args = settings.arguments as PrepareSelfieScreenArguments;

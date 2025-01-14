@@ -6,9 +6,11 @@ import 'package:pensiunku/model/ktp_model.dart';
 import 'package:pensiunku/model/referral_model.dart';
 import 'package:pensiunku/repository/referral_repository.dart';
 import 'package:pensiunku/repository/result_model.dart';
+import 'package:pensiunku/screen/home/account/TNC/term_and_condition.dart';
 import 'package:pensiunku/screen/home/account/account_info/account_info_screen.dart';
 import 'package:pensiunku/screen/home/account/customer_support/customer_support_screen.dart';
 import 'package:pensiunku/screen/home/account/faq/faq_screen.dart';
+import 'package:pensiunku/screen/home/account/privacy_policy/privacy_policy.dart';
 import 'package:pensiunku/screen/home/account/referral/confirm_ktp_referral_screen.dart';
 import 'package:pensiunku/screen/home/account/referral/referral_screen.dart';
 import 'package:pensiunku/screen/home/account/referral/referral_success_screen.dart';
@@ -171,6 +173,30 @@ class _AccountScreenState extends State<AccountScreen> {
               }
             });
           }
+        }
+      },
+      {
+        'title': 'Syarat dan Ketentuan',
+        'onTap': () {
+          Navigator.of(context)
+              .pushNamed(TermAndConditionScreen.ROUTE_NAME)
+              .then((newIndex) {
+            if (newIndex is int) {
+              widget.onChangeBottomNavIndex(newIndex);
+            }
+          });
+        }
+      },
+      {
+        'title': 'Kebijakan Privasi',
+        'onTap': () {
+          Navigator.of(context)
+              .pushNamed(PrivacyPolicyScreen.ROUTE_NAME)
+              .then((newIndex) {
+            if (newIndex is int) {
+              widget.onChangeBottomNavIndex(newIndex);
+            }
+          });
         }
       },
     ];

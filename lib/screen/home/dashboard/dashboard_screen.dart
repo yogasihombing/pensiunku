@@ -61,6 +61,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   UserModel? _userModel; // Model pengguna (opsional)
   late Future<ResultModel<UserModel>> _future;
   bool _isActivated = false; // Menambahkan variabel aktifasi
+  bool _isInDevelopment = true; // Atur ke true untuk mengunci fitur
 
   // Controller untuk input teks
   TextEditingController namaController = TextEditingController();
@@ -244,92 +245,207 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildBalanceCard() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      constraints: BoxConstraints(minHeight: 100), // Berikan batasan minimum
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.6),
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
-            offset: const Offset(0, 4),
+            offset: Offset(0, 4),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Stack(
         children: [
-          Row(
-            children: [
-              const Icon(Icons.account_balance_wallet_outlined,
-                  color: Colors.black),
-              const SizedBox(width: 8),
-              const Text(
-                'Dompet Anda',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.black,
+          // Konten asli
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.account_balance_wallet_outlined,
+                        color: Colors.black),
+                    SizedBox(width: 8),
+                    Text(
+                      'Dompet Anda',
+                      style: TextStyle(fontSize: 14, color: Colors.black),
+                    ),
+                    Spacer(),
+                    Text(
+                      'Rp 0',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              const Spacer(),
-              const Text(
-                'Rp 0',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          ElevatedButton(
-            onPressed: () {
-              // Arahkan ke halaman AktifkanPensiunkuPlusScreen
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) => AktifkanPensiunkuPlusScreen()),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color.fromARGB(148, 159, 221, 159),
-              minimumSize: const Size(double.infinity, 24),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: RichText(
-              text: TextSpan(
-                text: 'AKTIFKAN ',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.normal,
-                  color: Colors.green[900],
-                ),
-                children: [
-                  TextSpan(
-                    text: 'PENSIUNKU+',
-                    style: TextStyle(
-                      fontWeight:
-                          FontWeight.bold, // Bold hanya untuk "Pensiunku+"
+                SizedBox(height: 8),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => AktifkanPensiunkuPlusScreen()),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color(0xFFFFC950),
+                    minimumSize: Size(double.infinity, 24),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  TextSpan(
-                    text: ' SEKARANG',
-                    style: TextStyle(
-                      fontWeight:
-                          FontWeight.normal, // Normal untuk bagian lainnya
+                  child: RichText(
+                    text: TextSpan(
+                      text: 'AKTIFKAN ',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.normal,
+                        color: Colors.green[900],
+                      ),
+                      children: [
+                        TextSpan(
+                          text: 'PENSIUNKU+',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        TextSpan(
+                          text: ' SEKARANG',
+                          style: TextStyle(fontWeight: FontWeight.normal),
+                        ),
+                      ],
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
+          // Overlay gembok
+          if (_isInDevelopment)
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.6), // Warna overlay
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Center(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.lock,
+                          color: Colors.white), // Ikon gembok putih
+                      // SizedBox(width: 8),
+                      // Text(
+                      //   'Fitur ini sedang dalam pengembangan',
+                      //   style: TextStyle(
+                      //     fontSize: 14,
+                      //     color: Colors.white, // Teks putih
+                      //     fontWeight: FontWeight.bold,
+                      //   ),
+                      // ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
   }
+
+  // Widget _buildBalanceCard() {
+  //   return Container(
+  //     width: double.infinity,
+  //     padding: const EdgeInsets.all(16),
+  //     decoration: BoxDecoration(
+  //       color: Colors.white.withOpacity(0.6),
+  //       borderRadius: BorderRadius.circular(12),
+  //       boxShadow: [
+  //         BoxShadow(
+  //           color: Colors.black.withOpacity(0.05),
+  //           blurRadius: 10,
+  //           offset: const Offset(0, 4),
+  //         ),
+  //       ],
+  //     ),
+  //     child: Column(
+  //       crossAxisAlignment: CrossAxisAlignment.start,
+  //       children: [
+  //         Row(
+  //           children: [
+  //             const Icon(Icons.account_balance_wallet_outlined,
+  //                 color: Colors.black),
+  //             const SizedBox(width: 8),
+  //             const Text(
+  //               'Dompet Anda',
+  //               style: TextStyle(
+  //                 fontSize: 14,
+  //                 color: Colors.black,
+  //               ),
+  //             ),
+  //             const Spacer(),
+  //             const Text(
+  //               'Rp 0',
+  //               style: TextStyle(
+  //                 fontSize: 12,
+  //                 fontWeight: FontWeight.bold,
+  //                 color: Colors.black87,
+  //               ),
+  //             ),
+  //           ],
+  //         ),
+  //         const SizedBox(height: 8),
+  //         ElevatedButton(
+  //           onPressed: () {
+  //             // Arahkan ke halaman AktifkanPensiunkuPlusScreen
+  //             Navigator.push(
+  //               context,
+  //               MaterialPageRoute(
+  //                   builder: (context) => AktifkanPensiunkuPlusScreen()),
+  //             );
+  //           },
+  //           style: ElevatedButton.styleFrom(
+  //             backgroundColor: const Color.fromARGB(148, 159, 221, 159),
+  //             minimumSize: const Size(double.infinity, 24),
+  //             shape: RoundedRectangleBorder(
+  //               borderRadius: BorderRadius.circular(12),
+  //             ),
+  //           ),
+  //           child: RichText(
+  //             text: TextSpan(
+  //               text: 'AKTIFKAN ',
+  //               style: TextStyle(
+  //                 fontSize: 14,
+  //                 fontWeight: FontWeight.normal,
+  //                 color: Colors.green[900],
+  //               ),
+  //               children: [
+  //                 TextSpan(
+  //                   text: 'PENSIUNKU+',
+  //                   style: TextStyle(
+  //                     fontWeight:
+  //                         FontWeight.bold, // Bold hanya untuk "Pensiunku+"
+  //                   ),
+  //                 ),
+  //                 TextSpan(
+  //                   text: ' SEKARANG',
+  //                   style: TextStyle(
+  //                     fontWeight:
+  //                         FontWeight.normal, // Normal untuk bagian lainnya
+  //                   ),
+  //                 ),
+  //               ],
+  //             ),
+  //           ),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   Widget _buildBottomSectionTitle() {
     return Container(
@@ -385,22 +501,96 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
         const SizedBox(width: 10),
         Expanded(
-          child: _buildActionButton(
-            context,
-            'assets/dashboard_screen/mitra.png',
-            'AJUKAN\nMITRA\nPENSIUNKU+',
-            _isActivated // Periksa apakah sudah diaktifkan
-                ? () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => PengajuanOrangLainScreen(),
+          child: Stack(
+            children: [
+              _buildActionButton(
+                context,
+                'assets/dashboard_screen/mitra.png',
+                'AJUKAN\nMITRA\nPENSIUNKU+',
+                _isActivated // Periksa apakah sudah diaktifkan
+                    ? () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => PengajuanOrangLainScreen(),
+                          ),
+                        )
+                    : () =>
+                        _showActivationAlert(context), // Gunakan fungsi alert
+              ),
+              if (_isInDevelopment)
+                Positioned.fill(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.6),
+                      borderRadius:
+                          BorderRadius.circular(20), // Sesuaikan radius
+                    ),
+                    child: Center(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.lock,
+                            color: Colors.white, // Ikon gembok putih
+                            size: 20, // Ukuran ikon
+                          ),
+                          // SizedBox(width: 8),
+                          // Flexible(
+                          //   child: Text(
+                          //     'Fitur ini sedang dalam pengembangan',
+                          //     style: TextStyle(
+                          //       fontSize: 12,
+                          //       color: Colors.white, // Teks putih
+                          //       fontWeight: FontWeight.bold,
+                          //     ),
+                          //     textAlign: TextAlign.center,
+                          //   ),
+                          // ),
+                        ],
                       ),
-                    )
-                : () => _showActivationAlert(context), // Gunakan fungsi alert
+                    ),
+                  ),
+                ),
+            ],
           ),
         ),
       ],
     );
   }
+
+  // Widget _buildActionButtons(BuildContext context) {
+  //   return Row(
+  //     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+  //     children: [
+  //       Expanded(
+  //         child: _buildActionButton(
+  //           context,
+  //           'assets/dashboard_screen/pengajuanAnda.png',
+  //           'AJUKAN\nKREDIT\nPENSIUN',
+  //           () => Navigator.of(context).push(
+  //             MaterialPageRoute(
+  //               builder: (context) => PengajuanAndaScreen(),
+  //             ),
+  //           ),
+  //         ),
+  //       ),
+  //       const SizedBox(width: 10),
+  //       Expanded(
+  //         child: _buildActionButton(
+  //           context,
+  //           'assets/dashboard_screen/mitra.png',
+  //           'AJUKAN\nMITRA\nPENSIUNKU+',
+  //           _isActivated // Periksa apakah sudah diaktifkan
+  //               ? () => Navigator.of(context).push(
+  //                     MaterialPageRoute(
+  //                       builder: (context) => PengajuanOrangLainScreen(),
+  //                     ),
+  //                   )
+  //               : () => _showActivationAlert(context), // Gunakan fungsi alert
+  //         ),
+  //       ),
+  //     ],
+  //   );
+  // }
 
   Widget _buildActionButton(BuildContext context, String iconPath, String text,
       VoidCallback onPressed) {

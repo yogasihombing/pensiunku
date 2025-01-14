@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:pensiunku/repository/user_repository.dart';
+import 'package:pensiunku/screen/otp/account_recovery_screen.dart';
 import 'package:pensiunku/screen/otp/otp_code_screen.dart';
 import 'package:http/http.dart' as http;
 
@@ -324,6 +325,12 @@ class _OtpScreenState extends State<OtpScreen> {
                         TextButton(
                           onPressed: () {
                             // Pemulihan akun handler
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => AccountRecoveryScreen(),
+                              ),
+                            );
                           },
                           child: Text(
                             'PEMULIHAN AKUN',

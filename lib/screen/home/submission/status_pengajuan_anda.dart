@@ -41,9 +41,14 @@ class StatusPengajuanAndaScreen extends StatelessWidget {
                             'Nama Pemohon: ',
                             style: TextStyle(fontWeight: FontWeight.bold),
                           ),
-                          Text(
-                            pengajuanAnda.nama,
-                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          Flexible(
+                            child: Text(
+                              pengajuanAnda.nama,
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.bold),
+                              overflow: TextOverflow
+                                  .ellipsis, // Teks panjang akan terpotong dengan elipsis
+                            ),
                           ),
                         ],
                       ),
