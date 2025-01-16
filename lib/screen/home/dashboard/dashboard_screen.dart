@@ -421,7 +421,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         color: const Color(0xFF017964), // Latar hijau tua
         borderRadius: BorderRadius.circular(24), // Radius sudut kontainer
       ),
-      child: DotteddBorder(
+      child: DottedBorder(
         borderType: BorderType.RRect, // Bentuk border melengkung
         radius: const Radius.circular(24), // Radius sudut yang sama
         dashPattern: [3, 3], // Pola putus-putus (6px garis, 3px jarak)
