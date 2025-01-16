@@ -10,7 +10,6 @@ import 'package:pensiunku/repository/article_repository.dart';
 import 'package:pensiunku/repository/result_model.dart';
 import 'package:pensiunku/repository/user_repository.dart';
 import 'package:pensiunku/screen/article/article_screen.dart';
-import 'package:pensiunku/screen/home/account/account_info/account_info_screen.dart';
 import 'package:pensiunku/screen/home/account/account_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/ajukan/pengajuan_orang_lain_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/event/event_screen.dart';
@@ -19,9 +18,7 @@ import 'package:pensiunku/screen/home/dashboard/halopensiun/halopensiun_screen.d
 import 'package:pensiunku/screen/home/dashboard/icon_menu.dart';
 import 'package:pensiunku/screen/home/dashboard/ajukan/pengajuan_anda_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/aktifkan_pensiunku_plus_screen.dart';
-import 'package:pensiunku/screen/notification/notification_screen.dart';
 import 'package:pensiunku/util/shared_preferences_util.dart';
-import 'package:pensiunku/widget/notification_icon.dart';
 
 // Kelas utama DashboardScreen dengan StatefulWidget agar memiliki state yang dapat berubah
 class DashboardScreen extends StatefulWidget {
@@ -515,6 +512,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         )
                     : () =>
                         _showActivationAlert(context), // Gunakan fungsi alert
+                backgroundColor: Color(0xFFFFC950), // Warna background
               ),
               if (_isInDevelopment)
                 Positioned.fill(
@@ -592,11 +590,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
   //   );
   // }
 
-  Widget _buildActionButton(BuildContext context, String iconPath, String text,
-      VoidCallback onPressed) {
+  Widget _buildActionButton(
+    BuildContext context,
+    String iconPath,
+    String text,
+    VoidCallback onPressed, {
+    Color backgroundColor = const Color(0xFF017964), // Default warna tombol
+  }) {
     return ElevatedButton(
       style: ElevatedButton.styleFrom(
-        backgroundColor: Color(0xFF017964), // Warna latar belakang tombol
+        backgroundColor: backgroundColor, // Gunakan parameter warna di sini
         shape: RoundedRectangleBorder(
           borderRadius:
               BorderRadius.circular(20), // Border radius sesuai gambar
