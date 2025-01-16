@@ -1,11 +1,16 @@
+import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
+import 'package:pensiunku/screen/otp/recovery_update_phone_screen.dart';
+
 class OtpCodeRecoveryScreen extends StatelessWidget {
   final String email;
+  final String phone; // Tambahkan parameter untuk nomor telepon lama
 
-  OtpCodeRecoveryScreen({required this.email});
+
+  OtpCodeRecoveryScreen({required this.email, required this.phone});
 
   final List<TextEditingController> _otpControllers =
       List.generate(5, (_) => TextEditingController());
@@ -13,13 +18,20 @@ class OtpCodeRecoveryScreen extends StatelessWidget {
 
   Future<void> _verifyOtp(BuildContext context) async {
     if (_formKey.currentState!.validate()) {
-      final otp = _otpControllers.map((controller) => controller.text).join();
-
+      final otp =
+          _otpControllers.map((controller) => controller.text.trim()).join();
+      print('Email yang digunakan: $email');
+      print('Nomor telepon lama: $phone');
+      print('OTP yang dimasukkan: $otp');
       try {
         print('Mengirim permintaan verifikasi OTP ke server...');
+        print('Data yang dikirim: ${jsonEncode({'email': email, 'otp': otp})}');
         final response = await http.post(
           Uri.parse('https://api.pensiunku.id/new.php/cekOTP'),
-          headers: {'Content-Type': 'application/json'},
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json', // Jika server membutuhkan header ini
+          },
           body: jsonEncode({'email': email, 'otp': otp}),
         );
 
@@ -29,25 +41,48 @@ class OtpCodeRecoveryScreen extends StatelessWidget {
         if (response.statusCode == 200) {
           final data = jsonDecode(response.body);
           if (data['text'] != null && data['text']['message'] == 'success') {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('OTP berhasil diverifikasi!')),
+            print('OTP berhasil diverifikasi!');
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => RecoveryUpdatePhoneScreen(
+                  email: email,
+                  phone: phone, //kirim nomor telepon lama
+                ),
+              ),
             );
-            // TODO: Tambahkan navigasi ke halaman berikutnya jika diperlukan
           } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('OTP salah atau tidak valid.')),
-            );
+            print('OTP salah atau tidak valid.');
+            AwesomeDialog(
+              context: context,
+              dialogType: DialogType.error,
+              animType: AnimType.bottomSlide,
+              title: 'Gagal',
+              desc: 'OTP salah atau tidak valid.',
+              btnOkOnPress: () {},
+            ).show();
           }
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Terjadi kesalahan pada server.')),
-          );
+          print('Terjadi kesalahan pada server.');
+          AwesomeDialog(
+            context: context,
+            dialogType: DialogType.warning,
+            animType: AnimType.bottomSlide,
+            title: 'Kesalahan',
+            desc: 'Terjadi kesalahan pada server.',
+            btnOkOnPress: () {},
+          ).show();
         }
       } catch (e) {
         print('Kesalahan: $e');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal menghubungi server.')),
-        );
+        AwesomeDialog(
+          context: context,
+          dialogType: DialogType.error,
+          animType: AnimType.bottomSlide,
+          title: 'Gagal',
+          desc: 'Gagal menghubungi server.',
+          btnOkOnPress: () {},
+        ).show();
       }
     }
   }
@@ -83,7 +118,7 @@ class OtpCodeRecoveryScreen extends StatelessWidget {
                 ),
                 SizedBox(height: 16.0),
                 Text(
-                  'Masukkan kode OTP yang telah dikirim ke email anda',
+                  'Masukkan kode OTP yang telah dikirim \nke email anda',
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 16.0),
                 ),
@@ -133,7 +168,7 @@ class OtpCodeRecoveryScreen extends StatelessWidget {
                 SizedBox(height: 32.0),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.amber,
+                    backgroundColor: Color(0xFFFFC950),
                     foregroundColor: Colors.black,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(24.0),

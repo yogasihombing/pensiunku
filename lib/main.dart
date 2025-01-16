@@ -220,7 +220,7 @@ class MyApp extends StatelessWidget {
             page = WelcomeScreen();
             break;
           case OtpScreen.ROUTE_NAME:
-            page = OtpScreen();
+            page = OtpScreen(phone: 'phone');
             break;
           case OtpCodeScreen.ROUTE_NAME:
             var args = settings.arguments as OtpCodeScreenArgs;

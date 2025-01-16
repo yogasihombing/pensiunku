@@ -13,6 +13,9 @@ import 'package:http/http.dart' as http;
 ///
 class OtpScreen extends StatefulWidget {
   static const String ROUTE_NAME = '/otp';
+   final String phone;
+
+   OtpScreen({required this.phone});
 
   @override
   _OtpScreenState createState() => _OtpScreenState();
