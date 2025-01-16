@@ -13,6 +13,7 @@ import 'package:pensiunku/util/widget_util.dart';
 import 'package:pensiunku/widget/error_card.dart';
 
 class PengajuanAndaScreen extends StatefulWidget {
+  static const String ROUTE_NAME = '/pengajuan_anda';
   @override
   _PengajuanAndaScreenState createState() => _PengajuanAndaScreenState();
 }
@@ -28,7 +29,7 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
   bool _isKaripUploading = false; // Tambahan Untuk SK Pensiun
   // Deklarasi Future yang akan digunakan untuk menyimpan data asinkron // untuk mengambil data pengguna (1 yoga)
   late Future<ResultModel<UserModel>> _futureData;
-    UserModel? _userModel; // Model pengguna (opsional)
+  UserModel? _userModel; // Model pengguna (opsional)
 
   // Variabel untuk melacak progres upload
   double _ktpUploadProgress = 0.0; // Progres upload KTP
@@ -185,7 +186,6 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
         .getString(SharedPreferencesUtil.SP_KEY_TOKEN);
 
     _futureData = UserRepository().getOne(token!).then((value) {
-      
       if (value.error != null) {
         showDialog(
             context: context,
@@ -200,12 +200,12 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
       setState(() {
         namaController.text = value.data?.username ?? '';
         teleponController.text = value.data?.phone ?? '';
-            //  _userModel = result.data;
-      
-            // // Tambahkan log ini untuk melihat ID di konsol
-            // print('User ID: ${_userModel?.id}');
+        //  _userModel = result.data;
+
+        // // Tambahkan log ini untuk melihat ID di konsol
+        // print('User ID: ${_userModel?.id}');
       });
-    
+
       // Cek apakah id_user ada
       if (value.data?.id != null) {
         print('ID User: ${value.data?.id}');
@@ -241,6 +241,7 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
                         SizedBox(height: 5.0),
                         TextFormField(
                           controller: namaController,
+                          readOnly: true,
                           enabled: !_isLoading,
                           decoration: InputDecoration(
                               labelText: 'Nama', border: OutlineInputBorder()),
@@ -252,6 +253,7 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
 
                         TextFormField(
                           controller: teleponController,
+                          readOnly: true,
                           enabled: !_isLoading,
                           keyboardType: TextInputType.phone,
                           decoration: InputDecoration(

@@ -1,6 +1,6 @@
 flutter_icons:
   android: true
   ios: true
-  image_path: "assets/launcher_icon/kredit_pensiun_launcher_icon_2.png"
+  image_path: "assets/launcher_icon/pensiunku_launcher_icon_2.png"
   adaptive_icon_background: "#16826e"
-  adaptive_icon_foreground: "assets/launcher_icon/kredit_pensiun_launcher_foreground_icon_2.png"
+  adaptive_icon_foreground: "assets/launcher_icon/pensiunku_launcher_foreground_icon_2.png"

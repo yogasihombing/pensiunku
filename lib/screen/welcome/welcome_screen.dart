@@ -298,7 +298,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                   ),
                 ),
                 child: Text(
-                  _currentIndex < 2 ? 'LANJUTKAN' : 'DAFTAR',
+                  _currentIndex < 3 ? 'LANJUTKAN' : 'DAFTAR',
                   style: TextStyle(
                     fontSize: 16.0,
                     color: Colors.white,

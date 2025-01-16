@@ -52,4 +52,15 @@ class UserApi extends BaseApi {
       options: ApiUtil.getTokenOptions(token),
     );
   }
+
+  // Endpoint baru untuk mengecek keberadaan pengguna
+  Future<Response> checkUserExists(String phone) {
+    return httpPost(
+      'https://api.pensiunku.id/new.php/cekNomorTelepon', // Endpoint baru
+      data: {
+        'telepon':
+            phone, // Menggunakan 'telepon' sebagai parameter sesuai dengan API
+      },
+    );
+  }
 }

@@ -9,6 +9,7 @@ class ResultModel<T> {
     this.message,
     this.error,
     this.data,
+    errorMessage,
   });
 
   @override

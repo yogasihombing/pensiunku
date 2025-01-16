@@ -1,27 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item>
-        <!-- Gradien Latar Belakang -->
-        <shape android:shape="rectangle">
-            <gradient
-                android:startColor="#DFF0D8" <!-- Warna awal -->
-                android:endColor="#39796B" <!-- Warna akhir -->
-                android:angle="270"/> <!-- Arah gradien -->
-        </shape>
-    </item>
-    <item>
-        <!-- Logo Splash -->
-        <bitmap android:gravity="center" android:src="@drawable/splash"/>
-    </item>
-</layer-list>
-
-
-<!-- <?xml version="1.0" encoding="utf-8"?>
-<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item>
         <bitmap android:gravity="fill" android:src="@drawable/background"/>
     </item>
     <item>
         <bitmap android:gravity="center" android:src="@drawable/splash"/>
     </item>
-</layer-list> -->
+</layer-list>
