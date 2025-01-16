@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:pensiunku/screen/home/home_screen.dart';
+import 'package:pensiunku/screen/otp/otp_screen.dart';
 
-class RegisterSuccessScreen extends StatelessWidget {
+class RecoveryAccountSuccessScreen extends StatelessWidget {
   static const String ROUTE_NAME =
-      '/register-success'; // Rute statis untuk navigasi.
+      '/recovery-success'; // Rute statis untuk navigasi.
+  final String phone;
 
+  RecoveryAccountSuccessScreen({required this.phone});
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -18,7 +21,7 @@ class RegisterSuccessScreen extends StatelessWidget {
             colors: [
               Colors.white,
               Colors.white,
-              Color.fromARGB(255, 138, 217, 165),
+              Color.fromARGB(255, 219, 218, 145), // Warna gradasi hijau muda
             ],
             stops: [0.0, 0.5, 1.0],
           ),
@@ -33,11 +36,11 @@ class RegisterSuccessScreen extends StatelessWidget {
                   'assets/register_screen/pensiunku.png', // Ikon keberhasilan.
                   height: 40,
                 ),
-                SizedBox(height: 120.0),
+                SizedBox(height: 100.0),
 
                 // Teks Judul
                 Text(
-                  'Akun anda berhasil dibuat',
+                  'Akun anda berhasil dipulihkan!',
                   style: TextStyle(
                     fontSize: 24.0,
                     fontWeight: FontWeight.bold,
@@ -45,36 +48,38 @@ class RegisterSuccessScreen extends StatelessWidget {
                   ),
                   textAlign: TextAlign.center,
                 ),
-                SizedBox(height: 12.0),
+                SizedBox(height: 24.0),
 
                 // Subjudul
                 Text(
-                  'Sekarang Anda dapat menggunakan aplikasi.',
+                  'Sekarang Anda bisa login dengan nomor baru',
                   style: TextStyle(
-                    fontSize: 16.0,
+                    fontSize: 12.0,
                     color: Colors.black54,
                   ),
                   textAlign: TextAlign.center,
                 ),
-                SizedBox(height: 40.0),
+                SizedBox(height: 12.0),
 
                 // Tombol ke Dashboard/HomePage
                 ElevatedButton(
                   onPressed: () {
-                    Navigator.of(context).pushReplacementNamed(
-                        HomeScreen.ROUTE_NAME); // Mengarah ke Home Page
+                    Navigator.of(context).pushReplacement(
+                      MaterialPageRoute(builder: (context) => OtpScreen(phone: phone),
+                      ), // Mengirim data nomor baru. // Mengarah ke OtpScreen
+                    );
                   },
                   style: ElevatedButton.styleFrom(
                     padding:
                         EdgeInsets.symmetric(horizontal: 48.0, vertical: 16.0),
-                    backgroundColor: Color(0xFFFFC950),
+                    backgroundColor: Colors.orange,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(24.0),
                     ),
                   ),
                   child: Text(
-                    'MASUK KE APLIKASI',
+                    'Silahkan Login',
                     style: TextStyle(
                       fontSize: 16.0,
                       color: Colors.white,

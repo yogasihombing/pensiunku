@@ -44,7 +44,8 @@ class _AccountRecoveryScreenState extends State<AccountRecoveryScreen> {
             context,
             MaterialPageRoute(
                 builder: (context) => OtpCodeRecoveryScreen(
-                      email: 'email',
+                      email: email,
+                      phone: 'phone',
                     )),
           );
         } else {
@@ -131,7 +132,7 @@ class _AccountRecoveryScreenState extends State<AccountRecoveryScreen> {
                 SizedBox(height: 16.0),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.amber,
+                    backgroundColor: Color(0xFFFFC950),
                     foregroundColor: Colors.black,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(24.0),
