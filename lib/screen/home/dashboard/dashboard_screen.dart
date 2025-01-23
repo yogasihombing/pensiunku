@@ -253,102 +253,69 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         ],
       ),
-      child: Stack(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Konten asli
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.account_balance_wallet_outlined,
-                        color: Colors.black),
-                    SizedBox(width: 8),
-                    Text(
-                      'Dompet Anda',
-                      style: TextStyle(fontSize: 14, color: Colors.black),
-                    ),
-                    Spacer(),
-                    Text(
-                      'Rp 0',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 8),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => AktifkanPensiunkuPlusScreen()),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xFFFFC950),
-                    minimumSize: Size(double.infinity, 24),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: RichText(
-                    text: TextSpan(
-                      text: 'AKTIFKAN ',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.normal,
-                        color: Colors.green[900],
-                      ),
-                      children: [
-                        TextSpan(
-                          text: 'PENSIUNKU+',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        TextSpan(
-                          text: ' SEKARANG',
-                          style: TextStyle(fontWeight: FontWeight.normal),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // Overlay gembok
-          if (_isInDevelopment)
-            Positioned.fill(
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.6), // Warna overlay
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Center(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.lock,
-                          color: Colors.white), // Ikon gembok putih
-                      // SizedBox(width: 8),
-                      // Text(
-                      //   'Fitur ini sedang dalam pengembangan',
-                      //   style: TextStyle(
-                      //     fontSize: 14,
-                      //     color: Colors.white, // Teks putih
-                      //     fontWeight: FontWeight.bold,
-                      //   ),
-                      // ),
-                    ],
-                  ),
+          Row(
+            children: [
+              const Icon(Icons.account_balance_wallet_outlined,
+                  color: Colors.black),
+              const SizedBox(width: 8),
+              const Text(
+                'Dompet Anda',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.black,
                 ),
               ),
+              const Spacer(),
+              const Text(
+                'Rp 0',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ElevatedButton(
+            onPressed: () {},
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color.fromARGB(148, 159, 221, 159),
+              minimumSize: const Size(double.infinity, 24),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
+            child: RichText(
+              text: TextSpan(
+                text: 'AKTIFKAN ',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.normal,
+                  color: Colors.green[900],
+                ),
+                children: [
+                  TextSpan(
+                    text: 'PENSIUNKU+',
+                    style: TextStyle(
+                      fontWeight:
+                          FontWeight.bold, // Bold hanya untuk "Pensiunku+"
+                    ),
+                  ),
+                  TextSpan(
+                    text: ' SEKARANG',
+                    style: TextStyle(
+                      fontWeight:
+                          FontWeight.normal, // Normal untuk bagian lainnya
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
