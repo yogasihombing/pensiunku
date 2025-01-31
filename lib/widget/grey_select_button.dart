@@ -8,6 +8,7 @@ class GreySelectButton extends StatelessWidget {
   final Color color;
   final IconData? iconData;
   final TextAlign? textAlign;
+   final TextStyle? textStyle;
 
   const GreySelectButton({
     Key? key,
@@ -18,6 +19,7 @@ class GreySelectButton extends StatelessWidget {
     this.color = const Color.fromARGB(255, 226, 226, 226),
     this.iconData = Icons.chevron_right,
     this.textAlign = TextAlign.start,
+    this.textStyle,
   }) : super(key: key);
 
   @override

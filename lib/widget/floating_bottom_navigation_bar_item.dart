@@ -37,7 +37,8 @@ class FloatingBottomNavigationBarItem extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(36.0),
             color: isActive
-                ? theme.primaryColor.withOpacity(0.28)
+                ? const Color(0xFFFFC950)
+                // ? theme.primaryColor.withOpacity(0.28)
                 : Colors.transparent,
           ),
           duration: Duration(milliseconds: 100),
@@ -65,9 +66,13 @@ class FloatingBottomNavigationBarItem extends StatelessWidget {
                     text,
                     textAlign: TextAlign.center,
                     style: theme.textTheme.caption?.copyWith(
-                      color: theme.primaryColor,
+                      color: Colors.black,
                       fontWeight: FontWeight.w700,
                     ),
+                    // style: theme.textTheme.caption?.copyWith(
+                    //   color: theme.primaryColor,
+                    //   fontWeight: FontWeight.w700,
+                    // ),
                   ),
                 ),
               ],

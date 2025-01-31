@@ -6,21 +6,39 @@ class PrivacyPolicyScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          'Kebijakan Privasi',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Color(0XFF017964),
+          ),
+        ),
+        centerTitle: true,
+      ),
       body: Stack(
         children: [
-          // Background Gradient - full layar
+          // Background gradient
           Positioned.fill(
             child: Container(
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
                     Colors.white,
                     Colors.white,
-                    Color.fromARGB(225, 138, 217, 165), // Hijau Muda
+                    Colors.white,
+                    Color.fromARGB(255, 220, 226, 147),
                   ],
-                  stops: [0.0, 0.5, 1.0],
+                  stops: [0.25, 0.5, 0.75, 1.0],
                 ),
               ),
             ),
@@ -32,86 +50,22 @@ class PrivacyPolicyScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        IconButton(
-                          icon: Icon(Icons.arrow_back, color: Colors.white),
-                          onPressed: () => Navigator.pop(context),
+                    Center(
+                      child: Text(
+                        'Kebijakan Privasi',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
                         ),
-                        SizedBox(width: 8),
-                        Text(
-                          'Kebijakan Privasi',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
+                        textAlign: TextAlign.center,
+                      ),
                     ),
                     SizedBox(height: 20),
-                    Card(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16.0),
-                      ),
-                      elevation: 8,
-                      shadowColor: Colors.black45,
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Kebijakan Privasi Aplikasi Pensiunku',
-                              style: TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.teal.shade900,
-                              ),
-                            ),
-                            SizedBox(height: 20),
-                            _buildSectionTitle('1. Pendahuluan'),
-                            _buildSectionContent(
-                                'Kami di Pensiunku ("Aplikasi") menghormati privasi Anda dan berkomitmen untuk melindungi data pribadi Anda. Kebijakan Privasi ini menjelaskan bagaimana kami mengumpulkan, menggunakan, dan melindungi informasi yang Anda berikan saat menggunakan Aplikasi.'),
-                            SizedBox(height: 20),
-                            _buildSectionTitle(
-                                '2. Informasi yang Kami Kumpulkan'),
-                            _buildSectionContent(
-                                'Kami dapat mengumpulkan jenis informasi berikut dari Anda:\nInformasi Pribadi: Nama, alamat, tanggal lahir, nomor KTP, nomor telepon, dan email.\nInformasi Keuangan: Informasi rekening bank, slip gaji, dan data pengajuan pinjaman.\nInformasi Teknis: Alamat IP, jenis perangkat, sistem operasi, dan aktivitas penggunaan Aplikasi.'),
-                            SizedBox(height: 20),
-                            _buildSectionTitle(
-                                '3. Cara Kami Menggunakan Informasi Anda'),
-                            _buildSectionContent(
-                                'Informasi yang kami kumpulkan digunakan untuk:\n- Memverifikasi identitas Anda.\n- Memproses pengajuan pinjaman.\n- Memberikan layanan yang sesuai dengan kebutuhan Anda.\n- Mengirimkan pembaruan terkait layanan, promosi, atau informasi penting lainnya.\n- Mematuhi kewajiban hukum dan regulasi yang berlaku.'),
-                            SizedBox(height: 20),
-                            _buildSectionTitle('4. Berbagi Informasi Anda'),
-                            _buildSectionContent(
-                                'Kami tidak akan membagikan informasi pribadi Anda kepada pihak ketiga tanpa persetujuan Anda, kecuali dalam situasi berikut:\n- Untuk memenuhi persyaratan hukum atau permintaan pemerintah yang sah.\n- Kepada mitra layanan yang membantu operasional Aplikasi, seperti lembaga keuangan atau penyedia teknologi, dengan pengamanan yang sesuai.'),
-                            SizedBox(height: 20),
-                            _buildSectionTitle('5. Keamanan Informasi'),
-                            _buildSectionContent(
-                                'Kami menerapkan langkah-langkah keamanan yang sesuai untuk melindungi informasi Anda dari akses tidak sah, pengungkapan, atau kerusakan. Namun, harap dipahami bahwa tidak ada sistem keamanan yang sepenuhnya bebas risiko.'),
-                            SizedBox(height: 20),
-                            _buildSectionTitle('6. Penyimpanan Data'),
-                            _buildSectionContent(
-                                'Informasi Anda akan disimpan selama diperlukan untuk menyediakan layanan atau mematuhi ketentuan hukum yang berlaku. Setelah itu, data akan dihapus atau dianonimkan.'),
-                            SizedBox(height: 20),
-                            _buildSectionTitle('7. Hak Anda'),
-                            _buildSectionContent(
-                                'Anda memiliki hak berikut terkait data pribadi Anda:\n- Mengakses data yang kami simpan tentang Anda.\n- Memperbarui atau memperbaiki informasi yang tidak akurat.\n- Meminta penghapusan data, sesuai dengan ketentuan hukum.\n- Menarik persetujuan Anda kapan saja, dengan konsekuensi tertentu terhadap layanan yang diberikan.'),
-                            SizedBox(height: 20),
-                            _buildSectionTitle(
-                                '8. Perubahan Kebijakan Privasi'),
-                            _buildSectionContent(
-                                'Kami dapat memperbarui Kebijakan Privasi ini sewaktu-waktu. Perubahan akan diberitahukan melalui Aplikasi atau media lainnya. Penggunaan berkelanjutan setelah pemberitahuan dianggap sebagai persetujuan Anda terhadap perubahan tersebut.'),
-                            SizedBox(height: 20),
-                            _buildSectionTitle('9. Hubungi Kami'),
-                            _buildSectionContent(
-                                'Jika Anda memiliki pertanyaan atau kekhawatiran terkait Kebijakan Privasi ini, silakan hubungi kami melalui:\n- Email: ...\n- Telepon: ...'),
-                          ],
-                        ),
-                      ),
-                    ),
+                    _buildParagraph(
+                        "Kami di Pensiunku (\"Aplikasi\") menghormati privasi Anda dan berkomitmen untuk melindungi data pribadi Anda. Kebijakan Privasi ini menjelaskan bagaimana kami mengumpulkan, menggunakan, dan melindungi informasi yang Anda berikan saat menggunakan Aplikasi."),
+                    SizedBox(height: 20),
+                    ..._buildPolicySections(),
                   ],
                 ),
               ),
@@ -122,25 +76,129 @@ class PrivacyPolicyScreen extends StatelessWidget {
     );
   }
 
+  List<Widget> _buildPolicySections() {
+    List<Map<String, dynamic>> sections = [
+      {
+        "title": "Apa Informasi Yang Kami Kumpulkan?",
+        "content": _buildInformationList()
+      },
+      {
+        "title": "Bagaimana Cara Kami Menggunakan Informasi Anda?",
+        "content": _buildBulletPoints([
+          "Memverifikasi identitas Anda.",
+          "Memproses pengajuan pinjaman.",
+          "Memberikan layanan yang sesuai dengan kebutuhan Anda.",
+          "Mengirimkan pembaruan terkait layanan, promosi, atau informasi penting lainnya.",
+          "Mematuhi kewajiban hukum dan regulasi yang berlaku."
+        ])
+      },
+      {
+        "title": "Berbagi Informasi Anda",
+        "content": _buildBulletPoints([
+          "Untuk memenuhi persyaratan hukum atau permintaan pemerintah yang sah.",
+          "Kepada mitra layanan yang membantu operasional Aplikasi, seperti lembaga keuangan atau penyedia teknologi, dengan pengamanan yang sesuai."
+        ])
+      },
+      {
+        "title": "Keamanan Informasi",
+        "content": _buildParagraph(
+            "Kami menerapkan langkah-langkah keamanan yang sesuai untuk melindungi informasi Anda dari akses tidak sah, pengungkapan, atau kerusakan. Namun, harap dipahami bahwa tidak ada sistem keamanan yang sepenuhnya bebas risiko.")
+      },
+      {
+        "title": "Penyimpanan Data",
+        "content": _buildParagraph(
+            "Informasi Anda akan disimpan selama diperlukan untuk menyediakan layanan atau mematuhi ketentuan hukum yang berlaku. Setelah itu, data akan dihapus atau dianonimkan.")
+      },
+      {
+        "title": "Hak Anda",
+        "content": _buildBulletPoints([
+          "Mengakses data yang kami simpan tentang Anda.",
+          "Memperbarui atau memperbaiki informasi yang tidak akurat.",
+          "Meminta penghapusan data, sesuai dengan ketentuan hukum.",
+          "Menarik persetujuan Anda kapan saja, dengan konsekuensi tertentu terhadap layanan yang diberikan."
+        ])
+      },
+      {
+        "title": "Perubahan Kebijakan Privasi",
+        "content": _buildParagraph(
+            "Kami dapat memperbarui Kebijakan Privasi ini sewaktu-waktu. Perubahan akan diberitahukan melalui Aplikasi atau media lainnya. Penggunaan berkelanjutan setelah pemberitahuan dianggap sebagai persetujuan Anda terhadap perubahan tersebut.")
+      },
+      {
+        "title": "Hubungi Kami",
+        "content": _buildBulletPoints(
+            ["Email: pensiunku.hello@gmail.com", "Telepon: 087785833344"])
+      },
+    ];
+
+    return sections.map((section) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionTitle(section["title"]!),
+          section["content"]!,
+          SizedBox(height: 20),
+        ],
+      );
+    }).toList();
+  }
+
   Widget _buildSectionTitle(String title) {
-    return Text(
-      title,
-      style: TextStyle(
-        fontSize: 18,
-        fontWeight: FontWeight.bold,
-        color: Colors.teal.shade900,
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Text(
+        title,
+        style: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+          color: Color(0XFF017964),
+        ),
       ),
     );
   }
 
-  Widget _buildSectionContent(String content) {
+  Widget _buildParagraph(String content) {
     return Text(
       content,
+      textAlign: TextAlign.justify,
       style: TextStyle(
         fontSize: 14,
         color: Colors.black87,
         height: 1.5,
       ),
     );
+  }
+
+  Widget _buildBulletPoints(List<String> points) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: points.map((point) => _buildBulletPoint(point)).toList(),
+    );
+  }
+
+  Widget _buildBulletPoint(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text("• ", style: TextStyle(fontSize: 14, color: Colors.black87)),
+          Expanded(
+            child: Text(
+              text,
+              style:
+                  TextStyle(fontSize: 14, color: Colors.black87, height: 1.5),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInformationList() {
+    return _buildBulletPoints([
+      "Informasi Pribadi: Nama, alamat, tanggal lahir, nomor KTP, nomor telepon, dan email.",
+      "Informasi Keuangan: Informasi rekening bank, slip gaji, dan data pengajuan pinjaman.",
+      "Informasi Teknis: Alamat IP, jenis perangkat, sistem operasi, dan aktivitas penggunaan Aplikasi."
+    ]);
   }
 }

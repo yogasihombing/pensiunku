@@ -16,6 +16,7 @@ import 'package:pensiunku/screen/home/account/referral/confirm_ktp_referral_scre
 import 'package:pensiunku/screen/home/account/referral/referral_screen.dart';
 import 'package:pensiunku/screen/home/account/referral/referral_success_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/ajukan/pengajuan_anda_screen.dart';
+import 'package:pensiunku/screen/home/dashboard/dashboard_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/event/event_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/forum/forum_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/halopensiun/halopensiun_screen.dart';
@@ -45,18 +46,34 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 }
 
 void main() async {
-  // add these lines
   WidgetsFlutterBinding.ensureInitialized();
-  SystemChrome.setPreferredOrientations(
-      [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
+  
+  // Set orientation
+  SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp, 
+    DeviceOrientation.portraitDown
+  ]);
 
+  // Initialize Firebase first
   await Firebase.initializeApp();
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
   runApp(MyApp());
 }
+// void main() async {
+//   // add these lines
+//   WidgetsFlutterBinding.ensureInitialized();
+//   SystemChrome.setPreferredOrientations(
+//       [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
+
+//   await Firebase.initializeApp();
+//   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
+//   runApp(MyApp());
+// }
 
 class MyApp extends StatelessWidget {
+
   @override
   Widget build(BuildContext context) {
     // Color primaryColor = Color.fromARGB(255, 116, 130, 43);
@@ -276,7 +293,7 @@ class MyApp extends StatelessWidget {
               usahaDetailModel: args.usahaDetailModel,
             );
             break;
-
+  
           case HomeScreen.ROUTE_NAME:
             page = HomeScreen(
               title: 'Pensiunku',

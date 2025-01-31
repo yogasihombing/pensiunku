@@ -31,38 +31,28 @@ class AccountInfoScreen extends StatefulWidget {
 
 class _AccountInfoScreenState extends State<AccountInfoScreen> {
   bool _isBottomNavBarVisible = false;
-
-  // Kontrol untuk validasi dan pengelolaan data akun
   AccountInfoController _controller = AccountInfoController();
-  // Future untuk mengambil data akun
   late Future<ResultModel<UserModel>> _futureData;
   bool _isLoading = false;
 
-  // Controllers untuk input teks (nama, telepon, email, alamat)
   late TextEditingController _inputNameController;
-  String _inputName = '';
-
   late TextEditingController _inputPhoneController;
-  String _inputPhone = '';
-
   late TextEditingController _inputEmailController;
-  String _inputEmail = '';
-
   late TextEditingController _inputAddressController;
+
+  String _inputName = '';
+  String _inputPhone = '';
+  String _inputEmail = '';
   String _inputAddress = '';
 
-  // Data untuk pilihan provinsi dan kota
   OptionModel _inputProvinsi = OptionModel(id: 0, text: '');
   OptionModel _inputCity = OptionModel(id: 0, text: '');
-
   late List<OptionModel> listKabupaten = [];
 
   @override
   void initState() {
     super.initState();
-    // Memuat data akun
     _refreshData();
-    // Menampilkan bottom navigation bar setelah jeda
     Future.delayed(Duration(milliseconds: 300), () {
       setState(() {
         _isBottomNavBarVisible = true;
@@ -72,7 +62,6 @@ class _AccountInfoScreenState extends State<AccountInfoScreen> {
 
   @override
   void dispose() {
-    // Membersihkan controller untuk menghindari kebocoran memori
     _inputNameController.dispose();
     _inputPhoneController.dispose();
     _inputEmailController.dispose();
@@ -80,8 +69,7 @@ class _AccountInfoScreenState extends State<AccountInfoScreen> {
     super.dispose();
   }
 
-  // Fungsi untuk menyimpan informasi akun
-  _saveAccountInfo() {
+  void _saveAccountInfo() {
     if (_controller.isAllInputValid(
       _inputName,
       _inputPhone,
@@ -89,31 +77,33 @@ class _AccountInfoScreenState extends State<AccountInfoScreen> {
     )) {
       return;
     }
-    // Memulai proses loading
+
     setState(() {
       _isLoading = true;
     });
 
-    // Mengambil token dari SharedPreferences
-    String? token = SharedPreferencesUtil()
+    final token = SharedPreferencesUtil()
         .sharedPreferences
         .getString(SharedPreferencesUtil.SP_KEY_TOKEN);
-    // Menentukan nama kota jika sudah dipilih
+
+    if (token == null) {
+      _handleSaveError('Authentication token is missing');
+      return;
+    }
+
     String? _inputCityName;
     if (_inputCity.id != 0) {
       _inputCityName = _inputCity.text;
     }
-    // Membuat data formulir untuk disimpan
+
     var formData = {
       'username': _inputName,
       'email': _inputEmail,
-      'phone': _inputPhone, //telepon diganti ke phone
+      'phone': _inputPhone,
     };
+
     if (_inputAddress.isNotEmpty) {
       formData['alamat'] = _inputAddress;
-    }
-    if (_inputEmail.isNotEmpty) {
-      formData['email'] = _inputEmail;
     }
     if (_inputProvinsi.text.isNotEmpty) {
       formData['provinsi'] = _inputProvinsi.id.toString();
@@ -122,300 +112,614 @@ class _AccountInfoScreenState extends State<AccountInfoScreen> {
       formData['kota'] = _inputCity.id.toString();
     }
 
-    // Debug: menampilkan data formulir
-    print(formData);
-    // Memperbarui data akun di server melalui UserRepository
-    UserRepository().updateOne(token!, formData).then((result) {
+    UserRepository().updateOne(token, formData).then((result) {
       setState(() {
         _isLoading = false;
       });
-      // Menampilkan dialog hasil operasi
-      showDialog(
-          context: context,
-          builder: (_) => AlertDialog(
-                content: Text(
-                    result.isSuccess
-                        ? 'Informasi akun berhasil diubah'
-                        : result.error ?? 'Gagal menyimpan data user',
-                    style: TextStyle(color: Colors.white)),
-                backgroundColor: Colors.red,
-                elevation: 24.0,
-              ));
-      WidgetUtil.showSnackbar(
-        context,
+
+      _handleSaveResult(result);
+    });
+  }
+
+  void _handleSaveError(String message) {
+    setState(() {
+      _isLoading = false;
+    });
+    _showErrorDialog(message);
+    WidgetUtil.showSnackbar(context, message);
+  }
+
+  void _handleSaveResult(ResultModel result) {
+    _showErrorDialog(
         result.isSuccess
             ? 'Informasi akun berhasil diubah'
             : result.error ?? 'Gagal menyimpan data user',
-      );
-    });
+        isSuccess: result.isSuccess);
+
+    WidgetUtil.showSnackbar(
+      context,
+      result.isSuccess
+          ? 'Informasi akun berhasil diubah'
+          : result.error ?? 'Gagal menyimpan data user',
+    );
+  }
+
+  void _showErrorDialog(String message, {bool isSuccess = false}) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        content: Text(
+          message,
+          style: TextStyle(color: Colors.white),
+        ),
+        backgroundColor: isSuccess ? Colors.green : Colors.red,
+        elevation: 24.0,
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    ThemeData theme = Theme.of(context);
-
     return Scaffold(
-      appBar: WidgetUtil.getNewAppBar(context, 'Informasi Akun', 2, (newIndex) {
-        Navigator.of(context).pop(newIndex);
-      }, () {
-        Navigator.of(context).pop();
-      }, useNotificationIcon: false),
-      body: Stack(
-        children: [
-          RefreshIndicator(
-            onRefresh: () {
-              return _refreshData();
-            },
-            child: SingleChildScrollView(
-              physics: AlwaysScrollableScrollPhysics(),
-              child: Stack(
-                children: [
-                  Container(
-                    height: MediaQuery.of(context).size.height -
-                        AppBar().preferredSize.height,
-                  ),
-                  FutureBuilder(
-                    future: _futureData,
-                    builder: (BuildContext context,
-                        AsyncSnapshot<ResultModel<UserModel>> snapshot) {
-                      if (snapshot.hasData) {
-                        if (snapshot.data?.data != null) {
-                          UserModel data = snapshot.data!.data!;
-                          return _buildBody(context, theme, data);
-                        } else {
-                          String errorTitle =
-                              'Tidak dapat menampilkan informasi akun';
-                          String? errorSubtitle = snapshot.data?.error;
-                          return Column(
-                            children: [
-                              SizedBox(height: 16),
-                              ErrorCard(
-                                title: errorTitle,
-                                subtitle: errorSubtitle,
-                                iconData: Icons.warning_rounded,
-                              ),
-                            ],
-                          );
-                        }
-                      } else {
-                        return Column(
-                          children: [
-                            SizedBox(height: 16),
-                            Center(
-                              child: CircularProgressIndicator(
-                                color: theme.primaryColor,
-                              ),
-                            ),
-                          ],
-                        );
-                      }
-                    },
-                  ),
+      body: _buildMainContent(context),
+    );
+  }
+
+  Widget _buildMainContent(BuildContext context) {
+    final theme = Theme.of(context);
+    return Stack(
+      children: [
+        // Background gradient
+        Positioned.fill(
+          child: Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.white,
+                  Colors.white,
+                  Colors.white,
+                  Color.fromARGB(255, 220, 226, 147),
                 ],
+                stops: [0.25, 0.5, 0.75, 1.0],
               ),
             ),
+          ),
+        ),
+        // Konten utama
+        Column(
+          children: [
+            // AppBar (tidak bisa di-scroll)
+            _buildCustomAppBar(context),
+            // Konten yang bisa di-scroll
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 0.0,
+                  horizontal: 20.0,
+                ),
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 10.0),
+                      _buildNameAndEmailContainer(), // Bagian ini bisa di-scroll
+                      const SizedBox(height: 40.0),
+                      _buildAccountContent(
+                          context, theme), // Bagian ini bisa di-scroll
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCustomAppBar(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(
+        top: 32.0, // Jarak atas
+        bottom: 10.0, // Jarak bawah
+        left: 20.0,
+        right: 20.0,
+      ),
+      child: Row(
+        children: [
+          IconButton(
+            icon: const Icon(
+              Icons.arrow_back,
+              color: Color(0xFF017964),
+            ),
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+          ),
+          const Expanded(
+            child: Center(
+              child: Text(
+                'Akun',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF017964),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 48), // Spacer untuk menyeimbangkan layout
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAccountContent(BuildContext context, ThemeData theme) {
+    return FutureBuilder(
+      future: _futureData,
+      builder: (context, AsyncSnapshot<ResultModel<UserModel>> snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(
+            child: CircularProgressIndicator(
+              color: theme.primaryColor,
+            ),
+          );
+        }
+
+        if (snapshot.hasData && snapshot.data?.data != null) {
+          return _buildForm(context, theme, snapshot.data!.data!);
+        } else {
+          return const Center(
+            child: Text('Tidak dapat memuat data akun'),
+          );
+        }
+      },
+    );
+  }
+
+  Widget _buildNameAndEmailContainer() {
+    return Center(
+      child: Column(
+        children: [
+          // Icon profile
+          CircleAvatar(
+            radius: 80.0,
+            backgroundColor: Color(0xfff7f7f7),
+            child: Icon(
+              Icons.person,
+              color: Color(0xFF017964),
+              size: 80.0,
+            ),
+          ),
+          const SizedBox(height: 16.0),
+          // Name and Email
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Name
+              Text(
+                _inputName.isNotEmpty ? _inputName : 'Nama belum diatur',
+                style: TextStyle(
+                  fontSize: 16.0,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+              ),
+              const SizedBox(height: 4.0),
+              // Email
+              Text(
+                _inputEmail.isNotEmpty ? _inputEmail : 'Email belum diatur',
+                style: TextStyle(
+                  fontSize: 14.0,
+                  color: Colors.grey[700],
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  _refreshData() {
-    String? token = SharedPreferencesUtil()
+  Widget _buildForm(BuildContext context, ThemeData theme, UserModel data) {
+    return Column(
+      children: [
+        _buildStatusAccount(), // Add the new widget here
+         SizedBox(height: 30.0),
+        _buildPhone(), // Phone Field
+        // Divider(color: Colors.grey[400]), // Garis pembatas
+        SizedBox(height: 5.0),
+        _buildAlamat(), // Address Field
+        // Divider(color: Colors.grey[400]), // Garis pembatas
+        SizedBox(height: 5.0),
+        _buildProvinsi(), // Province Selector
+        // Divider(color: Colors.grey[400]), // Garis pembatas
+        SizedBox(height: 5.0),
+        _buildKabupaten(), // City Selector
+        // Divider(color: Colors.grey[400]), // Garis pembatas
+        SizedBox(height: 5.0),
+        _buildSimpan(),
+        SizedBox(height: 24), // Save Button
+      ],
+    );
+  }
+
+  Widget _buildStatusAccount() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 12.0),
+      decoration: BoxDecoration(
+        color: const Color.fromRGBO(217, 234, 177, 0.5),
+        borderRadius: BorderRadius.circular(12.0),
+      ),
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        children: [
+          // Status Akun Row
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Status Akun',
+                style: TextStyle(
+                  fontSize: 14.0,
+                  color: Colors.black87,
+                     fontWeight: FontWeight.bold,
+                ),
+              ),
+              Text(
+                'Akun Reguler',
+                style: TextStyle(
+                  fontSize: 14.0,
+                  color: Colors.black,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8.0),
+          // Dompet Anda Row
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Dompet Anda',
+                style: TextStyle(
+                  fontSize: 14.0,
+                  color: Colors.black87,
+                     fontWeight: FontWeight.bold,
+                ),
+              ),
+              Text(
+                'Belum Aktif',
+                style: TextStyle(
+                  fontSize: 14.0,
+                  color: Colors.black,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 1. Phone Field
+  Widget _buildPhone() {
+    String? inputPhoneError = _controller.getInputPhoneError(_inputPhone);
+
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(36.0),
+        color: Colors.transparent, // No visible background
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 24.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Label: 'No. Handphone' aligned to the start
+          Row(
+            mainAxisAlignment:
+                MainAxisAlignment.spaceBetween, // Rata kiri dan kanan
+            children: [
+              Text(
+                'No. Handphone',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.black,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              // Phone Number (text) aligned to the right
+              Text(
+                _inputPhone.isNotEmpty ? _inputPhone : 'No. Handphone',
+                style: TextStyle(
+                  fontSize: 12.0,
+                  color: Colors.black54, // Adjust color if needed
+                ),
+              ),
+            ],
+          ),
+          // Garis pembatas
+          Divider(
+            color: Colors.grey[400],
+            thickness: 1.0,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 2. Address Field
+  Widget _buildAlamat() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.transparent, // Latar belakang transparan
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 24.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Label: 'Alamat' aligned to the start
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Alamat',
+                style: TextStyle(
+                  fontSize: 12.0,
+                  color: Colors.black,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          // SizedBox(height: 8.0),
+          // Input field tanpa border atau latar belakang
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.transparent, // Latar belakang transparan
+            ),
+            child: CustomTextField(
+              controller: _inputAddressController,
+              labelText: '',
+              keyboardType: TextInputType.multiline,
+              enabled: !_isLoading,
+              minLines: 1,
+              maxLines: 5,
+              fillColor: Colors.transparent, // Latar belakang transparan
+              textAlign: TextAlign.left, // Teks diinput rata kiri
+            ),
+          ),
+          // Garis pembatas
+          Divider(
+            color: Colors.grey[400],
+            thickness: 1.0,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 3. Province Selector
+  Widget _buildProvinsi() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Container untuk label dan teks yang dipilih (sejajar)
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Row untuk menyejajarkan label dan input field
+              Row(
+                mainAxisAlignment: MainAxisAlignment
+                    .spaceBetween, // Menyejajarkan elemen dengan ruang di antara
+                crossAxisAlignment: CrossAxisAlignment
+                    .center, // Menengahkan elemen secara vertikal
+                children: [
+                  // Label: 'Provinsi' (rata kiri)
+                  Text(
+                    'Provinsi',
+                    style: TextStyle(
+                      fontSize: 12.0,
+                      color: Colors.black,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  // Teks provinsi yang dipilih (rata kanan) dengan ikon ">"
+                  if (_inputProvinsi != null && _inputProvinsi.text.isNotEmpty)
+                    Expanded(
+                      child: Align(
+                        alignment:
+                            Alignment.centerRight, // Menyejajarkan ke kanan
+                        child: SizedBox(
+                          width: 180,
+                          child: CustomSelectField(
+                            labelText: '',
+                            searchLabelText: 'Cari Provinsi',
+                            currentOption: _inputProvinsi,
+                            options: LocationRepository.getProvinces(),
+                            enabled: !_isLoading,
+                            onChanged: (OptionModel newProvince) {
+                              _getKabupatenList(newProvince.id.toString());
+                              setState(() {
+                                _inputProvinsi = newProvince;
+                                _inputCity = OptionModel(id: 0, text: '');
+                              });
+                            },
+                            useLabel: false,
+                            buttonType: 'button_text_field',
+                            hintText: 'Pilih Provinsi',
+                            borderRadius: 0.0, // Menghilangkan border radius
+                            fillColor:
+                                Colors.transparent, // Latar belakang transparan
+                            textStyle: TextStyle(
+                                fontSize: 12.0), // Ubah ukuran font di sini
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              // Garis pembatas
+              Divider(
+                color: Colors.grey[400],
+                thickness: 1.0,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // 4. City Selector (Kabupaten/Kota)
+  Widget _buildKabupaten() {
+    return _inputProvinsi.id != 0
+        ? Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        // Label: 'Kabupaten/Kota' (rata kiri)
+                        Text(
+                          'Kabupaten/Kota',
+                          style: TextStyle(
+                            fontSize: 12.0,
+                            color: Colors.black,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        // Dropdown Kabupaten/Kota (rata kanan)
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: SizedBox(
+                            width: 180,
+                            child: CustomSelectField(
+                              labelText: '',
+                              searchLabelText: 'Cari Kabupaten/Kota',
+                              currentOption: _inputCity,
+                              options: listKabupaten,
+                              enabled: !_isLoading,
+                              onChanged: (OptionModel newCity) {
+                                setState(() {
+                                  _inputCity = newCity;
+                                });
+                              },
+                              useLabel: false,
+                              buttonType: 'button_text_field',
+                              hintText: 'Kabupaten/Kota',
+                              borderRadius: 0.0,
+                              fillColor: Colors.transparent,
+                              textStyle: TextStyle(fontSize: 12.0),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    // Garis pembatas
+                    Divider(
+                      color: Colors.grey[400],
+                      thickness: 1.0,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          )
+        : Container();
+  }
+
+  // 5. Save Button
+  Widget _buildSimpan() {
+    return ElevatedButtonLoading(
+      text: 'Simpan',
+      textStyle: TextStyle(
+        fontWeight: FontWeight.bold, // Membuat teks bold
+        fontSize: 14.0, // Sesuaikan ukuran jika perlu
+        color: Colors.black,
+      ),
+      onTap: _saveAccountInfo,
+      isLoading: _isLoading,
+      disabled: _isLoading,
+    );
+  }
+
+  Future<void> _refreshData() async {
+    final token = SharedPreferencesUtil()
         .sharedPreferences
         .getString(SharedPreferencesUtil.SP_KEY_TOKEN);
 
-    return _futureData = UserRepository().getOne(token!).then((value) {
+    if (token == null) {
+      _showErrorDialog('Authentication token is missing');
+      return;
+    }
+
+    _futureData = UserRepository().getOne(token).then((value) {
       if (value.error != null) {
-        showDialog(
-            context: context,
-            builder: (_) => AlertDialog(
-                  content: Text(value.error.toString(),
-                      style: TextStyle(color: Colors.white)),
-                  backgroundColor: Colors.red,
-                  elevation: 24.0,
-                ));
+        _showErrorDialog(value.error.toString());
       }
-      setState(() {
-        _inputName = value.data?.username ?? '';
-        _inputNameController = TextEditingController(text: _inputName)
-          ..addListener(() {
-            setState(() {
-              _inputName = _inputNameController.text;
-            });
-          });
-        _inputPhone = value.data?.phone ?? '';
-        _inputPhoneController = TextEditingController(text: _inputPhone)
-          ..addListener(() {
-            setState(() {
-              _inputPhone = _inputPhoneController.text;
-            });
-          });
-        _inputEmail = value.data?.email ?? '';
-        _inputEmailController = TextEditingController(text: _inputEmail)
-          ..addListener(() {
-            setState(() {
-              _inputEmail = _inputEmailController.text;
-            });
-          });
-        _inputAddress = value.data?.address ?? '';
-        _inputAddressController = TextEditingController(text: _inputAddress)
-          ..addListener(() {
-            setState(() {
-              _inputAddress = _inputAddressController.text;
-            });
-          });
-        if (value.data?.provinsi != null) {
-          _inputProvinsi = LocationRepository.getProvinceById(
-              int.parse(value.data!.provinsi!));
-        }
-        if (value.data?.city != null) {
-          _setInputKabupaten(value.data!.city!);
-        }
-      });
+
+      _updateUserData(value);
       return value;
     });
   }
 
-  Widget _buildBody(BuildContext context, ThemeData theme, UserModel data) {
-    String? inputNameError = _controller.getInputNameError(_inputName);
-    String? inputPhoneError = _controller.getInputPhoneError(_inputPhone);
-    String? inputEmailError = _controller.getInputEmailError(_inputEmail);
+  void _updateUserData(ResultModel<UserModel> value) {
+    setState(() {
+      _inputName = value.data?.username ?? '';
+      _inputNameController = TextEditingController(text: _inputName)
+        ..addListener(() {
+          setState(() {
+            _inputName = _inputNameController.text;
+          });
+        });
 
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        children: [
-          CustomTextField(
-            controller: _inputNameController,
-            labelText: '',
-            hintText: 'Nama Lengkap (Sesuai KTP)',
-            keyboardType: TextInputType.name,
-            enabled: !_isLoading,
-            errorText: inputNameError,
-            borderRadius: 36.0,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 24.0,
-              vertical: 20.0,
-            ),
-            fillColor: Color(0xfff7f7f7),
-          ),
-          SizedBox(height: 12.0),
-          CustomTextField(
-            controller: _inputPhoneController,
-            labelText: '',
-            hintText: 'No. Handphone',
-            keyboardType: TextInputType.phone,
-            enabled: false,
-            errorText: inputPhoneError,
-            borderRadius: 36.0,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 24.0,
-              vertical: 20.0,
-            ),
-            fillColor: Color(0xfff7f7f7),
-          ),
-          SizedBox(height: 12.0),
-          CustomTextField(
-            controller: _inputEmailController,
-            labelText: '',
-            hintText: 'Email',
-            keyboardType: TextInputType.emailAddress,
-            enabled: !_isLoading,
-            errorText: inputEmailError,
-            borderRadius: 36.0,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 24.0,
-              vertical: 20.0,
-            ),
-            fillColor: Color(0xfff7f7f7),
-          ),
-          SizedBox(height: 12.0),
-          CustomTextField(
-            controller: _inputAddressController,
-            labelText: '',
-            hintText: 'Alamat',
-            keyboardType: TextInputType.multiline,
-            enabled: !_isLoading,
-            minLines: 2,
-            maxLines: 5,
-            borderRadius: 36.0,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 24.0,
-              vertical: 20.0,
-            ),
-            fillColor: Color(0xfff7f7f7),
-          ),
-          SizedBox(height: 12.0),
-          CustomSelectField(
-            labelText: 'Provinsi Tempat Tinggal',
-            searchLabelText: 'Cari Provinsi',
-            currentOption: _inputProvinsi,
-            options: LocationRepository.getProvinces(),
-            enabled: !_isLoading,
-            onChanged: (OptionModel newProvince) {
-              _getKabupatenList(newProvince.id.toString());
-              setState(() {
-                _inputProvinsi = newProvince;
-                _inputCity = OptionModel(id: 0, text: '');
-              });
-            },
-            useLabel: false,
-            buttonType: 'button_text_field',
-            hintText: 'Provinsi Tempat Tinggal',
-            borderRadius: 36.0,
-            fillColor: Color(0xfff7f7f7),
-          ),
-          SizedBox(height: 12.0),
-          _inputProvinsi.id != 0
-              ? CustomSelectField(
-                  labelText: 'Kabupaten/Kota',
-                  searchLabelText: 'Cari Kabupaten/Kota',
-                  currentOption: _inputCity,
-                  options: listKabupaten,
-                  enabled: !_isLoading,
-                  onChanged: (OptionModel newCity) {
-                    setState(() {
-                      _inputCity = newCity;
-                    });
-                  },
-                  useLabel: false,
-                  buttonType: 'button_text_field',
-                  hintText: 'Kabupaten/Kota',
-                  borderRadius: 36.0,
-                  fillColor: Color(0xfff7f7f7),
-                )
-              : DummyCustomSelectField(
-                  labelText: 'Kabupaten/Kota',
-                  placeholderText: 'Kabupaten/Kota',
-                  enabled: !_isLoading,
-                  onTap: () {
-                    showDialog(
-                        context: context,
-                        builder: (_) => AlertDialog(
-                              content: Text('Anda belum memilih provinsi',
-                                  style: TextStyle(color: Colors.white)),
-                              backgroundColor: Colors.red,
-                              elevation: 24.0,
-                            ));
-                    WidgetUtil.showSnackbar(
-                      context,
-                      'Anda belum memilih provinsi',
-                    );
-                  },
-                ),
+      _inputPhone = value.data?.phone ?? '';
+      _inputPhoneController = TextEditingController(text: _inputPhone)
+        ..addListener(() {
+          setState(() {
+            _inputPhone = _inputPhoneController.text;
+          });
+        });
 
-          SizedBox(height: 12.0),
-          ElevatedButtonLoading(
-            text: 'Simpan',
-            onTap: _saveAccountInfo,
-            isLoading: _isLoading,
-            disabled: _isLoading,
-          ),
-          SizedBox(height: 80.0), // BottomNavBar
-        ],
-      ),
-    );
+      _inputEmail = value.data?.email ?? '';
+      _inputEmailController = TextEditingController(text: _inputEmail)
+        ..addListener(() {
+          setState(() {
+            _inputEmail = _inputEmailController.text;
+          });
+        });
+
+      _inputAddress = value.data?.address ?? '';
+      _inputAddressController = TextEditingController(text: _inputAddress)
+        ..addListener(() {
+          setState(() {
+            _inputAddress = _inputAddressController.text;
+          });
+        });
+
+      if (value.data?.provinsi != null) {
+        _inputProvinsi = LocationRepository.getProvinceById(
+            int.parse(value.data!.provinsi!));
+      }
+
+      if (value.data?.city != null) {
+        _setInputKabupaten(value.data!.city!);
+      }
+    });
   }
 
   void _setInputKabupaten(String idKabupaten) async {
@@ -432,16 +736,14 @@ class _AccountInfoScreenState extends State<AccountInfoScreen> {
   void _getKabupatenList(String id) async {
     LocationRepository.getWilayah(id).then((value) {
       if (value.error == null) {
-        print('Data Kabupaten/Kota: ${value.data}');
         setState(() {
           listKabupaten = value.data!;
         });
-      } else {
-        print('Error: ${value.error}');
       }
     });
   }
 }
+
 
 // import 'dart:convert';
 // import 'dart:developer';

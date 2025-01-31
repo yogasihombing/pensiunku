@@ -117,9 +117,18 @@ class _RiwayatPengajuanAndaScreenState
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Riwayat Pengajuan Anda'),
+        title: Center(
+          child: Text(
+            'Riwayat Pengajuan      ',
+            style: TextStyle(
+              color: Color(0xFF017964), // Kode warna #017964
+              fontWeight: FontWeight.bold, // Teks bold
+              fontSize: 20,
+            ),
+          ),
+        ),
         leading: IconButton(
-          icon: Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back, color: Color(0xFF017964)),
           onPressed: () {
             if (Navigator.canPop(context)) {
               Navigator.pop(context);
@@ -128,6 +137,8 @@ class _RiwayatPengajuanAndaScreenState
             }
           },
         ),
+        backgroundColor: Colors.transparent, // Membuat AppBar transparan
+        elevation: 0, // Menghilangkan bayangan di bawah AppBar
       ),
       body: RefreshIndicator(
         onRefresh: () async {

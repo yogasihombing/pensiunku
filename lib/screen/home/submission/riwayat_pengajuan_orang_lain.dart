@@ -102,18 +102,11 @@ class _RiwayatPengajuanOrangLainScreenState
       animType: AnimType.bottomSlide,
       title: 'Informasi',
       desc: 'Anda belum Pernah melakukan Pengajuan, klik fitur Pensiunku+',
-      btnOkText: 'Pensiunku+',
+      btnOkText: 'Kembali',
       btnOkOnPress: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => DashboardScreen(
-              onApplySubmission: (context) {},
-              onChangeBottomNavIndex: (index) {},
-              scrollController: ScrollController(),
-            ),
-          ),
-        );
+        if (Navigator.canPop(context)) {
+          Navigator.pop(context); // Kembali ke layar sebelumnya
+        }
       },
     ).show();
   }

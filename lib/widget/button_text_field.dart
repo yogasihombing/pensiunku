@@ -8,6 +8,7 @@ class ButtonTextField extends StatelessWidget {
   final double borderRadius;
   final Color color;
   final bool useIcon;
+   final TextStyle? textStyle; // Tambahkan tipe data eksplisit
 
   const ButtonTextField({
     Key? key,
@@ -18,6 +19,7 @@ class ButtonTextField extends StatelessWidget {
     this.borderRadius = 4.0,
     this.color = const Color.fromARGB(255, 226, 226, 226),
     this.useIcon = false,
+    this.textStyle,
   }) : super(key: key);
 
   @override
@@ -47,13 +49,12 @@ class ButtonTextField extends StatelessWidget {
                     Expanded(
                       child: Text(
                         title,
-                        style: isFilled
-                            ? theme.textTheme.subtitle1?.copyWith(
-                                color: Colors.black87,
-                              )
-                            : theme.textTheme.subtitle1?.copyWith(
-                                color: Colors.black54,
-                              ),
+                        style: textStyle ??
+                            (isFilled
+                                ? theme.textTheme.subtitle1
+                                    ?.copyWith(color: Colors.black87)
+                                : theme.textTheme.subtitle1
+                                    ?.copyWith(color: Colors.black54)),
                       ),
                     ),
                     if (useIcon)

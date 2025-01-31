@@ -15,8 +15,33 @@ class StatusPengajuanAndaScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Pengajuan Anda'),
-        backgroundColor: primaryColor,
+        title: LayoutBuilder(
+          builder: (context, constraints) {
+            return Center(
+              child: Container(
+                width: constraints.maxWidth, // Lebar layar penuh
+                alignment: Alignment.center, // Pusatkan teks di tengah layar
+                child: Text(
+                  pengajuanAnda.tiket,
+                  style: TextStyle(
+                    color: Color(0xFF017964), // Kode warna #017964
+                    fontWeight: FontWeight.bold, // Teks bold
+                    fontSize: 20, // Ukuran teks disesuaikan
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back,
+              color: Color(0xFF017964)), // Warna ikon disesuaikan
+          onPressed: () {
+            Navigator.pop(context); // Aksi untuk kembali ke halaman sebelumnya
+          },
+        ),
+        backgroundColor: Colors.transparent, // Membuat AppBar transparan
+        elevation: 0, // Menghilangkan bayangan di bawah AppBar
       ),
       body: SingleChildScrollView(
           padding: const EdgeInsets.all(16.0),

@@ -116,6 +116,8 @@ flutter:
     - assets/welcome_screen/image_2.png
     - assets/welcome_screen/image_3.png
     - assets/logo_small_white.png
+    - assets/background.png
+    - assets/logo.png
     - assets/logo_name_white.png
     - assets/logo_pensiunku.png
     - assets/otp_screen/phone.png
@@ -125,6 +127,8 @@ flutter:
     - assets/register_screen/image_1.png
     - assets/register_screen/pensiunku.png
     - assets/dashboard_screen/image_1.png
+    - assets/dashboard_screen/image_2.png
+    - assets/dashboard_screen/image_3.png
     - assets/dashboard_screen/icon_promo.png
     - assets/dashboard_screen/icon_event.png
     - assets/dashboard_screen/icon_article.png
@@ -167,6 +171,12 @@ flutter:
     - assets/icon/icon_halo_pensiun.png
     - assets/icon/icon_points.png
     - assets/icon/icon_forum.png
+    - assets/icon/profile/pengajuan_anda.png
+    - assets/icon/profile/cs.png
+    - assets/icon/profile/faq.png
+    - assets/icon/profile/invite_friend.png
+    - assets/icon/profile/kebijakan_privasi.png
+    - assets/icon/profile/syarat_ketentuan.png
     - assets/icon/live_chat.png
     - assets/icon/submission_icon.png
     - assets/icon/submission_icon_active.png

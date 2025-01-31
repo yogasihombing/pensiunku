@@ -5,24 +5,27 @@ class ChipTab extends StatelessWidget {
   final bool isActive;
   final VoidCallback onTap;
   final bool custom;
+  final Color? backgroundColor; //
 
-  const ChipTab(
-      {Key? key,
-      required this.text,
-      required this.isActive,
-      required this.onTap,
-      this.custom = false})
-      : super(key: key);
+  const ChipTab({
+    Key? key,
+    required this.text,
+    required this.isActive,
+    required this.onTap,
+    this.custom = false,
+    this.backgroundColor,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     ThemeData theme = Theme.of(context);
-
-    Color backgroundColor = isActive
-        ? custom
-            ? Color.fromRGBO(0, 170, 158, 1.0)
-            : Color(0xffb90d49)
-        : Color.fromRGBO(247, 247, 247, 1.0);
+    // Jika backgroundColor diberikan, gunakan. Jika tidak, gunakan default.
+    Color bgColor = backgroundColor ??
+        (isActive
+            ? custom
+                ? Color.fromRGBO(0, 170, 158, 1.0)
+                : Color(0xffb90d49)
+            : Color.fromRGBO(247, 247, 247, 1.0));
     Color borderColor = isActive
         ? Color.fromRGBO(168, 168, 168, 1.0)
         : Color.fromRGBO(168, 168, 168, 1.0);
@@ -34,7 +37,7 @@ class ChipTab extends StatelessWidget {
       child: AnimatedContainer(
         margin: const EdgeInsets.symmetric(horizontal: 4.0),
         decoration: BoxDecoration(
-          color: backgroundColor,
+          color: bgColor,
           borderRadius: BorderRadius.circular(24.0),
           border: Border.all(
             color: borderColor,

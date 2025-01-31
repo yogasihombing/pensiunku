@@ -21,6 +21,7 @@ class CustomSelectField extends StatefulWidget {
   final bool useLabel;
   final Color fillColor;
   final String? errorText;
+  final TextStyle? textStyle;
 
   const CustomSelectField({
     Key? key,
@@ -39,6 +40,7 @@ class CustomSelectField extends StatefulWidget {
     this.borderRadius = 8.0,
     this.fillColor = const Color.fromARGB(255, 226, 226, 226),
     this.errorText,
+    this.textStyle,
   }) : super(key: key);
 
   @override
@@ -76,6 +78,8 @@ class _CustomSelectFieldState extends State<CustomSelectField> {
             onTap: widget.enabled ? _onTap : null,
             borderRadius: widget.borderRadius,
             color: widget.fillColor,
+            textStyle: widget.textStyle ??
+                TextStyle(fontSize: 12.0), // Atur default ukuran font
           ),
         if (widget.buttonType == 'grey_select_button')
           GreySelectButton(
@@ -85,6 +89,8 @@ class _CustomSelectFieldState extends State<CustomSelectField> {
             iconData: widget.iconData,
             textAlign: widget.textAlign,
             color: widget.fillColor,
+            textStyle: widget.textStyle ??
+                TextStyle(fontSize: 12.0), // Atur default ukuran font
           ),
         if (widget.buttonType == 'button_text_field')
           ButtonTextField(
@@ -96,6 +102,8 @@ class _CustomSelectFieldState extends State<CustomSelectField> {
             isFilled: widget.currentOption != null &&
                 widget.currentOption?.text != '',
             useIcon: true,
+            textStyle: widget.textStyle ??
+                TextStyle(fontSize: 12.0), // Atur default ukuran font
           ),
         if (widget.errorText != null)
           Padding(

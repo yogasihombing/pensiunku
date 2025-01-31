@@ -5,6 +5,7 @@ class GreyButton extends StatelessWidget {
   final void Function()? onTap;
   final double borderRadius;
   final Color color;
+  final TextStyle? textStyle;
 
   const GreyButton({
     Key? key,
@@ -12,6 +13,7 @@ class GreyButton extends StatelessWidget {
     this.onTap,
     this.borderRadius = 4.0,
     this.color = const Color.fromARGB(255, 226, 226, 226),
+     this.textStyle,
   }) : super(key: key);
 
   @override

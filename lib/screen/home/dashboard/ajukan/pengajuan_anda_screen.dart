@@ -220,13 +220,32 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Form Pengajuan Anda'),
+        title: LayoutBuilder(
+          builder: (context, constraints) {
+            return Center(
+              child: Container(
+                width: constraints.maxWidth, // Lebar layar penuh
+                alignment: Alignment.center, // Pusatkan teks di tengah layar
+                child: Text(
+                  'Form Pengajuan       ',
+                  style: TextStyle(
+                    color: Color(0xFF017964), // Kode warna #017964
+                    fontWeight: FontWeight.bold, // Teks bold
+                    fontSize: 20, // Ukuran teks disesuaikan
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
         leading: IconButton(
-          icon: Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back, color: Color(0xFF017964)),
           onPressed: () {
             Navigator.pop(context);
           },
         ),
+        backgroundColor: Colors.transparent, // Membuat AppBar transparan
+        elevation: 0, // Menghilangkan bayangan di bawah AppBar
       ),
       body: Stack(
         children: [
@@ -238,7 +257,7 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
                     key: _formKey,
                     child: ListView(
                       children: <Widget>[
-                        SizedBox(height: 5.0),
+                        SizedBox(height: 30.0),
                         TextFormField(
                           controller: namaController,
                           readOnly: true,
