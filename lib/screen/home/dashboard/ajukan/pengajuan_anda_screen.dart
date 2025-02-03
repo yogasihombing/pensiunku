@@ -220,32 +220,31 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: LayoutBuilder(
-          builder: (context, constraints) {
-            return Center(
-              child: Container(
-                width: constraints.maxWidth, // Lebar layar penuh
-                alignment: Alignment.center, // Pusatkan teks di tengah layar
-                child: Text(
-                  'Form Pengajuan       ',
-                  style: TextStyle(
-                    color: Color(0xFF017964), // Kode warna #017964
-                    fontWeight: FontWeight.bold, // Teks bold
-                    fontSize: 20, // Ukuran teks disesuaikan
-                  ),
-                ),
-              ),
-            );
-          },
-        ),
+        title: Text(''), // Judul kosong
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: Color(0xFF017964)),
           onPressed: () {
             Navigator.pop(context);
           },
         ),
-        backgroundColor: Colors.transparent, // Membuat AppBar transparan
-        elevation: 0, // Menghilangkan bayangan di bawah AppBar
+        backgroundColor: Colors.transparent, // AppBar transparan
+        elevation: 0, // Menghilangkan bayangan
+        flexibleSpace: Center(
+          // Pusatkan teks di tengah AppBar
+          child: Padding(
+            padding: EdgeInsets.only(
+                top: MediaQuery.of(context).padding.top +
+                    5), // Sesuaikan padding atas
+            child: Text(
+              'Form Pengajuan',
+              style: TextStyle(
+                color: Color(0xFF017964), // Warna teks
+                fontWeight: FontWeight.bold, // Teks bold
+                fontSize: 20, // Ukuran teks
+              ),
+            ),
+          ),
+        ),
       ),
       body: Stack(
         children: [
@@ -308,7 +307,9 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
                           validator: (value) {
                             if (value == null || value.isEmpty)
                               return 'Harap masukkan NOTAS/NIP';
-                            if (value.length != 10) return 'NIP harus 10 digit';
+                            if (value.length < 16 || value.length > 18) {
+                              return 'NIP harus antara 16 hingga 18 digit';
+                            }
                             return null;
                           },
                         ),
@@ -455,7 +456,7 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
                           onPressed: _submitPengajuanAnda,
                           child: Text('Ajukan Sekarang'),
                           style: ElevatedButton.styleFrom(
-                            primary: Color(0xFF017964),
+                            backgroundColor: Color(0xFF017964),
                           ),
                         ),
                       ],

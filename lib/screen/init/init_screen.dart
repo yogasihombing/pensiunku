@@ -176,7 +176,8 @@ class _InitScreenState extends State<InitScreen>
               child: Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center, // memastikan elemen di tengah
+                  crossAxisAlignment:
+                      CrossAxisAlignment.center, // memastikan elemen di tengah
                   children: [
                     // Logo dengan animasi fade in
                     AnimatedOpacity(
@@ -189,17 +190,6 @@ class _InitScreenState extends State<InitScreen>
                         height: 130,
                       ),
                     ),
-                    SizedBox(height: 24),
-                    // Loading indicator dengan animasi fade in
-                    AnimatedOpacity(
-                      opacity: _opacity,
-                      duration:
-                          Duration(milliseconds: 800), // Durasi fade in loading
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 3,
-                      ),
-                    ),
                   ],
                 ),
               ),
@@ -210,6 +200,18 @@ class _InitScreenState extends State<InitScreen>
     );
   }
 }
+
+                  // SizedBox(height: 24),
+                    // Loading indicator dengan animasi fade in
+                    // AnimatedOpacity(
+                    //   opacity: _opacity,
+                    //   duration:
+                    //       Duration(milliseconds: 800), // Durasi fade in loading
+                    //   child: CircularProgressIndicator(
+                    //     color: Colors.white,
+                    //     strokeWidth: 3,
+                    //   ),
+                    // ),
 
 // import 'package:firebase_core/firebase_core.dart';
 // import 'package:firebase_messaging/firebase_messaging.dart';

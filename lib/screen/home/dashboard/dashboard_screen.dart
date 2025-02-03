@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:io';
+
 import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:dotted_border/dotted_border.dart';
@@ -22,6 +25,8 @@ import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/aktifkan_pensiunk
 import 'package:pensiunku/util/shared_preferences_util.dart';
 import 'package:pensiunku/widget/chip_tab.dart';
 import 'package:pensiunku/widget/error_card.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 // Kelas utama DashboardScreen dengan StatefulWidget agar memiliki state yang dapat berubah
 class DashboardScreen extends StatefulWidget {
@@ -81,6 +86,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
+    print('DashboardScreen initialized'); // Cetak saat widget diinisialisasi
     _refreshData(); // Memuat data awal
   }
 
@@ -126,6 +132,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
+  Future<String> fetchGreeting() async {
+    const String baseUrl = 'https://api.pensiunku.id/new.php/greeting';
+    try {
+      print('Fetching greeting from: $baseUrl');
+
+      final response = await http.post(Uri.parse(baseUrl)).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          throw TimeoutException('Koneksi timeout');
+        },
+      );
+
+      print('Response status: ${response.statusCode}');
+      print('Response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        // Langsung return response.body karena sudah berupa string greeting
+        return response.body;
+      } else {
+        throw Exception('Failed to load greeting');
+      }
+    } on SocketException {
+      throw Exception('Tidak ada koneksi internet');
+    } on HttpException {
+      throw Exception('Gagal mengambil data dari server');
+    } catch (e) {
+      throw Exception('Terjadi kesalahan: $e');
+    }
+  }
+
   final List<String> programList = [
     'Pra-Pensiun',
     'Pensiun',
@@ -137,7 +173,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     'assets/application_screen/SLIDER-02.png',
     'assets/application_screen/SLIDER-03.png',
   ];
-
   @override
   Widget build(BuildContext context) {
     ThemeData theme = Theme.of(context);
@@ -164,33 +199,47 @@ class _DashboardScreenState extends State<DashboardScreen> {
             onRefresh: _refreshData,
             child: SingleChildScrollView(
               controller: widget.scrollController,
-              child: Padding(
-                // padding: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0, 16.0),
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildHeader(),
-                    const SizedBox(height: 1),
-                    _buildGreeting(),
-                    const SizedBox(height: 6),
-                    _buildBalanceCard(context),
-                    const SizedBox(height: 12),
-                    _buildBottomSectionTitle(),
-                    const SizedBox(height: 12),
-                    _buildActionButtons(context),
-                    const SizedBox(height: 16),
-                    _buildHeaderImage(),
-                    const SizedBox(height: 2),
-                    _buildMenuFeatures(),
-                    const SizedBox(height: 12),
-                    _buildCarouselSlider(),
-                    const SizedBox(height: 12),
-                    _buildArticleFeatures(),
-                    const SizedBox(height: 100),
-                    // _builderEventsFeatures(),
-                  ],
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: _buildHeader(),
+                  ),
+                  const SizedBox(height: 1),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: _buildGreeting(),
+                  ),
+                  const SizedBox(height: 6),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: _buildBalanceCard(context),
+                  ),
+                  const SizedBox(height: 12),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: _buildBottomSectionTitle(),
+                  ),
+                  const SizedBox(height: 12),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: _buildActionButtons(context),
+                  ),
+                  const SizedBox(height: 16),
+                  // Full screen widgets without padding
+                  _buildHeaderImage(),
+                  const SizedBox(height: 2),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: _buildMenuFeatures(),
+                  ),
+                  const SizedBox(height: 12),
+                  _buildCarouselSlider(),
+                  const SizedBox(height: 12),
+                  _buildArticleFeatures(),
+                  const SizedBox(height: 100),
+                ],
               ),
             ),
           ),
@@ -200,55 +249,83 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildHeader() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Image.asset(
-          'assets/logo_pensiunku.png',
-          height: 80,
-        ),
-        IconButton(
-          icon: const Icon(Icons.account_circle_outlined),
-          onPressed: () => Navigator.of(context)
-              .push(
-            MaterialPageRoute(
-              builder: (context) => AccountScreen(
-                onChangeBottomNavIndex: (int index) {},
+    return Padding(
+      padding: EdgeInsets.only(left: 15.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Image.asset(
+            'assets/logo_pensiunku.png',
+            height: 80,
+          ),
+          IconButton(
+            icon: const Icon(Icons.account_circle_outlined),
+            onPressed: () => Navigator.of(context)
+                .push(
+              MaterialPageRoute(
+                builder: (context) => AccountScreen(
+                  onChangeBottomNavIndex: (int index) {},
+                ),
               ),
-            ),
-          )
-              .then((_) {
-            // Fungsi yang dipanggil saat kembali dari halaman AccountScreen
-            _refreshData(); // Perbarui data di halaman utama
-          }),
-          color: Colors.black54,
-        ),
-      ],
+            )
+                .then((_) {
+              // Fungsi yang dipanggil saat kembali dari halaman AccountScreen
+              _refreshData(); // Perbarui data di halaman utama
+            }),
+            color: Colors.black54,
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildGreeting() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Selamat Pagi, ${_userModel?.username?.split(' ').first ?? 'Pengguna'}',
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
+    TextStyle greetingStyle = const TextStyle(
+      fontSize: 12,
+      fontWeight: FontWeight.bold,
+      color: Colors.black,
+    );
+
+    String userName = _userModel?.username?.split(' ').first ?? 'Pengguna';
+
+    Widget buildGreetingText(String greeting) {
+      return Text(
+        '$greeting, $userName',
+        style: greetingStyle,
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(left: 15.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          FutureBuilder<String>(
+            future: fetchGreeting(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const CircularProgressIndicator();
+              } else if (snapshot.connectionState == ConnectionState.done) {
+                if (snapshot.hasError) {
+                  return buildGreetingText('Selamat datang');
+                } else if (snapshot.hasData) {
+                  return buildGreetingText(snapshot.data!);
+                }
+              }
+              return buildGreetingText('Selamat datang');
+            },
           ),
-        ),
-        // Text(
-        //   'ID: ${_userModel?.id ?? 'Tidak tersedia'}',
-        //   style: const TextStyle(
-        //     fontSize: 10,
-        //     color: Colors.black87,
-        //   ),
-        // ),
-      ],
+        ],
+      ),
     );
   }
+  // Text(
+  //   'ID: ${_userModel?.id ?? 'Tidak tersedia'}',
+  //   style: const TextStyle(
+  //     fontSize: 10,
+  //     color: Colors.black87,
+  //   ),
+  // ),
 
   Widget _buildBalanceCard(BuildContext context) {
     return GestureDetector(
@@ -335,7 +412,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                       children: [
                         TextSpan(
-                          text: 'Pensiunku+',
+                          text: ' Pensiunku+',
                           style: TextStyle(
                             fontWeight: FontWeight
                                 .bold, // Bold hanya untuk "Pensiunku+"
@@ -640,53 +717,54 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final List<String> images = [
       'assets/dashboard_screen/image_1.png',
       'assets/dashboard_screen/image_2.png',
-      'assets/dashboard_screen/image_3.png' // Gambar tambahan
+      'assets/dashboard_screen/image_3.png'
     ];
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start, // Rata kiri untuk teks
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Padding(
-          padding: EdgeInsets.only(
-              left: 16.0, bottom: 8.0), // Jarak teks ke carousel
+          padding: EdgeInsets.only(left: 30.0, bottom: 8.0),
           child: Text(
             'Ada yang baru nih!',
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.bold,
-              color: Colors.black, // Warna teks
+              color: Colors.black,
             ),
           ),
         ),
-        CarouselSlider(
-          options: CarouselOptions(
-            height: 150, // Tinggi carousel
-            enlargeCenterPage: true, // Efek memperbesar gambar di tengah
-            autoPlay: true, // Slider otomatis
-            autoPlayInterval: const Duration(seconds: 3), // Interval 3 detik
-            autoPlayAnimationDuration:
-                const Duration(milliseconds: 800), //durasi animasi
-            viewportFraction: 0.96, // Rasio viewport
-            aspectRatio: 16 / 9, // Proporsi gambar
-            reverse: true,
-          ),
-          items: images.map((imagePath) {
-            return Builder(
-              builder: (BuildContext context) {
-                return Container(
-                  margin: const EdgeInsets.symmetric(
-                      horizontal: 8.0), // Jarak antar item
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16), // Radius sudut
-                    image: DecorationImage(
-                      image: AssetImage(imagePath),
-                      fit: BoxFit.cover, // Gambar memenuhi kontainer
+        Padding(
+          padding: const EdgeInsets.symmetric(
+              horizontal: 0.0), // Padding di sisi kiri dan kanan
+          child: CarouselSlider(
+            options: CarouselOptions(
+              height: 165,
+              enlargeCenterPage: true,
+              autoPlay: true,
+              autoPlayInterval: const Duration(seconds: 3),
+              autoPlayAnimationDuration: const Duration(milliseconds: 800),
+              viewportFraction: 0.96,
+              aspectRatio: 16 / 9,
+              reverse: true, // otomatis geser ke kanan
+            ),
+            items: images.map((imagePath) {
+              return Builder(
+                builder: (BuildContext context) {
+                  return Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 8.0),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      image: DecorationImage(
+                        image: AssetImage(imagePath),
+                        fit: BoxFit.cover,
+                      ),
                     ),
-                  ),
-                );
-              },
-            );
-          }).toList(),
+                  );
+                },
+              );
+            }).toList(),
+          ),
         ),
       ],
     );
@@ -740,70 +818,73 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildCarouselSlider() {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start, // Rata kiri untuk teks
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Padding(
-          padding:
-              EdgeInsets.only(left: 12.0, bottom: 8.0), // Jarak teks ke slider
+          padding: EdgeInsets.only(left: 30.0, bottom: 8.0),
           child: Text(
             'Produk kami',
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF017964), // Warna teks
+              color: Color(0xFF017964),
             ),
           ),
         ),
-        CarouselSlider.builder(
-          options: CarouselOptions(
-            height: 250,
-            autoPlay: true,
-            enlargeCenterPage: true,
-            aspectRatio: 1.0,
-            autoPlayCurve: Curves.fastOutSlowIn,
-            enableInfiniteScroll: true,
-            autoPlayAnimationDuration: const Duration(milliseconds: 800),
-            viewportFraction: 0.6,
-          ),
-          itemCount: programList.length,
-          itemBuilder: (BuildContext context, int index, int realIndex) {
-            return Container(
-              margin: const EdgeInsets.all(5.0),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(13.0),
-                image: DecorationImage(
-                  image: AssetImage(imageList[index]),
-                  fit: BoxFit.cover,
+        Padding(
+          padding: const EdgeInsets.symmetric(
+              horizontal: 0.0), // Padding di sisi kiri dan kanan
+          child: CarouselSlider.builder(
+            options: CarouselOptions(
+              height: 250,
+              autoPlay: true,
+              enlargeCenterPage: true,
+              aspectRatio: 1.0,
+              autoPlayCurve: Curves.fastOutSlowIn,
+              enableInfiniteScroll: true,
+              autoPlayAnimationDuration: const Duration(milliseconds: 800),
+              viewportFraction: 0.6,
+            ),
+            itemCount: programList.length,
+            itemBuilder: (BuildContext context, int index, int realIndex) {
+              return Container(
+                margin: const EdgeInsets.all(5.0),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(13.0),
+                  image: DecorationImage(
+                    image: AssetImage(imageList[index]),
+                    fit: BoxFit.cover,
+                  ),
                 ),
-              ),
-              child: Stack(
-                children: [
-                  Positioned(
-                    top: 20, // Atur posisi teks lebih ke atas
-                    left: 0,
-                    right: 0, // Atur posisi teks ke kiri
-                    child: Center(
-                      child: Text(
-                        programList[index],
-                        style: const TextStyle(
-                          fontSize: 20.0,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
-                          shadows: [
-                            Shadow(
-                              blurRadius: 5.0,
-                              color: Colors.black54,
-                              offset: Offset(2.0, 2.0),
-                            ),
-                          ],
+                child: Stack(
+                  children: [
+                    Positioned(
+                      top: 20,
+                      left: 0,
+                      right: 0,
+                      child: Center(
+                        child: Text(
+                          programList[index],
+                          style: const TextStyle(
+                            fontSize: 20.0,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                            shadows: [
+                              Shadow(
+                                blurRadius: 5.0,
+                                color: Colors.black54,
+                                offset: Offset(2.0, 2.0),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-            );
-          },
+                  ],
+                ),
+              );
+            },
+          ),
         ),
       ],
     );
@@ -829,7 +910,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Padding(
-            padding: EdgeInsets.only(left: 12.0, bottom: 8.0),
+            padding: EdgeInsets.only(left: 30.0, bottom: 15.0),
             child: Text(
               'Artikel',
               style: TextStyle(

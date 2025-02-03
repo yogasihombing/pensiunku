@@ -244,7 +244,7 @@ class _AccountScreenState extends State<AccountScreen> {
                                 Text(
                                   '${_userModel?.username ?? 'Pengguna'}',
                                   style: TextStyle(
-                                    fontSize: 16.0,
+                                    fontSize: 14.0,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
@@ -252,7 +252,7 @@ class _AccountScreenState extends State<AccountScreen> {
                                 Text(
                                  '${_userModel?.email ?? 'Pengguna'}',
                                   style: TextStyle(
-                                    fontSize: 14.0,
+                                    fontSize: 11.0,
                                     color: Colors.black54,
                                   ),
                                 ),

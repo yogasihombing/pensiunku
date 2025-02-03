@@ -102,9 +102,9 @@ class _CustomerSupportScreenState extends State<CustomerSupportScreen> {
                       color: Color(0xfffa4097),
                     ),
                     title: 'Email',
-                    subtitle: 'ptkreditpensiun@gmail.com',
+                    subtitle: 'pensiunku.hello@gmail.com',
                     onTap: () {
-                      UrlUtil.launchURL('mailto:ptkreditpensiun@gmail.com');
+                      UrlUtil.launchURL('mailto:pensiunku.hello@gmail.com');
                     },
                   ),
                   SizedBox(height: 12.0),
@@ -114,9 +114,9 @@ class _CustomerSupportScreenState extends State<CustomerSupportScreen> {
                       color: theme.colorScheme.secondary,
                     ),
                     title: 'Telepon',
-                    subtitle: '087786130256',
+                    subtitle: '087785833344',
                     onTap: () {
-                      UrlUtil.launchURL('tel:087786130256');
+                      UrlUtil.launchURL('tel:087785833344');
                     },
                   ),
                   SizedBox(height: 12.0),
@@ -127,10 +127,10 @@ class _CustomerSupportScreenState extends State<CustomerSupportScreen> {
                       semanticsLabel: 'WhatsApp Logo',
                     ),
                     title: 'WhatsApp',
-                    subtitle: '+6281181106000',
+                    subtitle: '+6281220379751',
                     onTap: () {
                       UrlUtil.launchURL(
-                          'https://wa.me/+6281181106000?text=Hallo%20admin%20kredit%20pensiun,%20saya%20memiliki%20kendala%20dalam%20menggunakan%20aplikasi%20kredit%20pensiun,%20bisa%20tolong%20dijelaskan%20cara%20penggunaannya%20?');
+                          'https://wa.me/+6281220379751?text=Hallo%20admin%20kredit%20pensiun,%20saya%20memiliki%20kendala%20dalam%20menggunakan%20aplikasi%20kredit%20pensiun,%20bisa%20tolong%20dijelaskan%20cara%20penggunaannya%20?');
                     },
                   ),
                   SizedBox(height: 12.0),
@@ -141,7 +141,7 @@ class _CustomerSupportScreenState extends State<CustomerSupportScreen> {
                       semanticsLabel: 'WhatsApp Logo',
                     ),
                     title: 'Live Chat',
-                    subtitle: 'Kredit Pensiun Admin',
+                    subtitle: 'Pensiunku Admin',
                     onTap: () {
                       Navigator.push(context,
                           MaterialPageRoute(builder: (context) => LiveChat()));

@@ -15,33 +15,33 @@ class StatusPengajuanAndaScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: LayoutBuilder(
-          builder: (context, constraints) {
-            return Center(
-              child: Container(
-                width: constraints.maxWidth, // Lebar layar penuh
-                alignment: Alignment.center, // Pusatkan teks di tengah layar
-                child: Text(
-                  pengajuanAnda.tiket,
-                  style: TextStyle(
-                    color: Color(0xFF017964), // Kode warna #017964
-                    fontWeight: FontWeight.bold, // Teks bold
-                    fontSize: 20, // Ukuran teks disesuaikan
-                  ),
-                ),
-              ),
-            );
-          },
-        ),
+        title: Text(''),
         leading: IconButton(
-          icon: Icon(Icons.arrow_back,
-              color: Color(0xFF017964)), // Warna ikon disesuaikan
+          icon: Icon(Icons.arrow_back, color: Color(0xFF017964)),
           onPressed: () {
-            Navigator.pop(context); // Aksi untuk kembali ke halaman sebelumnya
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+              // } else {
+              //   widget.onChangeBottomNavIndex(0);
+            }
           },
         ),
-        backgroundColor: Colors.transparent, // Membuat AppBar transparan
-        elevation: 0, // Menghilangkan bayangan di bawah AppBar
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        flexibleSpace: Center(
+          child: Padding(
+            padding:
+                EdgeInsets.only(top: MediaQuery.of(context).padding.top + 5),
+            child: Text(
+              pengajuanAnda.tiket,
+              style: TextStyle(
+                color: Color(0xFF017964),
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+              ),
+            ),
+          ),
+        ),
       ),
       body: SingleChildScrollView(
           padding: const EdgeInsets.all(16.0),
@@ -149,23 +149,27 @@ class StatusPengajuanAndaScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      const Text(
-                        '1. Kartu Tanda Penduduk (KTP)\n'
-                        '2. Kartu Keluarga\n'
-                        '3. Kartu Nomor Pokok Wajib Pajak (NPWP)\n'
-                        '4. Kartu Identitas Pensiunan (KARIP)\n'
-                        '5. SK Pensiun (Untuk Pensiunan)\n'
-                        '6. SK 80 atau SK 100 (Untuk Pra Pensiun)\n'
-                        '7. Buku Tabungan\n'
-                        '8. Cover Buku Tabungan Bank Asal\n'
-                        '9. Rekening Koran Tiga Bulan Terakhir (Rekening Penerima Gaji Pensiun)\n'
-                        '10. Slip Gaji Pensiun 2 Bulan Terakhir\n'
-                        '11. 2 Lembar Pas Foto Nasabah\n'
-                        '12. Surat Permohonan Pelunasan dipercepat yang telah ditandatangani (Bila Take Over)\n'
-                        '13. Surat Keterangan Kematian (Apabila Pemohon Pensiunan Janda atau Duda)\n'
-                        '14. Surat Pernyataan Tidak Menikah Kembali (Pemohon Janda atau Duda)',
-                        style: TextStyle(fontSize: 14, color: Colors.black87),
-                      ),
+                      Text(
+                        '• Kartu Tanda Penduduk (KTP)\n'
+                        '• Kartu Keluarga\n'
+                        '• Kartu Nomor Pokok Wajib Pajak (NPWP)\n'
+                        '• Kartu Identitas Pensiunan (KARIP)\n'
+                        '• SK Pensiun (Untuk Pensiunan)\n'
+                        '• SK 80 atau SK 100 (Untuk Pra Pensiun)\n'
+                        '• Buku Tabungan\n'
+                        '• Cover Buku Tabungan Bank Asal\n'
+                        '• Rekening Koran Tiga Bulan Terakhir (Rekening Penerima Gaji Pensiun)\n'
+                        '• Slip Gaji Pensiun 2 Bulan Terakhir\n'
+                        '• 2 Lembar Pas Foto Nasabah\n'
+                        '• Surat Permohonan Pelunasan dipercepat yang telah ditandatangani (Bila Take Over)\n'
+                        '• Surat Keterangan Kematian (Apabila Pemohon Pensiunan Janda atau Duda)\n'
+                        '• Surat Pernyataan Tidak Menikah Kembali (Pemohon Janda atau Duda)',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.black87,
+                          height: 1.5, // Menambah jarak antar baris
+                        ),
+                      )
                     ],
                   ),
                 ),
