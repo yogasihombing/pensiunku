@@ -89,15 +89,20 @@ class _RecoveryUpdatePhoneScreenState extends State<RecoveryUpdatePhoneScreen> {
           );
         } else if (data['text'] != null &&
             data['text']['message'] == 'Nomor telepon anda tidak berubah!') {
-          print('Nomor telepon yang dimasukkan sama dengan yang lama.');
-          AwesomeDialog(
-            context: context,
-            dialogType: DialogType.warning,
-            animType: AnimType.bottomSlide,
-            title: 'Nomor Tidak Berubah',
-            desc: 'Silakan masukkan nomor telepon baru Anda.',
-            btnOkOnPress: () {},
-          ).show();
+          print(
+              '[VALIDASI]: Nomor telepon yang dimasukkan sama dengan yang lama.');
+          _showAwesomeDialog(
+            'Silakan masukkan nomor telepon baru Anda.',
+            DialogType.warning,
+          );
+        } else if (data['text'] != null &&
+            data['text']['message'] ==
+                'Nomor telepon sudah terdaftar disistem!') {
+          print('[VALIDASI]: Nomor telepon sudah terdaftar di sistem.');
+          _showAwesomeDialog(
+            'Nomor telepon ini sudah terdaftar. Silakan gunakan nomor telepon lain.',
+            DialogType.error,
+          );
         }
       } else {
         print("[SERVER ERROR]: Status kode bukan 200.");
@@ -119,12 +124,17 @@ class _RecoveryUpdatePhoneScreenState extends State<RecoveryUpdatePhoneScreen> {
 
   void _showAwesomeDialog(String message, DialogType dialogType,
       {void Function()? onOk}) {
+    if (context == null || !mounted) {
+      print(
+          "[DIALOG ERROR]: Context tidak valid atau widget sudah di-dispose.");
+      return;
+    }
     print("[DIALOG]: Menampilkan dialog dengan pesan: $message");
     AwesomeDialog(
       context: context,
       dialogType: dialogType,
       animType: AnimType.scale,
-      title: dialogType == DialogType.success ? 'Berhasil' : 'Kesalahan',
+      title: dialogType == DialogType.success ? 'Berhasil' : 'Peringatan',
       desc: message,
       btnOkOnPress: onOk ?? () {},
     ).show();

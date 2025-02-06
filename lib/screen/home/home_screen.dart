@@ -63,7 +63,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void initState() {
-    final newVersion = NewVersion(androidId: 'com.kreditpensiun');
+    final newVersion = NewVersion(androidId: 'com.pensiunku');
 
     Timer(const Duration(milliseconds: 800), () {
       checkNewVersion(newVersion);

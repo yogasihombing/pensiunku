@@ -250,7 +250,7 @@ class _AccountScreenState extends State<AccountScreen> {
                                 ),
                                 SizedBox(height: 4.0),
                                 Text(
-                                 '${_userModel?.email ?? 'Pengguna'}',
+                                  '${_userModel?.email ?? 'Pengguna'}',
                                   style: TextStyle(
                                     fontSize: 11.0,
                                     color: Colors.black54,

@@ -10,7 +10,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Colors.black),
+          icon: Icon(Icons.arrow_back, color: Color(0XFF017964)),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(

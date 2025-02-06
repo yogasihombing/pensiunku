@@ -218,7 +218,7 @@ class _RiwayatPengajuanAndaScreenState
                                     color: Colors.grey[50],
                                     borderRadius: BorderRadius.circular(8),
                                   ),
-                                  child: Row(
+                                  child: Column(
                                     mainAxisAlignment:
                                         MainAxisAlignment.spaceBetween,
                                     children: [
@@ -228,13 +228,13 @@ class _RiwayatPengajuanAndaScreenState
                                           Icon(
                                             Icons.confirmation_number_outlined,
                                             size: 20,
-                                            color: Colors.blue[700],
+                                            color: Colors.black,
                                           ),
                                           const SizedBox(width: 8),
                                           Text(
                                             'Pengajuan ${pengajuanAnda.tiket}',
                                             style: TextStyle(
-                                              color: Colors.blue[700],
+                                              color: Colors.black,
                                               fontWeight: FontWeight.w600,
                                             ),
                                           ),
@@ -246,13 +246,13 @@ class _RiwayatPengajuanAndaScreenState
                                           Icon(
                                             Icons.calendar_today_outlined,
                                             size: 16,
-                                            color: Colors.grey[600],
+                                            color: Colors.black,
                                           ),
-                                          const SizedBox(width: 4),
+                                          const SizedBox(width: 12),
                                           Text(
                                             pengajuanAnda.tanggal,
                                             style: TextStyle(
-                                              color: Colors.grey[600],
+                                              color: Colors.black,
                                               fontSize: 14,
                                             ),
                                           ),

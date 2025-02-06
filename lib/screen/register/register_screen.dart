@@ -145,6 +145,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
     // Memvalidasi error pada input nama
     String? inputNameError =
         _controller.getInputNameError(_inputName, _inputNameTouched);
+    String? inputEmailError =
+        _controller.getInputEmailError(_inputEmail, _inputEmailTouched);
 
     return Scaffold(
       body: Container(
@@ -220,6 +222,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   labelText: '',
                   keyboardType: TextInputType.emailAddress,
                   enabled: !_isLoading,
+                  errorText: inputEmailError,
                   borderRadius: 12.0,
                   hintText: 'E-Mail',
                   useLabel: false,

@@ -60,10 +60,10 @@ class StatusPengajuanAndaScreen extends StatelessWidget {
                     children: [
                       Row(
                         children: [
-                          const Icon(Icons.person, color: primaryColor),
+                          const Icon(Icons.person, color: Colors.black),
                           const SizedBox(width: 8),
                           const Text(
-                            'Nama Pemohon: ',
+                            ' ',
                             style: TextStyle(fontWeight: FontWeight.bold),
                           ),
                           Flexible(
@@ -78,29 +78,29 @@ class StatusPengajuanAndaScreen extends StatelessWidget {
                         ],
                       ),
                       const Divider(),
+                      // Row(
+                      //   children: [
+                      //     const Icon(Icons.confirmation_number,
+                      //         color: primaryColor),
+                      //     const SizedBox(width: 8),
+                      //     const Text(
+                      //       'Kode Pengajuan: ',
+                      //       style: TextStyle(fontWeight: FontWeight.normal),
+                      //     ),
+                      //     Text(
+                      //       pengajuanAnda.tiket,
+                      //       style:
+                      //           const TextStyle(fontWeight: FontWeight.normal),
+                      //     ),
+                      //   ],
+                      // ),
+                      // const Divider(),
                       Row(
                         children: [
-                          const Icon(Icons.confirmation_number,
-                              color: primaryColor),
-                          const SizedBox(width: 8),
+                          const Icon(Icons.calendar_today, color: Colors.black),
+                          const SizedBox(width: 12),
                           const Text(
-                            'Kode Pengajuan: ',
-                            style: TextStyle(fontWeight: FontWeight.normal),
-                          ),
-                          Text(
-                            pengajuanAnda.tiket,
-                            style:
-                                const TextStyle(fontWeight: FontWeight.normal),
-                          ),
-                        ],
-                      ),
-                      const Divider(),
-                      Row(
-                        children: [
-                          const Icon(Icons.calendar_today, color: primaryColor),
-                          const SizedBox(width: 8),
-                          const Text(
-                            'Tanggal Pengajuan: ',
+                            'Pengajuan: ',
                             style: TextStyle(fontWeight: FontWeight.normal),
                           ),
                           Text(

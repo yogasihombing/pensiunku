@@ -13,9 +13,9 @@ import 'package:http/http.dart' as http;
 ///
 class OtpScreen extends StatefulWidget {
   static const String ROUTE_NAME = '/otp';
-   final String phone;
+  final String phone;
 
-   OtpScreen({required this.phone});
+  OtpScreen({required this.phone});
 
   @override
   _OtpScreenState createState() => _OtpScreenState();
@@ -109,7 +109,7 @@ class _OtpScreenState extends State<OtpScreen> {
               btnOkOnPress: () {
                 setState(() => _isLoginMode = false); // Alihkan ke mode DAFTAR
               },
-              btnOkText: 'Pilih Daftar',
+              btnOkText: 'Daftar Sekarang',
               btnCancelOnPress: () {},
               btnCancelText: 'Kembali',
             ).show();

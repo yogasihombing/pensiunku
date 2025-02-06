@@ -328,7 +328,7 @@ class _AccountInfoScreenState extends State<AccountInfoScreen> {
     return Column(
       children: [
         _buildStatusAccount(), // Add the new widget here
-         SizedBox(height: 30.0),
+        SizedBox(height: 30.0),
         _buildPhone(), // Phone Field
         // Divider(color: Colors.grey[400]), // Garis pembatas
         SizedBox(height: 5.0),
@@ -366,7 +366,7 @@ class _AccountInfoScreenState extends State<AccountInfoScreen> {
                 style: TextStyle(
                   fontSize: 14.0,
                   color: Colors.black87,
-                     fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
               Text(
@@ -389,7 +389,7 @@ class _AccountInfoScreenState extends State<AccountInfoScreen> {
                 style: TextStyle(
                   fontSize: 14.0,
                   color: Colors.black87,
-                     fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
               Text(
@@ -506,140 +506,141 @@ class _AccountInfoScreenState extends State<AccountInfoScreen> {
 
   // 3. Province Selector
   Widget _buildProvinsi() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Container untuk label dan teks yang dipilih (sejajar)
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Row untuk menyejajarkan label dan input field
-              Row(
-                mainAxisAlignment: MainAxisAlignment
-                    .spaceBetween, // Menyejajarkan elemen dengan ruang di antara
-                crossAxisAlignment: CrossAxisAlignment
-                    .center, // Menengahkan elemen secara vertikal
-                children: [
-                  // Label: 'Provinsi' (rata kiri)
-                  Text(
-                    'Provinsi',
-                    style: TextStyle(
-                      fontSize: 12.0,
-                      color: Colors.black,
-                      fontWeight: FontWeight.bold,
-                    ),
+    return GestureDetector(
+      onTap: _isLoading ? null : _showProvinceSelectionDialog,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Provinsi',
+                  style: TextStyle(
+                    fontSize: 12.0,
+                    color: Colors.black,
+                    fontWeight: FontWeight.bold,
                   ),
-                  // Teks provinsi yang dipilih (rata kanan) dengan ikon ">"
-                  if (_inputProvinsi != null && _inputProvinsi.text.isNotEmpty)
-                    Expanded(
-                      child: Align(
-                        alignment:
-                            Alignment.centerRight, // Menyejajarkan ke kanan
-                        child: SizedBox(
-                          width: 180,
-                          child: CustomSelectField(
-                            labelText: '',
-                            searchLabelText: 'Cari Provinsi',
-                            currentOption: _inputProvinsi,
-                            options: LocationRepository.getProvinces(),
-                            enabled: !_isLoading,
-                            onChanged: (OptionModel newProvince) {
-                              _getKabupatenList(newProvince.id.toString());
-                              setState(() {
-                                _inputProvinsi = newProvince;
-                                _inputCity = OptionModel(id: 0, text: '');
-                              });
-                            },
-                            useLabel: false,
-                            buttonType: 'button_text_field',
-                            hintText: 'Pilih Provinsi',
-                            borderRadius: 0.0, // Menghilangkan border radius
-                            fillColor:
-                                Colors.transparent, // Latar belakang transparan
-                            textStyle: TextStyle(
-                                fontSize: 12.0), // Ubah ukuran font di sini
-                          ),
-                        ),
+                ),
+                Row(
+                  children: [
+                    Text(
+                      _inputProvinsi.text.isNotEmpty
+                          ? _inputProvinsi.text
+                          : 'Pilih Provinsi',
+                      style: TextStyle(
+                        fontSize: 12.0,
+                        color: _inputProvinsi.text.isNotEmpty
+                            ? Colors.black
+                            : Colors.grey,
                       ),
                     ),
-                ],
-              ),
-              // Garis pembatas
-              Divider(
-                color: Colors.grey[400],
-                thickness: 1.0,
-              ),
-            ],
-          ),
+                    SizedBox(width: 8),
+                    Icon(
+                      Icons.chevron_right,
+                      color: Colors.grey,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            Divider(
+              color: Colors.grey[400],
+              thickness: 1.0,
+            ),
+          ],
         ),
-      ],
+      ),
+    );
+  }
+
+// Helper method to show province selection dialog
+  void _showProvinceSelectionDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Pilih Provinsi'),
+          content: Container(
+            width: double.maxFinite,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: LocationRepository.getProvinces().length,
+              itemBuilder: (context, index) {
+                final province = LocationRepository.getProvinces()[index];
+                return ListTile(
+                  title: Text(province.text),
+                  onTap: () {
+                    _getKabupatenList(province.id.toString());
+                    setState(() {
+                      _inputProvinsi = province;
+                      _inputCity = OptionModel(id: 0, text: '');
+                    });
+                    Navigator.of(context).pop();
+                  },
+                );
+              },
+            ),
+          ),
+        );
+      },
     );
   }
 
   // 4. City Selector (Kabupaten/Kota)
   Widget _buildKabupaten() {
-    return _inputProvinsi.id != 0
-        ? Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+    if (_inputProvinsi.id == 0) return Container();
+
+    return GestureDetector(
+      onTap: _isLoading ? null : _showCitySelectionDialog,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Kabupaten/Kota',
+                  style: TextStyle(
+                    fontSize: 12.0,
+                    color: Colors.black,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Row(
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        // Label: 'Kabupaten/Kota' (rata kiri)
-                        Text(
-                          'Kabupaten/Kota',
-                          style: TextStyle(
-                            fontSize: 12.0,
-                            color: Colors.black,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        // Dropdown Kabupaten/Kota (rata kanan)
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: SizedBox(
-                            width: 180,
-                            child: CustomSelectField(
-                              labelText: '',
-                              searchLabelText: 'Cari Kabupaten/Kota',
-                              currentOption: _inputCity,
-                              options: listKabupaten,
-                              enabled: !_isLoading,
-                              onChanged: (OptionModel newCity) {
-                                setState(() {
-                                  _inputCity = newCity;
-                                });
-                              },
-                              useLabel: false,
-                              buttonType: 'button_text_field',
-                              hintText: 'Kabupaten/Kota',
-                              borderRadius: 0.0,
-                              fillColor: Colors.transparent,
-                              textStyle: TextStyle(fontSize: 12.0),
-                            ),
-                          ),
-                        ),
-                      ],
+                    Text(
+                      _inputCity.text.isNotEmpty
+                          ? _inputCity.text
+                          : 'Pilih Kabupaten/Kota',
+                      style: TextStyle(
+                        fontSize: 12.0,
+                        color: _inputCity.text.isNotEmpty
+                            ? Colors.black
+                            : Colors.grey,
+                      ),
                     ),
-                    // Garis pembatas
-                    Divider(
-                      color: Colors.grey[400],
-                      thickness: 1.0,
+                    SizedBox(width: 8),
+                    Icon(
+                      Icons.chevron_right,
+                      color: Colors.grey,
                     ),
                   ],
                 ),
-              ),
-            ],
-          )
-        : Container();
+              ],
+            ),
+            Divider(
+              color: Colors.grey[400],
+              thickness: 1.0,
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   // 5. Save Button
@@ -654,6 +655,42 @@ class _AccountInfoScreenState extends State<AccountInfoScreen> {
       onTap: _saveAccountInfo,
       isLoading: _isLoading,
       disabled: _isLoading,
+    );
+  }
+
+  // Helper method to show city selection dialog
+  void _showCitySelectionDialog() {
+    if (listKabupaten.isEmpty) {
+      // Ensure kabupaten list is populated
+      _getKabupatenList(_inputProvinsi.id.toString());
+    }
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Pilih Kabupaten/Kota'),
+          content: Container(
+            width: double.maxFinite,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: listKabupaten.length,
+              itemBuilder: (context, index) {
+                final city = listKabupaten[index];
+                return ListTile(
+                  title: Text(city.text),
+                  onTap: () {
+                    setState(() {
+                      _inputCity = city;
+                    });
+                    Navigator.of(context).pop();
+                  },
+                );
+              },
+            ),
+          ),
+        );
+      },
     );
   }
 

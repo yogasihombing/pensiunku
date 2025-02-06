@@ -229,14 +229,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   const SizedBox(height: 16),
                   // Full screen widgets without padding
                   _buildHeaderImage(),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 12),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16.0),
                     child: _buildMenuFeatures(),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
                   _buildCarouselSlider(),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
                   _buildArticleFeatures(),
                   const SizedBox(height: 100),
                 ],
@@ -281,17 +281,34 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildGreeting() {
     TextStyle greetingStyle = const TextStyle(
-      fontSize: 12,
-      fontWeight: FontWeight.bold,
-      color: Colors.black,
+      fontSize: 13,
+      fontWeight: FontWeight.normal, // Gaya normal untuk teks greeting
+      color: Color(0Xff017964),
+    );
+
+    TextStyle boldStyle = const TextStyle(
+      fontSize: 14,
+      fontWeight: FontWeight.bold, // Gaya bold untuk nama pengguna
+      color: Color(0Xff017964),
     );
 
     String userName = _userModel?.username?.split(' ').first ?? 'Pengguna';
 
     Widget buildGreetingText(String greeting) {
-      return Text(
-        '$greeting, $userName',
-        style: greetingStyle,
+      return RichText(
+        text: TextSpan(
+          children: [
+            TextSpan(
+              text: '$greeting, ', // Teks greeting dengan gaya normal
+              style: greetingStyle,
+            ),
+            TextSpan(
+              text: userName, // Nama pengguna dengan gaya bold
+              style: boldStyle,
+            ),
+            
+          ],
+        ),
       );
     }
 
@@ -347,12 +364,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
             padding: EdgeInsets.all(16), // Berikan batasan padding
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
-              color: Colors.white.withOpacity(0.6),
+              color: Colors.white.withOpacity(0.5),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: Offset(0, 4),
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 1,
+                  offset: Offset(0, 5),
                 ),
               ],
             ),
@@ -368,6 +385,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       'Dompet Anda',
                       style: TextStyle(
                         fontSize: 14,
+                        fontWeight: FontWeight.bold,
                         color: Colors.black,
                       ),
                     ),
@@ -397,10 +415,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFFFC950),
-                    minimumSize: const Size(double.infinity, 24),
+                    minimumSize: const Size(double.infinity, 22),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(20),
                     ),
+                    shadowColor: Colors.grey
+                        .withOpacity(0.5), // Tambahkan shadowColor di sini
+                    elevation: 5, // Atur elevation untuk menampilkan shadow
                   ),
                   child: RichText(
                     text: TextSpan(
@@ -408,7 +429,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.normal,
-                        color: Colors.green[900],
+                        color: Colors.black,
                       ),
                       children: [
                         TextSpan(
@@ -534,34 +555,62 @@ class _DashboardScreenState extends State<DashboardScreen> {
         color: const Color(0xFF017964), // Latar hijau tua
         borderRadius: BorderRadius.circular(24), // Radius sudut kontainer
       ),
-      child: DottedBorder(
-        borderType: BorderType.RRect, // Bentuk border melengkung
-        radius: const Radius.circular(24), // Radius sudut yang sama
-        dashPattern: [3, 3], // Pola putus-putus (6px garis, 3px jarak)
-        color: Colors.white, // Warna putih untuk garis
-        strokeWidth: 2, // Ketebalan garis
-        padding: const EdgeInsets.all(0), // Padding dalam border
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            vertical: 4, // Padding atas-bawah
-            horizontal: 16, // Padding kiri-kanan
-          ),
-          child: const Center(
-            // Menengahkan teks secara horizontal dan vertikal
-            child: Text(
-              'BUTUH UANG UNTUK MASA PENSIUNMU?',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: Colors.white, // Warna teks putih
-              ),
-              textAlign: TextAlign.center, // Teks rata tengah horizontal
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          vertical: 8, // Padding atas-bawah
+          horizontal: 16, // Padding kiri-kanan
+        ),
+        child: const Center(
+          // Menengahkan teks secara horizontal dan vertikal
+          child: Text(
+            'BUTUH UANG UNTUK MASA PENSIUNMU?',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              color: Colors.white, // Warna teks putih
             ),
+            textAlign: TextAlign.center, // Teks rata tengah horizontal
           ),
         ),
       ),
     );
   }
+
+  // Widget _buildBottomSectionTitle() {
+  //   return Container(
+  //     width: double.infinity, // Menyamakan lebar dengan _buildBalanceCard
+  //     decoration: BoxDecoration(
+  //       color: const Color(0xFF017964), // Latar hijau tua
+  //       borderRadius: BorderRadius.circular(24), // Radius sudut kontainer
+  //     ),
+  //     child: DottedBorder(
+  //       borderType: BorderType.RRect, // Bentuk border melengkung
+  //       radius: const Radius.circular(24), // Radius sudut yang sama
+  //       dashPattern: [3, 3], // Pola putus-putus (6px garis, 3px jarak)
+  //       color: Colors.white, // Warna putih untuk garis
+  //       strokeWidth: 2, // Ketebalan garis
+  //       padding: const EdgeInsets.all(0), // Padding dalam border
+  //       child: Padding(
+  //         padding: const EdgeInsets.symmetric(
+  //           vertical: 4, // Padding atas-bawah
+  //           horizontal: 16, // Padding kiri-kanan
+  //         ),
+  //         child: const Center(
+  //           // Menengahkan teks secara horizontal dan vertikal
+  //           child: Text(
+  //             'BUTUH UANG UNTUK MASA PENSIUNMU?',
+  //             style: TextStyle(
+  //               fontSize: 14,
+  //               fontWeight: FontWeight.bold,
+  //               color: Colors.white, // Warna teks putih
+  //             ),
+  //             textAlign: TextAlign.center, // Teks rata tengah horizontal
+  //           ),
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  // }
 
   Widget _buildActionButtons(BuildContext context) {
     Widget _buildButton(
@@ -729,14 +778,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
             'Ada yang baru nih!',
             style: TextStyle(
               fontSize: 12,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w600,
               color: Colors.black,
             ),
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.symmetric(
-              horizontal: 0.0), // Padding di sisi kiri dan kanan
+        SizedBox(
+          width: double.infinity,
+          height: 165,
           child: CarouselSlider(
             options: CarouselOptions(
               height: 165,
@@ -746,7 +795,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               autoPlayAnimationDuration: const Duration(milliseconds: 800),
               viewportFraction: 0.96,
               aspectRatio: 16 / 9,
-              reverse: true, // otomatis geser ke kanan
+              reverse: true,
             ),
             items: images.map((imagePath) {
               return Builder(
@@ -769,6 +818,63 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ],
     );
   }
+
+  // Widget _buildHeaderImage() {
+  //   final List<String> images = [
+  //     'assets/dashboard_screen/image_1.png',
+  //     'assets/dashboard_screen/image_2.png',
+  //     'assets/dashboard_screen/image_3.png'
+  //   ];
+
+  //   return Column(
+  //     crossAxisAlignment: CrossAxisAlignment.start,
+  //     children: [
+  //       const Padding(
+  //         padding: EdgeInsets.only(left: 30.0, bottom: 8.0),
+  //         child: Text(
+  //           'Ada yang baru nih!',
+  //           style: TextStyle(
+  //             fontSize: 12,
+  //             fontWeight: FontWeight.w600,
+  //             color: Colors.black,
+  //           ),
+  //         ),
+  //       ),
+  //       Padding(
+  //         padding: const EdgeInsets.symmetric(
+  //             horizontal: 0.0), // Padding di sisi kiri dan kanan
+  //         child: CarouselSlider(
+  //           options: CarouselOptions(
+  //             height: 165,
+  //             enlargeCenterPage: true,
+  //             autoPlay: true,
+  //             autoPlayInterval: const Duration(seconds: 3),
+  //             autoPlayAnimationDuration: const Duration(milliseconds: 800),
+  //             viewportFraction: 0.96,
+  //             aspectRatio: 16 / 9,
+  //             reverse: true, // otomatis geser ke kanan
+  //           ),
+  //           items: images.map((imagePath) {
+  //             return Builder(
+  //               builder: (BuildContext context) {
+  //                 return Container(
+  //                   margin: const EdgeInsets.symmetric(horizontal: 8.0),
+  //                   decoration: BoxDecoration(
+  //                     borderRadius: BorderRadius.circular(16),
+  //                     image: DecorationImage(
+  //                       image: AssetImage(imagePath),
+  //                       fit: BoxFit.cover,
+  //                     ),
+  //                   ),
+  //                 );
+  //               },
+  //             );
+  //           }).toList(),
+  //         ),
+  //       ),
+  //     ],
+  //   );
+  // }
 
   Widget _buildMenuFeatures() {
     return Column(
@@ -823,11 +929,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
         const Padding(
           padding: EdgeInsets.only(left: 30.0, bottom: 8.0),
           child: Text(
-            'Produk kami',
+            'Produk',
             style: TextStyle(
               fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF017964),
+              fontWeight: FontWeight.w600,
+              color: Colors.black,
             ),
           ),
         ),
@@ -915,8 +1021,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
               'Artikel',
               style: TextStyle(
                 fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF017964),
+                fontWeight: FontWeight.w600,
+                color: Colors.black,
               ),
             ),
           ),

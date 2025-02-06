@@ -1,6 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:pensiunku/data/db/app_database.dart';
 import 'package:pensiunku/screen/register/prepare_register_screen.dart';
 import 'package:pensiunku/screen/welcome/welcome_screen.dart';
@@ -8,7 +9,6 @@ import 'package:pensiunku/util/shared_preferences_util.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Screen Inisialisasi (Splash Screen)
-///
 /// Screen ini adalah screen pertama yang dipanggil saat aplikasi dibuka.
 /// Melakukan inisialisasi library yang diperlukan seperti database dan preferences,
 /// kemudian mengarahkan ke welcome screen atau home screen.
@@ -32,6 +32,13 @@ class _InitScreenState extends State<InitScreen>
   void initState() {
     super.initState();
 
+    // Mengatur UI system
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersive);
+    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      systemNavigationBarColor: Colors.transparent,
+    ));
+
     // Setup animation controller untuk fade out
     _fadeController = AnimationController(
       duration: const Duration(seconds: 1), // Durasi animasi fade out 1 detik
@@ -45,7 +52,7 @@ class _InitScreenState extends State<InitScreen>
     ).animate(_fadeController);
 
     // Delay sebelum memulai fade in logo dan loading
-    Future.delayed(Duration(milliseconds: 300), () {
+    Future.delayed(const Duration(milliseconds: 100), () {
       if (mounted) {
         setState(() {
           _opacity = 1.0; // Trigger animasi fade in
@@ -131,6 +138,9 @@ class _InitScreenState extends State<InitScreen>
 
   @override
   void dispose() {
+    // Kembalikan system UI ke normal
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual,
+        overlays: SystemUiOverlay.values);
     // Bersihkan controller saat widget di dispose
     _fadeController.dispose();
     super.dispose();
@@ -159,43 +169,47 @@ class _InitScreenState extends State<InitScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: AnimatedBuilder(
-        // Wrap dengan AnimatedBuilder untuk handle fade out
-        animation: _fadeAnimation,
-        builder: (context, child) {
-          return Opacity(
-            opacity: _fadeAnimation.value,
-            child: Container(
-              // Background image container
-              decoration: BoxDecoration(
-                image: DecorationImage(
-                  image: AssetImage("assets/background.png"),
-                  fit: BoxFit.cover,
+      backgroundColor: Colors.transparent,
+      body: AnnotatedRegion<SystemUiOverlayStyle>(
+        value: const SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          systemNavigationBarColor: Colors.transparent,
+          statusBarIconBrightness: Brightness.dark,
+          systemNavigationBarIconBrightness: Brightness.dark,
+        ),
+        child: AnimatedBuilder(
+          animation: _fadeAnimation,
+          builder: (context, child) {
+            return Opacity(
+              opacity: _fadeAnimation.value,
+              child: Container(
+                decoration: const BoxDecoration(
+                  image: DecorationImage(
+                    image: AssetImage("assets/background.png"),
+                    fit: BoxFit.cover,
+                  ),
                 ),
-              ),
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment:
-                      CrossAxisAlignment.center, // memastikan elemen di tengah
-                  children: [
-                    // Logo dengan animasi fade in
-                    AnimatedOpacity(
-                      opacity: _opacity,
-                      duration:
-                          Duration(milliseconds: 800), // Durasi fade in logo
-                      child: Image.asset(
-                        'assets/logo.png',
-                        width: 130,
-                        height: 130,
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      AnimatedOpacity(
+                        opacity: _opacity,
+                        duration: const Duration(milliseconds: 800),
+                        child: Image.asset(
+                          'assets/logo.png',
+                          width: 130,
+                          height: 130,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }

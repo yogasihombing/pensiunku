@@ -108,18 +108,18 @@ class _CustomerSupportScreenState extends State<CustomerSupportScreen> {
                     },
                   ),
                   SizedBox(height: 12.0),
-                  ContactListTile(
-                    leading: Icon(
-                      Icons.phone_in_talk,
-                      color: theme.colorScheme.secondary,
-                    ),
-                    title: 'Telepon',
-                    subtitle: '087785833344',
-                    onTap: () {
-                      UrlUtil.launchURL('tel:087785833344');
-                    },
-                  ),
-                  SizedBox(height: 12.0),
+                  // ContactListTile(
+                  //   leading: Icon(
+                  //     Icons.phone_in_talk,
+                  //     color: theme.colorScheme.secondary,
+                  //   ),
+                  //   title: 'Telepon',
+                  //   subtitle: '087785833344',
+                  //   onTap: () {
+                  //     UrlUtil.launchURL('tel:087785833344');
+                  //   },
+                  // ),
+                  // SizedBox(height: 12.0),
                   ContactListTile(
                     leading: SvgPicture.asset(
                       'assets/icon/whatsapp.svg',
@@ -127,27 +127,27 @@ class _CustomerSupportScreenState extends State<CustomerSupportScreen> {
                       semanticsLabel: 'WhatsApp Logo',
                     ),
                     title: 'WhatsApp',
-                    subtitle: '+6281220379751',
+                    subtitle: '+6287785833344',
                     onTap: () {
                       UrlUtil.launchURL(
-                          'https://wa.me/+6281220379751?text=Hallo%20admin%20kredit%20pensiun,%20saya%20memiliki%20kendala%20dalam%20menggunakan%20aplikasi%20kredit%20pensiun,%20bisa%20tolong%20dijelaskan%20cara%20penggunaannya%20?');
+                          'https://wa.me/+6287785833344?text=Hallo%20admin%20kredit%20pensiunku,%20saya%20memiliki%20kendala%20dalam%20menggunakan%20aplikasi%20Pensiunku,%20bisa%20tolong%20dijelaskan%20cara%20penggunaannya%20?');
                     },
                   ),
                   SizedBox(height: 12.0),
-                  ContactListTile(
-                    leading: SvgPicture.asset(
-                      'assets/icon/whatsapp.svg',
-                      color: Color.fromARGB(255, 50, 211, 102),
-                      semanticsLabel: 'WhatsApp Logo',
-                    ),
-                    title: 'Live Chat',
-                    subtitle: 'Pensiunku Admin',
-                    onTap: () {
-                      Navigator.push(context,
-                          MaterialPageRoute(builder: (context) => LiveChat()));
-                    },
-                  ),
-                  SizedBox(height: 24.0),
+                  // ContactListTile(
+                  //   leading: SvgPicture.asset(
+                  //     'assets/icon/whatsapp.svg',
+                  //     color: Color.fromARGB(255, 50, 211, 102),
+                  //     semanticsLabel: 'WhatsApp Logo',
+                  //   ),
+                  //   title: 'Live Chat',
+                  //   subtitle: 'Pensiunku Admin',
+                  //   onTap: () {
+                  //     Navigator.push(context,
+                  //         MaterialPageRoute(builder: (context) => LiveChat()));
+                  //   },
+                  // ),
+                  // SizedBox(height: 24.0),
                   Text(
                     'Kirim Pertanyaan',
                     style: theme.textTheme.bodyText1?.copyWith(

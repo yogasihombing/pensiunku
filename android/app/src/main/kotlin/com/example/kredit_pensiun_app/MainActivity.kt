@@ -1,4 +1,4 @@
-package com.kreditpensiun
+package com.pensiunku
 
 import io.flutter.embedding.android.FlutterActivity
 
