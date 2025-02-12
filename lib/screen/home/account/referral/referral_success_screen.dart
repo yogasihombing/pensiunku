@@ -44,10 +44,10 @@ class _ReferralSuccessScreenState extends State<ReferralSuccessScreen> {
           context,
           'Referral Screen',
           2,
-          (newIndex) {
+              (newIndex) {
             Navigator.of(context).pop(newIndex);
           },
-          () {
+              () {
             Navigator.of(context).pop();
           },
         ),
@@ -74,8 +74,7 @@ class _ReferralSuccessScreenState extends State<ReferralSuccessScreen> {
                         SizedBox(
                           height: 250,
                           width: 300,
-                          child:
-                              Image.asset('assets/referal_screen/jump-04.png'),
+                          child: Image.asset('assets/referal_screen/jump-04.png'),
                         ),
                         Text(
                           'Selamat!',
