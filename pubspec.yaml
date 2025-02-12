@@ -200,6 +200,13 @@ flutter:
     - assets/toko/kategori/hobi1.png
     - assets/toko/kategori/hobi2.png
     - assets/toko/kategori/hobi3.png
+    - assets/pensiunkuplus/pensiunku.png
+    - assets/pensiunkuplus/pensiunkuplus_1.png
+    - assets/pensiunkuplus/uploadfotowajah.png
+    - assets/pensiunkuplus/uploadktp.png
+    - assets/pensiunkuplus/daftarkan_pin.png
+    - assets/pensiunkuplus/pensiunkuplus_success.png
+    - assets/pensiunkuplus/icon_upload_dokumen.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware.
