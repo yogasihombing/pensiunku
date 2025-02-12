@@ -33,7 +33,9 @@ class ReferralScreenArguments {
 //migrate from RaisedButton to ElevatedButton
 final ButtonStyle raisedButtonStyle = ElevatedButton.styleFrom(
   backgroundColor: Color(0xff16826e),
-  padding: EdgeInsets.all(10.0), disabledForegroundColor: Color(0xfff29724).withOpacity(0.38), disabledBackgroundColor: Color(0xfff29724).withOpacity(0.12),
+  padding: EdgeInsets.all(10.0),
+  disabledForegroundColor: Color(0xfff29724).withOpacity(0.38),
+  disabledBackgroundColor: Color(0xfff29724).withOpacity(0.12),
   textStyle: TextStyle(
     color: Colors.white,
   ),
