@@ -20,6 +20,7 @@ import 'package:pensiunku/screen/home/dashboard/dashboard_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/event/event_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/forum/forum_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/halopensiun/halopensiun_screen.dart';
+import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/pensiunkuplus_success_screen.dart';
 import 'package:pensiunku/screen/home/home_screen.dart';
 import 'package:pensiunku/screen/home/submission/riwayat_pengajuan_orang_lain.dart';
 import 'package:pensiunku/screen/home/submission/riwayat_pengajuan_anda.dart';
@@ -47,12 +48,10 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Set orientation
-  SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp, 
-    DeviceOrientation.portraitDown
-  ]);
+  SystemChrome.setPreferredOrientations(
+      [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
 
   // Initialize Firebase first
   await Firebase.initializeApp();
@@ -73,7 +72,6 @@ void main() async {
 // }
 
 class MyApp extends StatelessWidget {
-
   @override
   Widget build(BuildContext context) {
     // Color primaryColor = Color.fromARGB(255, 116, 130, 43);
@@ -293,7 +291,7 @@ class MyApp extends StatelessWidget {
               usahaDetailModel: args.usahaDetailModel,
             );
             break;
-  
+
           case HomeScreen.ROUTE_NAME:
             page = HomeScreen(
               title: 'Pensiunku',
@@ -340,6 +338,29 @@ class MyApp extends StatelessWidget {
             page = ArticleDetailScreen(
               articleId: args.articleId,
             );
+            break;
+          case PensiunkuPlusSuccessScreen.ROUTE_NAME:
+            page = PensiunkuPlusSuccessScreen();
+            break;
+          case DashboardScreen.ROUTE_NAME:
+            print('DashboardScreen route detected');
+            final args = settings.arguments as Map<String, dynamic>?;
+
+            if (args != null) {
+              print('Arguments received: $args');
+              page = DashboardScreen(
+                onApplySubmission: args['onApplySubmission'],
+                onChangeBottomNavIndex: args['onChangeBottomNavIndex'],
+                scrollController: args['scrollController'],
+              );
+            } else {
+              print('Arguments are null, using default values');
+              page = DashboardScreen(
+                onApplySubmission: (context) {},
+                onChangeBottomNavIndex: (index) {},
+                scrollController: ScrollController(),
+              );
+            }
             break;
           default:
             page = Container();

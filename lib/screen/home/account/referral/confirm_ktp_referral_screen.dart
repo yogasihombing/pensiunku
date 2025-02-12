@@ -380,13 +380,13 @@ class _ConfirmKtpReferalScreenState extends State<ConfirmKtpReferalScreen> {
               ),
             ),
           ),
-          // FloatingBottomNavigationBar(
-          //   isVisible: _isBottomNavBarVisible,
-          //   currentIndex: 2,
-          //   onTapItem: (newIndex) {
-          //     Navigator.of(context).pop(newIndex);
-          //   },
-          // ),
+          FloatingBottomNavigationBar(
+            isVisible: _isBottomNavBarVisible,
+            currentIndex: 2,
+            onTapItem: (newIndex) {
+              Navigator.of(context).pop(newIndex);
+            },
+          ),
         ],
       ),
     );

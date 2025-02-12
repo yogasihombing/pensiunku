@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/pensiunku_plus_prepare_screen.dart';
+import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/upload_foto_wajah.dart';
 
 class AktifkanPensiunkuPlusScreen extends StatelessWidget {
   static const String ROUTE_NAME = '/AktifkanPensiunkuPlusScreen';
@@ -8,77 +7,104 @@ class AktifkanPensiunkuPlusScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    bool _isLoading = false;
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Aktifkan Pensiunku+'),
-        centerTitle: true,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Aktifkan Pensiunku+',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              'Nikmati berbagai kemudahan dan layanan eksklusif dengan mengaktifkan Pensiunku+. Dengan fitur ini, Anda dapat mengelola dana pensiun lebih baik dan merencanakan masa depan yang cerah.',
-              style: TextStyle(fontSize: 16),
-            ),
-            const SizedBox(height: 24),
-            const Text(
-              'Keuntungan Aktifasi:',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            const ListTile(
-              leading: Icon(Icons.check_circle, color: Colors.green),
-              title: Text('Akses layanan premium'),
-            ),
-            const ListTile(
-              leading: Icon(Icons.check_circle, color: Colors.green),
-              title: Text('Perencanaan pensiun yang lebih baik'),
-            ),
-            const ListTile(
-              leading: Icon(Icons.check_circle, color: Colors.green),
-              title: Text('Informasi dan konsultasi eksklusif'),
-            ),
-            const Spacer(),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+      body: Stack(
+        children: [
+          // Background gradient
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.white,
+                    Colors.white,
+                    Colors.white,
+                    Color.fromARGB(255, 233, 208, 127),
+                  ],
+                  stops: [0.25, 0.5, 0.75, 1.0],
                 ),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) =>  PensiunkuPlusPrepareScreen(),
+              ),
+            ),
+          ),
+          // Content
+          Center(
+            child: SafeArea(
+                child: Column(
+              children: [
+                Expanded(
+                    child: SingleChildScrollView(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        SizedBox(height: 20.0),
+                        SizedBox(
+                          height: 150,
+                          child:
+                              Image.asset('assets/pensiunkuplus/pensiunku.png'),
+                        ),
+                        SizedBox(
+                          height: 200,
+                          child: Image.asset(
+                              'assets/pensiunkuplus/pensiunkuplus_1.png'),
+                        ),
+                        SizedBox(height: 12.0),
+                        Text(
+                          'Bergabunglah menjadi \nmitra Pensiunku+',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 24.0,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        SizedBox(height: 16.0),
+                        Text(
+                          '• Potensi insentif s/d lebih dari Rp 5 Juta \n • Insentif langsung ke wallet akun \n • Tentukan sendiri target dan jam kerja',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 13.0),
+                        ),
+                        SizedBox(height: 20.0),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Color(0xFFFFC950),
+                            foregroundColor: Colors.black,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(24.0),
+                            ),
+                            padding: EdgeInsets.symmetric(
+                                vertical: 12.0, horizontal: 32.0),
+                          ),
+                          onPressed: () {
+                            // Navigasi ke halaman UploadFotoWajahPensiunkuPlusScreen
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => UploadFotoWajahPensiunkuPlusScreen(),
+                              ),
+                            );
+                          },
+                          child: _isLoading
+                              ? CircularProgressIndicator(color: Colors.white)
+                              : Text(
+                                  'Bergabung Sekarang',
+                                  style: TextStyle(
+                                      fontSize: 16.0,
+                                      fontWeight: FontWeight.bold),
+                                ),
+                        ),
+                      ],
                     ),
-                  );
-                },
-                child: const Text(
-                  'Aktifkan Sekarang',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
                   ),
-                ),
-              ),
-            ),
-          ],
-        ),
+                ))
+              ],
+            )),
+          )
+        ],
       ),
     );
   }
