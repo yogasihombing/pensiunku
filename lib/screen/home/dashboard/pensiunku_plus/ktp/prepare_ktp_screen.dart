@@ -4,24 +4,21 @@ import 'package:pensiunku/model/submission_model.dart';
 import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/ktp/camera_ktp_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/ktp/confirm_ktp_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/ktp/preview_ktp_screen.dart';
-// import 'package:pensiunku/screen/ktp/camera_ktp_screen.dart';
-// import 'package:pensiunku/screen/ktp/confirm_ktp_screen.dart';
-// import 'package:pensiunku/screen/ktp/preview_ktp_screen.dart';
 import 'package:pensiunku/screen/permission/permission_screen.dart';
 import 'package:pensiunku/util/firebase_vision_util.dart';
 import 'package:pensiunku/util/widget_util.dart';
-import 'package:pensiunku/widget/floating_bottom_navigation_bar.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:image_picker/image_picker.dart';
 
 //migrate from RaisedButton to ElevatedButton
 final ButtonStyle raisedButtonStyle = ElevatedButton.styleFrom(
-  primary: Color(0xff16826e),
+  backgroundColor: Color(0xff16826e),
   padding: EdgeInsets.all(10.0),
+  disabledForegroundColor: Color(0xfff29724).withOpacity(0.38),
+  disabledBackgroundColor: Color(0xfff29724).withOpacity(0.12),
   textStyle: TextStyle(
     color: Colors.white,
   ),
-  onSurface: Color(0xfff29724),
   shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.all(Radius.circular(10.0))),
 );
@@ -356,102 +353,102 @@ class _PrepareKtpScreenState extends State<PrepareKtpScreen> {
                         child: ElevatedButton(
                           onPressed: () {
                             _showDescriptionDialog(context);
-                            // Navigator.of(
-                            //   context,
-                            //   rootNavigator: true,
-                            // )
-                            //     .pushNamed(PermissionScreen.ROUTE_NAME)
-                            //     .then((permissionStatus) {
-                            //   switch (permissionStatus) {
-                            //     case PermissionStatus.granted:
-                            //       // Navigator.of(context, rootNavigator: true)
-                            //       //     .pushNamed(CameraKtpNewScreen.ROUTE_NAME);
-                            //       Navigator.of(
-                            //         context,
-                            //         rootNavigator: true,
-                            //       )
-                            //           .pushNamed(
-                            //         CameraKtpScreen.ROUTE_NAME,
-                            //         arguments: CameraKtpScreenArgs(
-                            //             cameraFilter: 'assets/ktp_filter.png',
-                            //             buildFilter: (context) {
-                            //               return Container(
-                            //                 constraints:
-                            //                     const BoxConstraints.expand(),
-                            //                 child: CustomPaint(
-                            //                   painter: KtpFramePainter(
-                            //                     screenSize:
-                            //                         MediaQuery.of(context).size,
-                            //                     outerFrameColor:
-                            //                         Color(0x73442C2E),
-                            //                     innerFrameColor:
-                            //                         Colors.transparent,
-                            //                   ),
-                            //                 ),
-                            //               );
-                            //             },
-                            //             onProcessImage: (file, _) =>
-                            //                 FirebaseVisionUtils
-                            //                     .getKtpVisionDataFromImage(
-                            //                   file,
-                            //                   isDrawSearchingArea: false,
-                            //                   isDrawExtractedArea: true,
-                            //                 ),
-                            //             onPreviewImage:
-                            //                 (pageContext, ktpModel) {
-                            //               return Navigator.of(pageContext)
-                            //                   .pushNamed(
-                            //                 PreviewKtpScreen.ROUTE_NAME,
-                            //                 arguments: PreviewKtpScreenArgs(
-                            //                   ktpModel: ktpModel as KtpModel,
-                            //                 ),
-                            //               );
-                            //             }),
-                            //       )
-                            //           .then((value) {
-                            //         if (value != null) {
-                            //           KtpModel ktpModel = value as KtpModel;
-                            //           Navigator.of(context)
-                            //               .pushNamed(
-                            //             ConfirmKtpScreen.ROUTE_NAME,
-                            //             arguments: ConfirmKtpScreenArgs(
-                            //               submissionModel:
-                            //                   widget.submissionModel,
-                            //               ktpModel: ktpModel,
-                            //               onSuccess: (_) =>
-                            //                   widget.onSuccess(context),
-                            //             ),
-                            //           )
-                            //               .then((returnValue) {
-                            //             if (returnValue is int) {
-                            //               // User presses BottomNavBar item
-                            //               Navigator.of(context)
-                            //                   .pop(returnValue);
-                            //             } else if (returnValue == true) {
-                            //               // User completes KTP
-                            //               widget.onSuccess(context);
-                            //             }
-                            //           });
-                            //         }
-                            //       });
-                            //       break;
-                            //     case PermissionStatus.limited:
-                            //     case PermissionStatus.denied:
-                            //     case PermissionStatus.permanentlyDenied:
-                            //     case PermissionStatus.restricted:
-                            //     default:
-                            //       WidgetUtil.showSnackbar(
-                            //         context,
-                            //         'Tolong izinkan Kredit Pensiun untuk mengakses kamera Anda.',
-                            //         snackbarAction: SnackBarAction(
-                            //           label: 'Pengaturan',
-                            //           onPressed: () {
-                            //             openAppSettings();
-                            //           },
-                            //         ),
-                            //       );
-                            //   }
-                            // });
+                            Navigator.of(
+                              context,
+                              rootNavigator: true,
+                            )
+                                .pushNamed(PermissionScreen.ROUTE_NAME)
+                                .then((permissionStatus) {
+                              switch (permissionStatus) {
+                                case PermissionStatus.granted:
+                                  // Navigator.of(context, rootNavigator: true)
+                                  //     .pushNamed(CameraKtpNewScreen.ROUTE_NAME);
+                                  Navigator.of(
+                                    context,
+                                    rootNavigator: true,
+                                  )
+                                      .pushNamed(
+                                    CameraKtpScreen.ROUTE_NAME,
+                                    arguments: CameraKtpScreenArgs(
+                                        cameraFilter: 'assets/ktp_filter.png',
+                                        buildFilter: (context) {
+                                          return Container(
+                                            constraints:
+                                                const BoxConstraints.expand(),
+                                            child: CustomPaint(
+                                              painter: KtpFramePainter(
+                                                screenSize:
+                                                    MediaQuery.of(context).size,
+                                                outerFrameColor:
+                                                    Color(0x73442C2E),
+                                                innerFrameColor:
+                                                    Colors.transparent,
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                        onProcessImage: (file, _) =>
+                                            FirebaseVisionUtils
+                                                .getKtpVisionDataFromImage(
+                                              file,
+                                              isDrawSearchingArea: false,
+                                              isDrawExtractedArea: true,
+                                            ),
+                                        onPreviewImage:
+                                            (pageContext, ktpModel) {
+                                          return Navigator.of(pageContext)
+                                              .pushNamed(
+                                            PreviewKtpScreen.ROUTE_NAME,
+                                            arguments: PreviewKtpScreenArgs(
+                                              ktpModel: ktpModel as KtpModel,
+                                            ),
+                                          );
+                                        }),
+                                  )
+                                      .then((value) {
+                                    if (value != null) {
+                                      KtpModel ktpModel = value as KtpModel;
+                                      Navigator.of(context)
+                                          .pushNamed(
+                                        ConfirmKtpScreen.ROUTE_NAME,
+                                        arguments: ConfirmKtpScreenArgs(
+                                          submissionModel:
+                                              widget.submissionModel,
+                                          ktpModel: ktpModel,
+                                          onSuccess: (_) =>
+                                              widget.onSuccess(context),
+                                        ),
+                                      )
+                                          .then((returnValue) {
+                                        if (returnValue is int) {
+                                          // User presses BottomNavBar item
+                                          Navigator.of(context)
+                                              .pop(returnValue);
+                                        } else if (returnValue == true) {
+                                          // User completes KTP
+                                          widget.onSuccess(context);
+                                        }
+                                      });
+                                    }
+                                  });
+                                  break;
+                                case PermissionStatus.limited:
+                                case PermissionStatus.denied:
+                                case PermissionStatus.permanentlyDenied:
+                                case PermissionStatus.restricted:
+                                default:
+                                  WidgetUtil.showSnackbar(
+                                    context,
+                                    'Tolong izinkan Kredit Pensiun untuk mengakses kamera Anda.',
+                                    snackbarAction: SnackBarAction(
+                                      label: 'Pengaturan',
+                                      onPressed: () {
+                                        openAppSettings();
+                                      },
+                                    ),
+                                  );
+                              }
+                            });
                           },
                           child: Text('Ambil Foto'),
                         ),
@@ -463,13 +460,6 @@ class _PrepareKtpScreenState extends State<PrepareKtpScreen> {
               ],
             ),
           ),
-          // FloatingBottomNavigationBar(
-          //   isVisible: _isBottomNavBarVisible,
-          //   currentIndex: 1,
-          //   onTapItem: (newIndex) {
-          //     Navigator.of(context).pop(newIndex);
-          //   },
-          // ),
         ],
       ),
     );

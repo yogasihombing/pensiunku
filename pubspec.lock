@@ -84,35 +84,35 @@ packages:
       name: camera
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.9.8+1"
+    version: "0.10.5+3"
   camera_android:
     dependency: transitive
     description:
       name: camera_android
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.9.8+3"
+    version: "0.10.8+6"
   camera_avfoundation:
     dependency: transitive
     description:
       name: camera_avfoundation
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.9.8+5"
+    version: "0.9.13+3"
   camera_platform_interface:
     dependency: transitive
     description:
       name: camera_platform_interface
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.2.0"
+    version: "2.5.1"
   camera_web:
     dependency: transitive
     description:
       name: camera_web
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.2.1+6"
+    version: "0.3.2+1"
   carousel_slider:
     dependency: "direct main"
     description:
@@ -406,6 +406,20 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.7.3"
+  google_mlkit_commons:
+    dependency: transitive
+    description:
+      name: google_mlkit_commons
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.2.0"
+  google_mlkit_face_detection:
+    dependency: "direct main"
+    description:
+      name: google_mlkit_face_detection
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.2.0"
   graphs:
     dependency: transitive
     description:

@@ -13,6 +13,9 @@ import 'package:pensiunku/screen/home/account/account_info/account_info_screen.d
 import 'package:pensiunku/screen/home/account/customer_support/customer_support_screen.dart';
 import 'package:pensiunku/screen/home/account/faq/faq_screen.dart';
 import 'package:pensiunku/screen/home/account/privacy_policy/privacy_policy.dart';
+import 'package:pensiunku/screen/home/account/referral/confirm_ktp_referral_screen.dart';
+import 'package:pensiunku/screen/home/account/referral/referral_screen.dart';
+import 'package:pensiunku/screen/home/account/referral/referral_success_screen.dart';
 import 'package:pensiunku/screen/home/submission/riwayat_pengajuan_anda.dart';
 import 'package:pensiunku/util/shared_preferences_util.dart';
 import 'package:pensiunku/util/widget_util.dart';
@@ -59,7 +62,7 @@ class _AccountScreenState extends State<AccountScreen> {
         }
       });
 
-      ReferralRepository().getAll(token!).then((result) {
+      ReferralRepository().getAll(token).then((result) {
         setState(() {
           resultReferralModel = result;
         });
@@ -134,6 +137,72 @@ class _AccountScreenState extends State<AccountScreen> {
             }
           });
         },
+      },
+      {
+        'title': 'Referral',
+        'onTap': () {
+          if (resultReferralModel.data?.fotoKtp == null) {
+            log("masuk referal null");
+            resultReferralModel = ResultModel(
+                isSuccess: resultReferralModel.isSuccess,
+                message: resultReferralModel.message,
+                data: ReferralModel(
+                    fotoKtp: null,
+                    nameKtp: null,
+                    nikKtp: null,
+                    addressKtp: null,
+                    jobKtp: null,
+                    birthDateKtp: null,
+                    referal: null));
+            Navigator.of(context)
+                .pushNamed(ReferralScreen.ROUTE_NAME,
+                    arguments: ReferralScreenArguments(
+                        referralModel: resultReferralModel.data!,
+                        onSuccess: (referalContext) {
+                          Navigator.of(referalContext).pop(true);
+                        }))
+                .then((newIndex) {
+              if (newIndex is int) {
+                widget.onChangeBottomNavIndex(newIndex);
+              }
+            });
+          } else if (resultReferralModel.data?.referal == null) {
+            log("masuk referal untuk input kode referal");
+            Navigator.of(context)
+                .pushNamed(ConfirmKtpReferalScreen.ROUTE_NAME,
+                    arguments: ConfirmKtpReferalScreenArgs(
+                        referralModel: resultReferralModel.data!,
+                        ktpModel: KtpModel(
+                            // image: File('asset/selfie_filter.png'),
+                            image: File(
+                                '$apiHost/fotoktp/${resultReferralModel.data!.fotoKtp?.replaceAll('.jpg', '')}'),
+                            name: resultReferralModel.data!.nameKtp,
+                            nik: resultReferralModel.data!.nikKtp,
+                            address: resultReferralModel.data!.addressKtp,
+                            birthDate: resultReferralModel.data!.birthDateKtp,
+                            job: null,
+                            jobConfidence: null,
+                            jobOriginalText: resultReferralModel.data!.jobKtp),
+                        onSuccess: (referalContext) {
+                          Navigator.of(referalContext).pop(true);
+                        }))
+                .then((newIndex) {
+              if (newIndex is int) {
+                widget.onChangeBottomNavIndex(newIndex);
+              }
+            });
+          } else {
+            Navigator.of(context)
+                .pushNamed(ReferralSuccessScreen.ROUTE_NAME,
+                    arguments: ReferralSuccessScreenArgs(
+                        referralModel: resultReferralModel.data!))
+                .then((newIndex) {
+              if (newIndex is int) {
+                widget.onChangeBottomNavIndex(newIndex);
+              }
+            });
+          }
+        }
       },
     ];
 

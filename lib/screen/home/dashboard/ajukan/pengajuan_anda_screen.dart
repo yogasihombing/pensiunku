@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:pensiunku/data/db/pengajuan_anda_dao.dart';
 import 'package:pensiunku/model/option_model.dart';
 import 'package:pensiunku/model/user_model.dart';
+import 'package:pensiunku/repository/location_repository.dart';
 import 'package:pensiunku/repository/result_model.dart';
 import 'package:pensiunku/repository/user_repository.dart';
 import 'package:pensiunku/screen/home/submission/riwayat_pengajuan_anda.dart';
@@ -161,7 +162,8 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
   String? fileNPWPPath;
   String? fileKaripPath;
 
-  OptionModel _inputProvinsi = OptionModel(id: 0, text: ''); // Untuk menyimpan provinsi yang dipilih
+  OptionModel _inputProvinsi =
+      OptionModel(id: 0, text: ''); // Untuk menyimpan provinsi yang dipilih
 
   Map<String, String?> fileErrors = {
     'KTP': null,
@@ -374,6 +376,63 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
     });
   }
 
+  OptionModel _inputCity =
+      OptionModel(id: 0, text: ''); // For storing selected city
+  List<OptionModel> _cities = []; // To store city list
+
+  Future<void> _loadCities() async {
+    if (_inputProvinsi.id == 0) return;
+
+    setState(() => _isLoading = true);
+    try {
+      final cities = await LocationRepository.getCity(_inputProvinsi.id);
+      setState(() {
+        _cities = cities;
+        _isLoading = false;
+      });
+    } catch (e) {
+      print('Error loading cities: $e');
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _showCitySelectionDialog() async {
+    if (_cities.isEmpty) {
+      await _loadCities();
+    }
+
+    final selectedCity = await showDialog<OptionModel>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Pilih Kabupaten/Kota'),
+          content: Container(
+            width: double.maxFinite,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: _cities.length,
+              itemBuilder: (context, index) {
+                return ListTile(
+                  title: Text(_cities[index].text),
+                  onTap: () {
+                    Navigator.of(context).pop(_cities[index]);
+                  },
+                );
+              },
+            ),
+          ),
+        );
+      },
+    );
+
+    if (selectedCity != null) {
+      setState(() {
+        _inputCity = selectedCity;
+        domisiliController.text = selectedCity.text;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -439,14 +498,47 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
                           },
                         ),
                         SizedBox(height: 16.0),
-                        TextFormField(
-                          controller: domisiliController,
-                          decoration: InputDecoration(
-                              labelText: 'Kota Domisili',
-                              border: OutlineInputBorder()),
-                          validator: (value) => (value == null || value.isEmpty)
-                              ? 'Harap masukkan kota domisili'
-                              : null,
+                        // Replace TextFormField with GestureDetector for city selection
+                        GestureDetector(
+                          onTap: _showCitySelectionDialog,
+                          child: Container(
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 8),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.grey),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Kota Domisili',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey[600],
+                                      ),
+                                    ),
+                                    SizedBox(height: 4),
+                                    Text(
+                                      _inputCity.text.isNotEmpty
+                                          ? _inputCity.text
+                                          : 'Pilih Kota Domisili',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        color: _inputCity.text.isNotEmpty
+                                            ? Colors.black87
+                                            : Colors.grey,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                Icon(Icons.arrow_drop_down, color: Colors.grey),
+                              ],
+                            ),
+                          ),
                         ),
                         SizedBox(height: 16.0),
                         TextFormField(
@@ -530,6 +622,7 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
       fileKTP = null;
       fileNPWP = null;
       fileKarip = null;
+      _inputCity = OptionModel(id: 0, text: '');
     });
   }
 }

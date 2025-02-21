@@ -20,6 +20,8 @@ import 'package:pensiunku/screen/home/dashboard/dashboard_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/event/event_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/forum/forum_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/halopensiun/halopensiun_screen.dart';
+import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/ktp/camera_ktp_screen.dart';
+import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/ktp/prepare_ktp_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/pensiunkuplus_success_screen.dart';
 import 'package:pensiunku/screen/home/home_screen.dart';
 import 'package:pensiunku/screen/home/submission/riwayat_pengajuan_orang_lain.dart';
@@ -246,6 +248,15 @@ class MyApp extends StatelessWidget {
           case PermissionScreen.ROUTE_NAME:
             page = PermissionScreen();
             break;
+          case CameraKtpScreen.ROUTE_NAME:
+            final args = settings.arguments as CameraKtpScreenArgs;
+            page = CameraKtpScreen(
+              cameraFilter: args.cameraFilter,
+              onProcessImage: args.onProcessImage,
+              onPreviewImage: args.onPreviewImage,
+              buildFilter: args.buildFilter,
+            );
+            break;
           case PreviewSelfieScreen.ROUTE_NAME:
             var args = settings.arguments as PreviewSelfieScreenArgs;
             page = PreviewSelfieScreen(
@@ -261,6 +272,15 @@ class MyApp extends StatelessWidget {
               onSuccess: args.onSuccess,
             );
             break;
+          // ini tambahan baru
+          case PrepareKtpScreen.ROUTE_NAME:
+            final args = settings.arguments as PrepareKtpScreenArguments;
+            page = PrepareKtpScreen(
+              submissionModel: args.submissionModel,
+              onSuccess: args.onSuccess,
+            );
+            break;
+
           case ReferralSuccessScreen.ROUTE_NAME:
             var args = settings.arguments as ReferralSuccessScreenArgs;
             page = ReferralSuccessScreen(
