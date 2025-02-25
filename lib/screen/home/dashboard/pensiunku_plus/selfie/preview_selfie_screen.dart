@@ -68,43 +68,65 @@ class _PreviewSelfieScreenState extends State<PreviewSelfieScreen> {
   }
 
   Future<void> _confirmPhoto(BuildContext context) async {
+  print('1. Memulai proses confirm photo');
+  if (!mounted) {
+    print('Widget tidak mounted, membatalkan proses');
+    return;
+  }
+
+  final file = File(widget.selfieModel.image.path);
+  if (!await file.exists()) {
+    print('Error: File selfie tidak ditemukan!');
+    _showErrorDialog('File selfie tidak ditemukan. Silakan ulangi.');
+    return;
+  }
+
+  setState(() {
+    _isLoading = true;
+    print('2. Set loading state ke true');
+  });
+
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString(SharedPreferencesUtil.SP_KEY_TOKEN);
+
+    print('Token: $token'); // Print token
+    print('Image path: ${widget.selfieModel.image.path}'); // Print image path
+
+    if (token == null) {
+      throw Exception('Token not found');
+    }
+
+    print('Mulai upload selfie ke repository...'); // Print sebelum upload
+    final result = await SubmissionRepository().uploadSelfie(
+      token,
+      widget.submissionModel,
+      widget.selfieModel.image.path,
+    );
+
+    print('Hasil upload: ${result.isSuccess}'); // Print hasil upload
+    print('Error message jika ada: ${result.error}'); // Print error jika ada
+
     if (!mounted) return;
 
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString(SharedPreferencesUtil.SP_KEY_TOKEN);
-
-      if (token == null) {
-        throw Exception('Token not found');
-      }
-
-      final result = await SubmissionRepository().uploadSelfie(
-        token,
-        widget.submissionModel,
-        widget.selfieModel.image.path,
-      );
-
-      if (!mounted) return;
-
-      if (result.isSuccess) {
-        Navigator.of(context).pop(true);
-      } else {
-        _showErrorDialog(result.error ?? 'Gagal mengirimkan foto selfie');
-      }
-    } catch (e) {
-      _showErrorDialog('Terjadi kesalahan: ${e.toString()}');
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+    if (result.isSuccess) {
+      Navigator.of(context).pop(true);
+    } else {
+      print('Upload gagal: ${result.error}');
+      _showErrorDialog(result.error ?? 'Gagal mengirimkan foto selfie');
+    }
+  } catch (e) {
+    print('Terjadi exception: $e'); // Print exception
+    _showErrorDialog('Terjadi kesalahan: ${e.toString()}');
+  } finally {
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
+}
+  
 
   void _showErrorDialog(String message) {
     showDialog(
@@ -186,8 +208,8 @@ class _PreviewSelfieScreenState extends State<PreviewSelfieScreen> {
                         onPressed:
                             _isLoading ? null : () => _retakePhoto(context),
                         style: ElevatedButton.styleFrom(
-                          primary: Colors.white,
-                          onPrimary: theme.colorScheme.secondary,
+                          foregroundColor: theme.colorScheme.secondary,
+                          backgroundColor: Colors.white,
                           padding: EdgeInsets.symmetric(vertical: 12),
                         ),
                         child: Text('Ulangi'),
@@ -196,11 +218,15 @@ class _PreviewSelfieScreenState extends State<PreviewSelfieScreen> {
                     SizedBox(width: 16.0),
                     Expanded(
                       child: ElevatedButton(
-                        onPressed:
-                            _isLoading ? null : () => _confirmPhoto(context),
+                        onPressed: _isLoading
+                            ? null
+                            : () {
+                                print('=== Tombol Lanjutkan ditekan ===');
+                                _confirmPhoto(context);
+                              },
                         style: ElevatedButton.styleFrom(
-                          primary: theme.primaryColor,
-                          onPrimary: Colors.white,
+                          foregroundColor: Colors.white,
+                          backgroundColor: theme.primaryColor,
                           padding: EdgeInsets.symmetric(vertical: 12),
                         ),
                         child: _isLoading

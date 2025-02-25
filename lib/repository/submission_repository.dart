@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'dart:developer';
+import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
@@ -18,70 +20,89 @@ class SubmissionRepository extends BaseRepository {
     SubmissionModel submissionModel,
     String selfieFile,
   ) async {
-    assert(() {
-      log('uploadSelfie', name: tag);
-      return true;
-    }());
-
-    String finalErrorMessage =
-        'Tidak dapat mengirimkan foto selfie. Tolong periksa Internet Anda.';
+    print('=== Repository.uploadSelfie started ===');
 
     try {
-      Response response = await api.uploadWajah(token, selfieFile);
+      Response response = await api.uploadSelfie(token, selfieFile);
+      print('Raw response: ${response.data}');
 
-      // Debugging: Periksa response dari server
-      if (kDebugMode) {
-        print('Response: ${response.data}');
-      }
-
-      var responseJson = response.data;
-
-      if (responseJson != null && responseJson['status'] == 'success') {
-        log(responseJson['data'].toString());
-        return ResultModel(
-          isSuccess: true,
-          data: SubmissionModel.fromJson(responseJson['data']),
-        );
-      } else {
+      if (response.statusCode != 200) {
         return ResultModel(
           isSuccess: false,
-          error: responseJson?['msg'] ?? finalErrorMessage,
+          error: 'Server error: ${response.statusCode}',
         );
       }
-    } catch (e) {
-      log(e.toString(), name: tag, error: e);
 
-      if (e is DioError) {
-        if (e.type == DioErrorType.connectTimeout ||
-            e.type == DioErrorType.receiveTimeout ||
-            e.type == DioErrorType.other) {
+      var responseData = response.data;
+      print('Response type: ${responseData.runtimeType}');
+      print('Response content: $responseData');
+
+      // Parse response jika masih dalam bentuk String
+      if (responseData is String) {
+        try {
+          responseData = jsonDecode(responseData);
+          print('Parsed JSON response: $responseData');
+        } catch (e) {
+          print('Failed to parse response as JSON: $e');
+        }
+      }
+
+      // Handle berbagai kemungkinan format response
+      if (responseData is Map) {
+        // Menangani format respons {"text": {"message":"success"}}
+        if (responseData.containsKey('text') &&
+            responseData['text'] is Map &&
+            responseData['text']['message'] == 'success') {
+          // Ini adalah respons sukses dari API
+          print('✅ Response success ditemukan');
           return ResultModel(
-            isSuccess: false,
-            error: 'Koneksi internet bermasalah. Coba lagi nanti.',
+            isSuccess: true,
+            data: submissionModel, // Gunakan model yang sudah ada
           );
         }
 
-        int? statusCode = e.response?.statusCode;
-        var errorMessage = e.response?.data?['msg'] ?? 'Terjadi kesalahan, coba lagi.';
+        // Cek pesan error dalam format {text: {message: ...}}
+        if (responseData.containsKey('text') &&
+            responseData['text'] is Map &&
+            responseData['text']['message'] != null &&
+            responseData['text']['message'] != 'success') {
+          final errorMessage = responseData['text']['message'].toString();
+          print('Error message from server: $errorMessage');
+          return ResultModel(
+            isSuccess: false,
+            error: errorMessage,
+          );
+        }
 
-        if (statusCode != null) {
-          if (statusCode >= 400 && statusCode < 500) {
-            return ResultModel(
-              isSuccess: false,
-              error: errorMessage,
-            );
-          } else if (statusCode >= 500) {
-            return ResultModel(
-              isSuccess: false,
-              error: 'Server mengalami gangguan. Silakan coba lagi nanti.',
-            );
-          }
+        // Format success lama
+        if (responseData['status'] == 'success' &&
+            responseData['data'] != null) {
+          return ResultModel(
+            isSuccess: true,
+            data: SubmissionModel.fromJson(responseData['data']),
+          );
         }
       }
 
+      // Coba parse lagi dengan format berbeda jika respons berisi "success"
+      if (responseData is String && responseData.contains('success')) {
+        print('String response contains "success"');
+        return ResultModel(
+          isSuccess: true,
+          data: submissionModel,
+        );
+      }
+
+      // Jika format tidak sesuai ekspektasi
       return ResultModel(
         isSuccess: false,
-        error: finalErrorMessage,
+        error: 'Format response tidak valid: $responseData',
+      );
+    } catch (e) {
+      print('Error di repository: $e');
+      return ResultModel(
+        isSuccess: false,
+        error: 'Terjadi kesalahan: ${e.toString()}',
       );
     }
   }

@@ -1,13 +1,7 @@
-import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
-import 'package:pensiunku/model/selfie_model.dart';
 import 'package:pensiunku/model/submission_model.dart';
-import 'package:pensiunku/screen/permission/permission_screen.dart';
-import 'package:pensiunku/screen/selfie/preview_selfie_screen.dart';
-import 'package:pensiunku/util/firebase_vision_util.dart';
+// import 'package:pensiunku/screen/selfie/preview_selfie_screen.dart';
 import 'package:pensiunku/util/widget_util.dart';
-import 'package:pensiunku/widget/floating_bottom_navigation_bar.dart';
-import 'package:permission_handler/permission_handler.dart';
 
 class PrepareKaripScreenArguments {
   final void Function(BuildContext context) onSuccess;

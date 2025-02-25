@@ -31,6 +31,7 @@ class ItemArticle extends StatelessWidget {
           borderRadius: BorderRadius.circular(8.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
               // Gambar dengan AspectRatio 1:1
               ClipRRect(
@@ -61,7 +62,9 @@ class ItemArticle extends StatelessWidget {
                     Text(
                       'Baca Selengkapnya',
                       style: theme.textTheme.caption,
-                    ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    )
                   ],
                 ),
               ),

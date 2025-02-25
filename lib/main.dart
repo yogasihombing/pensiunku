@@ -12,9 +12,9 @@ import 'package:pensiunku/screen/home/account/customer_support/customer_support_
 import 'package:pensiunku/screen/home/account/faq/faq_detail_screen.dart';
 import 'package:pensiunku/screen/home/account/faq/faq_screen.dart';
 import 'package:pensiunku/screen/home/account/privacy_policy/privacy_policy.dart';
-import 'package:pensiunku/screen/home/account/referral/confirm_ktp_referral_screen.dart';
-import 'package:pensiunku/screen/home/account/referral/referral_screen.dart';
-import 'package:pensiunku/screen/home/account/referral/referral_success_screen.dart';
+// import 'package:pensiunku/screen/home/account/referral/confirm_ktp_referral_screen.dart';
+// import 'package:pensiunku/screen/home/account/referral/referral_screen.dart';
+// import 'package:pensiunku/screen/home/account/referral/referral_success_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/ajukan/pengajuan_anda_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/dashboard_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/event/event_screen.dart';
@@ -23,6 +23,7 @@ import 'package:pensiunku/screen/home/dashboard/halopensiun/halopensiun_screen.d
 import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/ktp/camera_ktp_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/ktp/prepare_ktp_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/pensiunkuplus_success_screen.dart';
+import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/selfie/preview_selfie_screen.dart';
 import 'package:pensiunku/screen/home/home_screen.dart';
 import 'package:pensiunku/screen/home/submission/riwayat_pengajuan_orang_lain.dart';
 import 'package:pensiunku/screen/home/submission/riwayat_pengajuan_anda.dart';
@@ -34,8 +35,6 @@ import 'package:pensiunku/screen/permission/permission_screen.dart';
 import 'package:pensiunku/screen/register/prepare_register_screen.dart';
 import 'package:pensiunku/screen/register/register_screen.dart';
 import 'package:pensiunku/screen/register/register_success_screen.dart';
-import 'package:pensiunku/screen/selfie/prepare_selfie_screen.dart';
-import 'package:pensiunku/screen/selfie/preview_selfie_screen.dart';
 import 'package:pensiunku/screen/web_view/web_view_screen.dart';
 import 'package:pensiunku/screen/welcome/welcome_screen.dart';
 import 'screen/common/gallery_youtube_fullscreen.dart';
@@ -190,16 +189,16 @@ class MyApp extends StatelessWidget {
           case CustomerSupportScreen.ROUTE_NAME:
             page = CustomerSupportScreen();
             break;
-          case ReferralScreen.ROUTE_NAME:
-            // page = ReferralScreen();
-            // log(ReferralScreenArguments.retype<num>());
+          // case ReferralScreen.ROUTE_NAME:
+          //   // page = ReferralScreen();
+          //   // log(ReferralScreenArguments.retype<num>());
 
-            final args = settings.arguments as ReferralScreenArguments;
-            page = ReferralScreen(
-              referralModel: args.referralModel,
-              onSuccess: args.onSuccess,
-            );
-            break;
+          //   final args = settings.arguments as ReferralScreenArguments;
+          //   page = ReferralScreen(
+          //     referralModel: args.referralModel,
+          //     onSuccess: args.onSuccess,
+          //   );
+          //   break;
 
           case TermAndConditionScreen.ROUTE_NAME:
             page = TermAndConditionScreen();
@@ -207,13 +206,13 @@ class MyApp extends StatelessWidget {
           case PrivacyPolicyScreen.ROUTE_NAME:
             page = PrivacyPolicyScreen();
             break;
-          case PrepareSelfieScreen.ROUTE_NAME:
-            final args = settings.arguments as PrepareSelfieScreenArguments;
-            page = PrepareSelfieScreen(
-              submissionModel: args.submissionModel,
-              onSuccess: args.onSuccess,
-            );
-            break;
+          // case PrepareSelfieScreen.ROUTE_NAME:
+          //   final args = settings.arguments as PrepareSelfieScreenArguments;
+          //   page = PrepareSelfieScreen(
+          //     submissionModel: args.submissionModel,
+          //     onSuccess: args.onSuccess,
+          //   );
+          //   break;
           case AccountInfoScreen.ROUTE_NAME:
             page = AccountInfoScreen();
             break;
@@ -264,14 +263,14 @@ class MyApp extends StatelessWidget {
               submissionModel: args.submissionModel,
             );
             break;
-          case ConfirmKtpReferalScreen.ROUTE_NAME:
-            var args = settings.arguments as ConfirmKtpReferalScreenArgs;
-            page = ConfirmKtpReferalScreen(
-              referralModel: args.referralModel,
-              ktpModel: args.ktpModel,
-              onSuccess: args.onSuccess,
-            );
-            break;
+          // case ConfirmKtpReferalScreen.ROUTE_NAME:
+          //   var args = settings.arguments as ConfirmKtpReferalScreenArgs;
+          //   page = ConfirmKtpReferalScreen(
+          //     referralModel: args.referralModel,
+          //     ktpModel: args.ktpModel,
+          //     onSuccess: args.onSuccess,
+          //   );
+          //   break;
           // ini tambahan baru
           case PrepareKtpScreen.ROUTE_NAME:
             final args = settings.arguments as PrepareKtpScreenArguments;
@@ -281,12 +280,12 @@ class MyApp extends StatelessWidget {
             );
             break;
 
-          case ReferralSuccessScreen.ROUTE_NAME:
-            var args = settings.arguments as ReferralSuccessScreenArgs;
-            page = ReferralSuccessScreen(
-              referralModel: args.referralModel,
-            );
-            break;
+          // case ReferralSuccessScreen.ROUTE_NAME:
+          //   var args = settings.arguments as ReferralSuccessScreenArgs;
+          //   page = ReferralSuccessScreen(
+          //     referralModel: args.referralModel,
+          //   );
+          //   break;
           case PrepareRegisterScreen.ROUTE_NAME:
             page = PrepareRegisterScreen();
             break;

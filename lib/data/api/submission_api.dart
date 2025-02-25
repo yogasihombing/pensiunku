@@ -1,33 +1,53 @@
-
+import 'dart:convert';
+import 'dart:io';
+import 'package:http_parser/http_parser.dart';
 import 'package:dio/dio.dart';
 import 'package:pensiunku/data/api/base_api.dart';
-
 
 class SubmissionApi extends BaseApi {
   bool bypassPengajuan = false; // TODO: Set to true to bypass pengajuan
   Dio dio = Dio();
 
-  Future<Response> uploadWajah(String token, String selfieFile) async {
-    String url = 'https://api.pensiunku.id/new.php/uploadWajah';
+  Future<Response> uploadSelfie(String token, String selfieFilePath) async {
+    print('=== Start uploadWajah di API ===');
+    print('URL: https://api.pensiunku.id/new.php/uploadWajah');
 
-    FormData formData = FormData();
+    final file = File(selfieFilePath);
+    if (!await file.exists()) {
+      print('❌ File tidak ditemukan: $selfieFilePath');
+      throw Exception('File selfie tidak ditemukan');
+    }
 
-    formData.files.add(
-      MapEntry(
-        'foto_selfie',
-        await MultipartFile.fromFile(selfieFile, filename: 'selfie.jpg'),
-      ),
-    );
+    print('✅ File ditemukan: $selfieFilePath');
+    print('📏 Ukuran file: ${await file.length()} bytes');
 
-    formData.fields.add(MapEntry('nama_foto_selfie', 'selfie.jpg'));
+    // Ubah gambar menjadi base64
+    List<int> imageBytes = await file.readAsBytes();
+    String base64Image = base64Encode(imageBytes);
+
+    // Kirim sebagai JSON
+    final data = {
+      "foto_selfie": base64Image, // Kirim file dalam base64
+      "nama_foto_selfie": "selfie.jpg"
+    };
+
+    print('📤 Mengirim JSON ke API: $data');
 
     return await dio.post(
-      url,
-      data: formData,
-      options: Options(headers: {'Authorization': 'Bearer $token'}),
+      'https://api.pensiunku.id/new.php/uploadWajah',
+      data: jsonEncode(data), // Ubah ke JSON
+      options: Options(
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        responseType:
+            ResponseType.json, // Pastikan response di-parse sebagai JSON
+      ),
     );
   }
 }
+
 
 
 // import 'dart:developer';
