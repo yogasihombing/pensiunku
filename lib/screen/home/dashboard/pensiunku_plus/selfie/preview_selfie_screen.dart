@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:pensiunku/model/selfie_model.dart';
 import 'package:pensiunku/model/submission_model.dart';
 import 'package:pensiunku/repository/submission_repository.dart';
+import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/ktp/prepare_ktp_screen.dart';
 import 'package:pensiunku/util/shared_preferences_util.dart';
-import 'package:pensiunku/widget/elevated_button_loading.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -68,65 +68,85 @@ class _PreviewSelfieScreenState extends State<PreviewSelfieScreen> {
   }
 
   Future<void> _confirmPhoto(BuildContext context) async {
-  print('1. Memulai proses confirm photo');
-  if (!mounted) {
-    print('Widget tidak mounted, membatalkan proses');
-    return;
-  }
-
-  final file = File(widget.selfieModel.image.path);
-  if (!await file.exists()) {
-    print('Error: File selfie tidak ditemukan!');
-    _showErrorDialog('File selfie tidak ditemukan. Silakan ulangi.');
-    return;
-  }
-
-  setState(() {
-    _isLoading = true;
-    print('2. Set loading state ke true');
-  });
-
-  try {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString(SharedPreferencesUtil.SP_KEY_TOKEN);
-
-    print('Token: $token'); // Print token
-    print('Image path: ${widget.selfieModel.image.path}'); // Print image path
-
-    if (token == null) {
-      throw Exception('Token not found');
+    print('1. Memulai proses confirm photo');
+    if (!mounted) {
+      print('Widget tidak mounted, membatalkan proses');
+      return;
     }
 
-    print('Mulai upload selfie ke repository...'); // Print sebelum upload
-    final result = await SubmissionRepository().uploadSelfie(
-      token,
-      widget.submissionModel,
-      widget.selfieModel.image.path,
-    );
-
-    print('Hasil upload: ${result.isSuccess}'); // Print hasil upload
-    print('Error message jika ada: ${result.error}'); // Print error jika ada
-
-    if (!mounted) return;
-
-    if (result.isSuccess) {
-      Navigator.of(context).pop(true);
-    } else {
-      print('Upload gagal: ${result.error}');
-      _showErrorDialog(result.error ?? 'Gagal mengirimkan foto selfie');
+    final file = File(widget.selfieModel.image.path);
+    if (!await file.exists()) {
+      print('Error: File selfie tidak ditemukan!');
+      _showErrorDialog('File selfie tidak ditemukan. Silakan ulangi.');
+      return;
     }
-  } catch (e) {
-    print('Terjadi exception: $e'); // Print exception
-    _showErrorDialog('Terjadi kesalahan: ${e.toString()}');
-  } finally {
-    if (mounted) {
-      setState(() {
-        _isLoading = false;
-      });
+
+    setState(() {
+      _isLoading = true;
+      print('2. Set loading state ke true');
+    });
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString(SharedPreferencesUtil.SP_KEY_TOKEN);
+
+      print('Token: $token'); // Print token
+      print('Image path: ${widget.selfieModel.image.path}'); // Print image path
+
+      if (token == null) {
+        throw Exception('Token not found');
+      }
+
+      print('Mulai upload selfie ke repository...'); // Print sebelum upload
+      final result = await SubmissionRepository().uploadSelfie(
+        token,
+        widget.submissionModel,
+        widget.selfieModel.image.path,
+      );
+
+      print('Hasil upload: ${result.isSuccess}'); // Print hasil upload
+      print('Error message jika ada: ${result.error}'); // Print error jika ada
+
+      if (!mounted) return;
+
+      if (result.isSuccess) {
+        // Tampilkan pemberitahuan bahwa selfie berhasil diupload
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Foto selfie berhasil diupload'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+
+        // Arahkan ke PrepareKtpScreen dengan parameter onSuccess
+        Navigator.of(context).pushReplacementNamed(
+          PrepareKtpScreen.ROUTE_NAME,
+          arguments: PrepareKtpScreenArguments(
+            submissionModel: widget.submissionModel,
+            onSuccess: (BuildContext ctx) {
+              // Definisikan apa yang terjadi saat KTP berhasil diupload
+              // Sebagai contoh, bisa navigasi ke halaman berikutnya:
+              // Navigator.of(ctx).pushReplacementNamed(NextScreen.ROUTE_NAME);
+              print('KTP berhasil diupload dan diproses');
+            },
+          ),
+        );
+      } else {
+        print('Upload gagal: ${result.error}');
+        _showErrorDialog(result.error ?? 'Gagal mengirimkan foto selfie');
+      }
+    } catch (e) {
+      print('Terjadi exception: $e'); // Print exception
+      _showErrorDialog('Terjadi kesalahan: ${e.toString()}');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
-}
-  
 
   void _showErrorDialog(String message) {
     showDialog(

@@ -15,7 +15,7 @@ class PrepareSelfieScreen extends StatefulWidget {
 
   // Callback ketika proses selfie berhasil
   final void Function(BuildContext context) onSuccess;
-  
+
   // Model data submission yang diperlukan
   final SubmissionModel submissionModel;
 
@@ -34,7 +34,7 @@ class _PrepareSelfieScreenState extends State<PrepareSelfieScreen> {
   static const double _logoHeight = 100.0;
   static const double _instructionImageHeight = 257.0;
   static const double _horizontalPadding = 24.0;
-  
+
   // Status visibility bottom navigation bar
   bool _isBottomNavBarVisible = false;
 
@@ -51,7 +51,7 @@ class _PrepareSelfieScreenState extends State<PrepareSelfieScreen> {
     });
   }
 
-  // Warna untuk gradient background
+  // Widget untuk background gradient
   static const List<Color> _gradientColors = [
     Colors.white,
     Colors.white,
@@ -62,7 +62,6 @@ class _PrepareSelfieScreenState extends State<PrepareSelfieScreen> {
   // Posisi stop untuk gradient
   static const List<double> _gradientStops = [0.25, 0.5, 0.75, 1.0];
 
-  // Widget untuk background gradient
   Widget _buildBackground() {
     return Positioned.fill(
       child: Container(
@@ -74,6 +73,29 @@ class _PrepareSelfieScreenState extends State<PrepareSelfieScreen> {
             stops: _gradientStops,
           ),
         ),
+      ),
+    );
+  }
+
+  // Widget untuk menampilkan back button dan progress bar
+  Widget _buildBackButtonAndProgress() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      child: Row(
+        children: [
+          IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.black),
+            onPressed: () => Navigator.pop(context),
+          ),
+          Expanded(
+            child: LinearProgressIndicator(
+              value: 0.25,
+              backgroundColor: Colors.grey[300],
+              valueColor:
+                  const AlwaysStoppedAnimation<Color>(Color(0xFF006C4E)),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -94,20 +116,37 @@ class _PrepareSelfieScreenState extends State<PrepareSelfieScreen> {
   }
 
   // Widget untuk gambar instruksi selfie
-  Widget _buildInstructionImage() {
-    return Padding(
-      padding: const EdgeInsets.only(top: 20.0, bottom: 10.0),
-      child: Center(
-        child: SizedBox(
-          height: _instructionImageHeight,
-          child: Image.asset(
-            'assets/document/selfie_new.png',
-            fit: BoxFit.fill,
+Widget _buildInstructionImage() {
+  return Padding(
+    padding: const EdgeInsets.only(top: 0.0, bottom: 10.0),
+    child: Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            height: _instructionImageHeight,
+            child: Image.asset(
+              'assets/pensiunkuplus/uploadfotowajah.png',
+              height: 150,
+              // fit: BoxFit.fill,
+            ),
           ),
-        ),
+          // Title
+          const Text(
+            'Upload foto wajah',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
+            ),
+          ),
+    
+        ],
       ),
-    );
-  }
+    ),
+  );
+}
+
 
   // Widget untuk teks instruksi
   Widget _buildInstructions(ThemeData theme) {
@@ -116,23 +155,16 @@ class _PrepareSelfieScreenState extends State<PrepareSelfieScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const SizedBox(height: 16.0),
+          const SizedBox(height: 5.0),
           Text(
             'Mohon untuk menangkap foto sesuai frame objek yang telah ditentukan. '
             'Jangan lupa pastikan Anda memiliki cahaya dan posisi yang cukup untuk '
             'menghasilkan foto yang baik. Foto yang jelas memudahkan kami untuk '
             'melakukan verifikasi pengajuan Anda.',
             textAlign: TextAlign.justify,
-            style: theme.textTheme.bodyText2,
+            style: theme.textTheme.bodySmall,
           ),
           const SizedBox(height: 24.0),
-          Text(
-            '*Sebelum mengambil foto, mohon pastikan Rotation Lock/Kunci Rotasi '
-            'pada Hp anda telah aktif!',
-            style: theme.textTheme.bodyText1?.copyWith(color: Colors.red),
-            textAlign: TextAlign.justify,
-          ),
-          const SizedBox(height: 28.0),
           _buildTakePhotoButton(),
         ],
       ),
@@ -163,12 +195,11 @@ class _PrepareSelfieScreenState extends State<PrepareSelfieScreen> {
       if (status.isDenied) {
         status = await Permission.camera.request();
       }
-
       if (!mounted) return;
-
       if (status.isGranted) {
         // Navigasi ke layar kamera jika izin diberikan
-        final result = await Navigator.of(context, rootNavigator: true).pushNamed(
+        final result =
+            await Navigator.of(context, rootNavigator: true).pushNamed(
           CameraKtpScreen.ROUTE_NAME,
           arguments: CameraKtpScreenArgs(
             cameraFilter: 'assets/selfie_filter.png',
@@ -178,7 +209,7 @@ class _PrepareSelfieScreenState extends State<PrepareSelfieScreen> {
                 child: CustomPaint(
                   painter: SelfieFramePainter(
                     screenSize: MediaQuery.of(context).size,
-                    outerFrameColor: Color(0x73442C2E),
+                    outerFrameColor: const Color(0x73442C2E),
                     closeWindow: false,
                     innerFrameColor: Colors.transparent,
                   ),
@@ -202,7 +233,6 @@ class _PrepareSelfieScreenState extends State<PrepareSelfieScreen> {
             },
           ),
         );
-
         // Panggil callback onSuccess jika berhasil
         if (result != null && mounted) {
           widget.onSuccess(context);
@@ -237,7 +267,6 @@ class _PrepareSelfieScreenState extends State<PrepareSelfieScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final size = MediaQuery.of(context).size;
-
     return Scaffold(
       body: Stack(
         children: [
@@ -250,10 +279,12 @@ class _PrepareSelfieScreenState extends State<PrepareSelfieScreen> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      // Tambahkan back button dan progress bar di atas
+                      _buildBackButtonAndProgress(),
                       _buildLogo(),
                       _buildInstructionImage(),
                       _buildInstructions(theme),
-                      const SizedBox(height: 80.0),
+                      const SizedBox(height: 60.0),
                     ],
                   ),
                 ],
@@ -265,6 +296,7 @@ class _PrepareSelfieScreenState extends State<PrepareSelfieScreen> {
     );
   }
 }
+
 
 // class PrepareSelfieScreenArguments {
 //   final void Function(BuildContext context) onSuccess;
