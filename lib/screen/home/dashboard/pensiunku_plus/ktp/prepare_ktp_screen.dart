@@ -1,7 +1,12 @@
+import 'dart:io';
+
+import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:pensiunku/model/camera_result_model.dart';
 import 'package:pensiunku/model/ktp_model.dart';
 import 'package:pensiunku/model/submission_model.dart';
+import 'package:pensiunku/repository/result_model.dart';
 import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/ktp/camera_ktp_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/ktp/confirm_ktp_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/ktp/preview_ktp_screen.dart';
@@ -10,22 +15,18 @@ import 'package:pensiunku/util/firebase_vision_util.dart';
 import 'package:pensiunku/util/widget_util.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-// Custom style untuk elevated buttons
-
 final ButtonStyle raisedButtonStyle = ElevatedButton.styleFrom(
-  backgroundColor: Color(0xff16826e),
-  padding: EdgeInsets.all(10.0),
-  disabledForegroundColor: Color(0xfff29724).withOpacity(0.38),
-  disabledBackgroundColor: Color(0xfff29724).withOpacity(0.12),
-  textStyle: TextStyle(
-    color: Colors.white,
-  ),
-  shape: RoundedRectangleBorder(
+  backgroundColor: const Color(0xFF16826E),
+  padding: const EdgeInsets.all(10.0),
+  disabledForegroundColor: const Color(0xFFF29724).withOpacity(0.38),
+  disabledBackgroundColor: const Color(0xFFF29724).withOpacity(0.12),
+  textStyle: const TextStyle(color: Colors.white),
+  shape: const RoundedRectangleBorder(
     borderRadius: BorderRadius.all(Radius.circular(10.0)),
   ),
 );
 
-// Arguments class untuk mengirim data ke PrepareKtpScreen
+// Arguments class untuk PrepareKtpScreen
 class PrepareKtpScreenArguments {
   final SubmissionModel submissionModel;
   final void Function(BuildContext context) onSuccess;
@@ -36,7 +37,6 @@ class PrepareKtpScreenArguments {
   });
 }
 
-// Widget screen utama untuk persiapan KTP
 class PrepareKtpScreen extends StatefulWidget {
   static const String ROUTE_NAME = '/ktp/prepare';
 
@@ -54,40 +54,54 @@ class PrepareKtpScreen extends StatefulWidget {
 }
 
 class _PrepareKtpScreenState extends State<PrepareKtpScreen> {
-  // Flag untuk mengontrol visibilitas bottom navigation bar
+  // Variabel ini dapat digunakan jika nanti ingin mengatur tampilan bottom navigation bar
   bool _isBottomNavBarVisible = false;
 
-  // Tinggi default untuk logo
-  static const double _logoHeight = 80.0;
-
-  // Warna untuk gradient background
+  // Constants
+  static const double _logoHeight = 120.0;
+  static const double _instructionImageHeight = 150.0;
   static const List<Color> _gradientColors = [
     Colors.white,
     Colors.white,
     Colors.white,
     Color.fromARGB(255, 233, 208, 127),
   ];
-
-  // Posisi stop untuk gradient
   static const List<double> _gradientStops = [0.25, 0.5, 0.75, 1.0];
 
   @override
   void initState() {
     super.initState();
-    // Menampilkan bottom navigation bar setelah inisialisasi
-    Future.delayed(Duration(milliseconds: 0), () {
-      setState(() {
-        _isBottomNavBarVisible = true;
-      });
+    // Tampilkan bottom nav bar (jika diperlukan) setelah build awal
+    Future.delayed(Duration.zero, () {
+      setState(() => _isBottomNavBarVisible = true);
     });
   }
 
-  // Widget untuk background gradient yang menutupi seluruh layar
+  // Widget builder untuk header yang berisi tombol back dan progress indicator
+  Widget _buildHeader(BuildContext context) {
+    return Row(
+      children: [
+        IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () => Navigator.pop(context),
+        ),
+        Expanded(
+          child: LinearProgressIndicator(
+            value: 0.5,
+            backgroundColor: Colors.grey[300],
+            valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF006C4E)),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Widget builder untuk background gradient
   Widget _buildBackground() {
     return Container(
       width: double.infinity,
       height: double.infinity,
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
@@ -98,43 +112,74 @@ class _PrepareKtpScreenState extends State<PrepareKtpScreen> {
     );
   }
 
-  // Widget logo yang dapat dikonfigurasi
+  // Widget builder untuk logo
   Widget _buildLogo({
     double? height,
     double? width,
     Alignment alignment = Alignment.center,
     EdgeInsetsGeometry? padding,
   }) {
-    return Padding(
-      padding: padding ?? const EdgeInsets.only(top: 20.0),
-      child: Align(
-        alignment: alignment,
-        child: Image.asset(
-          'assets/pensiunkuplus/pensiunku.png',
-          height: height ?? _logoHeight,
-          width: width, // Jika ingin menentukan width secara spesifik
-          fit: BoxFit.contain,
+    return Flexible(
+      child: Padding(
+        padding: padding ?? const EdgeInsets.only(top: 20.0),
+        child: Align(
+          alignment: alignment,
+          child: Image.asset(
+            'assets/pensiunkuplus/pensiunku.png',
+            height: height ?? _logoHeight,
+            width: width,
+            fit: BoxFit.contain,
+          ),
         ),
       ),
     );
   }
 
-  // Method untuk membuka galeri gambar
-  void _openGallery() async {
-    var picture = await ImagePicker().pickImage(source: ImageSource.gallery);
-    setState(() {
-      // Misalnya: file = picture; // Definisikan variabel file sesuai kebutuhan
-    });
-    Navigator.of(context).pop();
+  // Widget builder untuk instruksi tampilan
+  Widget _buildInstructionImage() {
+    return Padding(
+      padding: const EdgeInsets.only(top: 0.0, bottom: 5.0),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.asset(
+              'assets/pensiunkuplus/uploadktp.png', // Gunakan asset untuk foto KTP
+              height: _instructionImageHeight,
+              // fit: BoxFit.fill,
+            ),
+            const Text(
+              'Ambil foto KTP',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
-  // Menampilkan dialog dengan instruksi pengambilan foto KTP
+  // Method untuk membuka gallery (jika diperlukan)
+  void _openGallery() async {
+    var picture = await ImagePicker().pickImage(source: ImageSource.gallery);
+    if (picture != null) {
+      setState(() {
+        // TODO: Tangani gambar yang dipilih
+      });
+    }
+    Navigator.pop(context);
+  }
+
+  // Dialog yang menjelaskan cara pengambilan foto KTP yang tepat
   Future<void> _showDescriptionDialog(BuildContext context) {
     return showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text(
+          title: const Text(
             'Cara Pengambilan Foto KTP Yang Tepat',
             textAlign: TextAlign.center,
             style: TextStyle(
@@ -146,98 +191,21 @@ class _PrepareKtpScreenState extends State<PrepareKtpScreen> {
           content: SingleChildScrollView(
             child: ListBody(
               children: <Widget>[
-                Text('\u2022 Pencahayaan terang'),
-                SizedBox(height: 5),
-                Text(
+                const Text('\u2022 Pencahayaan terang'),
+                const SizedBox(height: 5),
+                const Text(
                     '\u2022 Posisikan KTP sesuaikan informasi KTP sejajar dengan tanda garis'),
-                SizedBox(height: 5),
-                Text('\u2022 Letakkan foto sejajar atau letakkan tepat masuk dalam kotak'),
-                SizedBox(height: 5),
-                Text('\u2022 Gunakan KTP yang jelas tidak Blur sehingga data dapat terbaca oleh sistem'),
-                SizedBox(height: 5),
+                const SizedBox(height: 5),
+                const Text(
+                    '\u2022 Letakkan foto sejajar atau letakkan tepat masuk dalam kotak'),
+                const SizedBox(height: 5),
+                const Text(
+                    '\u2022 Gunakan KTP yang jelas tidak Blur sehingga data dapat terbaca oleh sistem'),
+                const SizedBox(height: 5),
                 ElevatedButton(
                   style: raisedButtonStyle,
-                  onPressed: () {
-                    Navigator.of(context, rootNavigator: true)
-                        .pushNamed(PermissionScreen.ROUTE_NAME)
-                        .then((permissionStatus) {
-                      switch (permissionStatus) {
-                        case PermissionStatus.granted:
-                          Navigator.of(context, rootNavigator: true)
-                              .pushNamed(
-                            CameraKtpScreen.ROUTE_NAME,
-                            arguments: CameraKtpScreenArgs(
-                              cameraFilter: 'assets/ktp_filter.png',
-                              buildFilter: (context) {
-                                return Container(
-                                  constraints: const BoxConstraints.expand(),
-                                  child: CustomPaint(
-                                    painter: KtpFramePainter(
-                                      screenSize: MediaQuery.of(context).size,
-                                      outerFrameColor: Color(0x73442C2E),
-                                      innerFrameColor: Colors.transparent,
-                                    ),
-                                  ),
-                                );
-                              },
-                              onProcessImage: (file, _) =>
-                                  FirebaseVisionUtils.getKtpVisionDataFromImage(
-                                file,
-                                isDrawSearchingArea: false,
-                                isDrawExtractedArea: true,
-                              ),
-                              onPreviewImage: (pageContext, ktpModel) {
-                                return Navigator.of(pageContext).pushNamed(
-                                  PreviewKtpScreen.ROUTE_NAME,
-                                  arguments: PreviewKtpScreenArgs(
-                                    ktpModel: ktpModel as KtpModel,
-                                  ),
-                                );
-                              },
-                            ),
-                          ).then((value) {
-                            if (value != null) {
-                              KtpModel ktpModel = value as KtpModel;
-                              Navigator.of(context).pushNamed(
-                                ConfirmKtpScreen.ROUTE_NAME,
-                                arguments: ConfirmKtpScreenArgs(
-                                  submissionModel: widget.submissionModel,
-                                  ktpModel: ktpModel,
-                                  onSuccess: (_) => widget.onSuccess(context),
-                                ),
-                              ).then((returnValue) {
-                                if (returnValue is int) {
-                                  Navigator.of(context).pop(returnValue);
-                                } else if (returnValue == true) {
-                                  widget.onSuccess(context);
-                                }
-                              });
-                            }
-                          });
-                          break;
-                        case PermissionStatus.limited:
-                        case PermissionStatus.denied:
-                        case PermissionStatus.permanentlyDenied:
-                        case PermissionStatus.restricted:
-                        default:
-                          WidgetUtil.showSnackbar(
-                            context,
-                            'Tolong izinkan Pensiunku untuk mengakses kamera Anda.',
-                            snackbarAction: SnackBarAction(
-                              label: 'Pengaturan',
-                              onPressed: () {
-                                openAppSettings();
-                              },
-                            ),
-                          );
-                      }
-                    });
-                  },
-                  child: Column(
-                    children: <Widget>[
-                      Text('Open Camera'),
-                    ],
-                  ),
+                  onPressed: () => _handleCameraPermission(),
+                  child: const Text('Open Camera'),
                 ),
               ],
             ),
@@ -247,129 +215,132 @@ class _PrepareKtpScreenState extends State<PrepareKtpScreen> {
     );
   }
 
-  // Menampilkan dialog untuk memilih antara kamera dan galeri
-  Future<void> _showChoiceDialog(BuildContext context) {
-    return showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(
-            'Pilih Foto KTP',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.black,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          content: SingleChildScrollView(
-            child: ListBody(
-              children: <Widget>[
-                ElevatedButton(
-                  style: raisedButtonStyle,
-                  onPressed: () {
-                    _showDescriptionDialog(context);
-                  },
-                  child: Column(
-                    children: <Widget>[
-                      Text('Camera'),
-                    ],
-                  ),
-                ),
-                SizedBox(height: 20),
-                ElevatedButton(
-                  style: raisedButtonStyle,
-                  onPressed: () => {},
-                  child: Column(
-                    children: <Widget>[
-                      Text('Gallery'),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  // Menangani izin kamera dan membuka kamera KTP
-  void _openKtpCamera() {
+  // Menangani permission kamera dan membuka kamera KTP jika diizinkan
+  void _handleCameraPermission() {
     Navigator.of(context, rootNavigator: true)
         .pushNamed(PermissionScreen.ROUTE_NAME)
         .then((permissionStatus) {
-      switch (permissionStatus) {
-        case PermissionStatus.granted:
-          Navigator.of(context, rootNavigator: true)
-              .pushNamed(
-            CameraKtpScreen.ROUTE_NAME,
-            arguments: CameraKtpScreenArgs(
-              cameraFilter: 'assets/ktp_filter.png',
-              buildFilter: (context) {
-                return Container(
-                  constraints: const BoxConstraints.expand(),
-                  child: CustomPaint(
-                    painter: KtpFramePainter(
-                      screenSize: MediaQuery.of(context).size,
-                      outerFrameColor: Color(0x73442C2E),
-                      innerFrameColor: Colors.transparent,
-                    ),
-                  ),
-                );
-              },
-              onProcessImage: (file, _) =>
-                  FirebaseVisionUtils.getKtpVisionDataFromImage(
-                file,
-                isDrawSearchingArea: false,
-                isDrawExtractedArea: true,
-              ),
-              onPreviewImage: (pageContext, ktpModel) {
-                return Navigator.of(pageContext).pushNamed(
-                  PreviewKtpScreen.ROUTE_NAME,
-                  arguments: PreviewKtpScreenArgs(
-                    ktpModel: ktpModel as KtpModel,
-                  ),
-                );
-              },
-            ),
-          ).then((value) {
-            if (value != null) {
-              KtpModel ktpModel = value as KtpModel;
-              Navigator.of(context).pushNamed(
-                ConfirmKtpScreen.ROUTE_NAME,
-                arguments: ConfirmKtpScreenArgs(
-                  submissionModel: widget.submissionModel,
-                  ktpModel: ktpModel,
-                  onSuccess: (_) => widget.onSuccess(context),
-                ),
-              ).then((returnValue) {
-                if (returnValue is int) {
-                  Navigator.of(context).pop(returnValue);
-                } else if (returnValue == true) {
-                  widget.onSuccess(context);
-                }
-              });
-            }
-          });
-          break;
-        case PermissionStatus.limited:
-        case PermissionStatus.denied:
-        case PermissionStatus.permanentlyDenied:
-        case PermissionStatus.restricted:
-        default:
-          WidgetUtil.showSnackbar(
-            context,
-            'Tolong izinkan pensiunku untuk mengakses kamera Anda.',
-            snackbarAction: SnackBarAction(
-              label: 'Pengaturan',
-              onPressed: () {
-                openAppSettings();
-              },
-            ),
-          );
+      if (permissionStatus == PermissionStatus.granted) {
+        _openKtpCamera();
+      } else {
+        _showPermissionDeniedMessage();
       }
     });
+  }
+
+  // Membuka kamera KTP dengan filter dan callback yang telah didefinisikan
+  void _openKtpCamera() {
+    Navigator.of(context, rootNavigator: true)
+        .pushNamed(
+          CameraKtpScreen.ROUTE_NAME,
+          arguments: CameraKtpScreenArgs(
+            cameraFilter: 'assets/ktp_filter.png',
+            buildFilter: _buildKtpFilter,
+            onProcessImage: _processKtpImage,
+            onPreviewImage: _previewKtpImage,
+          ),
+        )
+        .then(_handleCameraResult);
+  }
+
+  // Widget builder untuk filter KTP yang ditampilkan di kamera
+  Widget _buildKtpFilter(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints.expand(),
+      child: CustomPaint(
+        painter: KtpFramePainter(
+          screenSize: MediaQuery.of(context).size,
+          outerFrameColor: const Color(0x73442C2E),
+          innerFrameColor: Colors.transparent,
+        ),
+      ),
+    );
+  }
+
+  // Proses gambar KTP menggunakan Firebase Vision
+  Future<ResultModel<KtpModel>> _processKtpImage(
+      XFile file, CameraLensDirection lensDirection) async {
+    try {
+      // Langsung gunakan objek file (XFile) tanpa konversi ke File
+      ResultModel<KtpModel> ktpData =
+          await FirebaseVisionUtils.getKtpVisionDataFromImage(
+        file,
+        isDrawSearchingArea: false,
+        isDrawExtractedArea: true,
+      );
+
+      return ResultModel<KtpModel>(
+        isSuccess: true,
+        data: ktpData.data!, // Pastikan data tidak null jika isSuccess true
+        message: 'Berhasil mengambil data KTP',
+      );
+    } catch (e) {
+      return ResultModel<KtpModel>(
+        isSuccess: false,
+        data: null,
+        message: 'Gagal memproses KTP: ${e.toString()}',
+      );
+    }
+  }
+
+  // Menampilkan preview gambar KTP yang telah diambil
+  Future<dynamic> _previewKtpImage(BuildContext pageContext, dynamic ktpModel) {
+    return Navigator.of(pageContext).pushNamed(
+      PreviewKtpScreen.ROUTE_NAME,
+      arguments: PreviewKtpScreenArgs(
+        ktpModel: ktpModel as KtpModel,
+      ),
+    );
+  }
+
+  // Menangani hasil dari kamera
+  void _handleCameraResult(dynamic value) {
+    if (value != null) {
+      if (value is ResultModel<KtpModel> &&
+          value.isSuccess &&
+          value.data != null) {
+        KtpModel ktpModel = value.data!;
+        _navigateToConfirmScreen(ktpModel);
+      } else if (value is KtpModel) {
+        // Jika masih menggunakan format lama
+        _navigateToConfirmScreen(value);
+      }
+    }
+  }
+
+  // Navigasi ke halaman konfirmasi KTP
+  void _navigateToConfirmScreen(KtpModel ktpModel) {
+    Navigator.of(context)
+        .pushNamed(
+          ConfirmKtpScreen.ROUTE_NAME,
+          arguments: ConfirmKtpScreenArgs(
+            submissionModel: widget.submissionModel,
+            ktpModel: ktpModel,
+            onSuccess: (_) => widget.onSuccess(context),
+          ),
+        )
+        .then(_handleConfirmResult);
+  }
+
+  // Menangani hasil dari halaman konfirmasi
+  void _handleConfirmResult(dynamic returnValue) {
+    if (returnValue is int) {
+      Navigator.of(context).pop(returnValue);
+    } else if (returnValue == true) {
+      widget.onSuccess(context);
+    }
+  }
+
+  // Menampilkan pesan jika permission kamera ditolak
+  void _showPermissionDeniedMessage() {
+    WidgetUtil.showSnackbar(
+      context,
+      'Tolong izinkan Pensiunku untuk mengakses kamera Anda.',
+      snackbarAction: SnackBarAction(
+        label: 'Pengaturan',
+        onPressed: openAppSettings,
+      ),
+    );
   }
 
   @override
@@ -378,23 +349,22 @@ class _PrepareKtpScreenState extends State<PrepareKtpScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        // Atur tinggi toolbar agar cukup untuk konten di flexibleSpace
+        toolbarHeight: 120.0,
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: Text(''),
+        title: const Text(''),
         centerTitle: true,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back),
-          onPressed: () {
-            Navigator.of(context).pop();
-          },
-        ),
-        // Menampilkan logo di flexibleSpace dengan ukuran yang dapat dikonfigurasi
+        automaticallyImplyLeading: false, // Hilangkan back button default
         flexibleSpace: Container(
+          padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
+          // Gunakan mainAxisSize.min agar Column tidak memaksa tinggi penuh
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              SizedBox(height: 32), // Jarak atas untuk status bar
+              _buildHeader(context),
               _buildLogo(
-                height: _logoHeight / 1.9,
+                height: _logoHeight / 1,
                 alignment: Alignment.center,
               ),
             ],
@@ -404,77 +374,39 @@ class _PrepareKtpScreenState extends State<PrepareKtpScreen> {
       extendBodyBehindAppBar: true,
       body: Stack(
         children: [
-          // Background gradient full layar
-          _buildBackground(),
-          // Konten utama
-          SingleChildScrollView(
-            child: Stack(
-              children: [
-                Container(
-                  height: MediaQuery.of(context).size.height -
-                      AppBar().preferredSize.height,
+          _buildBackground(), // Background gradient
+          SafeArea(
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 32.0,
+                  horizontal: 24.0,
                 ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 32.0,
-                    horizontal: 24.0,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      SizedBox(height: 50.0),
-                      Text(
-                        'Ambil foto KTP Anda',
-                        style: theme.textTheme.headline6
-                            ?.copyWith(fontWeight: FontWeight.w600),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Gunakan widget _buildInstructionImage() untuk tampilan instruksi
+                    _buildInstructionImage(),
+                    const SizedBox(height: 15.0),
+                    const Text(
+                      'Arahkan kamera Anda tepat sesuai frame yang telah kami tentukan. '
+                      'Setelah foto, mohon untuk melakukan verifikasi data KTP anda!',
+                      textAlign: TextAlign.justify,
+                    ),
+                    const SizedBox(height: 32.0),
+                    Center(
+                      child: ElevatedButton(
+                        style: raisedButtonStyle,
+                        onPressed: () {
+                          _showDescriptionDialog(context);
+                        },
+                        child: const Text('Ambil Foto'),
                       ),
-                      SizedBox(height: 8.0),
-                      Text(
-                        'Arahkan kamera Anda tepat sesuai frame yang telah kami tentukan. Setelah foto, mohon untuk melakukan verifikasi data KTP anda!',
-                      ),
-                      SizedBox(height: 32.0),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              children: [
-                                SizedBox(
-                                  height: 100,
-                                  child: Image.asset('assets/document/ktp.png'),
-                                ),
-                                SizedBox(height: 16.0),
-                                Text(
-                                  'Foto KTP',
-                                  style: theme.textTheme.caption,
-                                )
-                              ],
-                            ),
-                          ),
-                          SizedBox(width: 32.0),
-                        ],
-                      ),
-                      SizedBox(height: 24.0),
-                      Text(
-                        '*Sebelum mengambil foto, mohon pastikan Rotation Lock/Kunci Rotasi pada Hp anda telah aktif!',
-                        style: theme.textTheme.subtitle1?.copyWith(color: Colors.red),
-                      ),
-                      SizedBox(height: 28.0),
-                      Align(
-                        alignment: Alignment.center,
-                        child: ElevatedButton(
-                          style: raisedButtonStyle,
-                          onPressed: () {
-                            _showDescriptionDialog(context);
-                            _openKtpCamera();
-                          },
-                          child: Text('Ambil Foto'),
-                        ),
-                      ),
-                      SizedBox(height: 80.0),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 80.0),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         ],
@@ -482,3 +414,398 @@ class _PrepareKtpScreenState extends State<PrepareKtpScreen> {
     );
   }
 }
+
+// final ButtonStyle raisedButtonStyle = ElevatedButton.styleFrom(
+//   backgroundColor: const Color(0xFF16826E),
+//   padding: const EdgeInsets.all(10.0),
+//   disabledForegroundColor: const Color(0xFFF29724).withOpacity(0.38),
+//   disabledBackgroundColor: const Color(0xFFF29724).withOpacity(0.12),
+//   textStyle: const TextStyle(color: Colors.white),
+//   shape: const RoundedRectangleBorder(
+//     borderRadius: BorderRadius.all(Radius.circular(10.0)),
+//   ),
+// );
+
+// // Arguments class untuk PrepareKtpScreen
+// class PrepareKtpScreenArguments {
+//   final SubmissionModel submissionModel;
+//   final void Function(BuildContext context) onSuccess;
+
+//   PrepareKtpScreenArguments({
+//     required this.submissionModel,
+//     required this.onSuccess,
+//   });
+// }
+
+// class PrepareKtpScreen extends StatefulWidget {
+//   static const String ROUTE_NAME = '/ktp/prepare';
+
+//   final SubmissionModel submissionModel;
+//   final void Function(BuildContext context) onSuccess;
+
+//   const PrepareKtpScreen({
+//     Key? key,
+//     required this.submissionModel,
+//     required this.onSuccess,
+//   }) : super(key: key);
+
+//   @override
+//   _PrepareKtpScreenState createState() => _PrepareKtpScreenState();
+// }
+
+// class _PrepareKtpScreenState extends State<PrepareKtpScreen> {
+//   // Variabel ini dapat digunakan jika nanti ingin mengatur tampilan bottom navigation bar
+//   bool _isBottomNavBarVisible = false;
+
+//   // Constants
+//   static const double _logoHeight = 80.0;
+//   static const double _instructionImageHeight = 257.0;
+//   static const List<Color> _gradientColors = [
+//     Colors.white,
+//     Colors.white,
+//     Colors.white,
+//     Color.fromARGB(255, 233, 208, 127),
+//   ];
+//   static const List<double> _gradientStops = [0.25, 0.5, 0.75, 1.0];
+
+//   @override
+//   void initState() {
+//     super.initState();
+//     // Tampilkan bottom nav bar (jika diperlukan) setelah build awal
+//     Future.delayed(Duration.zero, () {
+//       setState(() => _isBottomNavBarVisible = true);
+//     });
+//   }
+
+//   // Widget builder untuk header yang berisi tombol back dan progress indicator
+//   Widget _buildHeader(BuildContext context) {
+//     return Row(
+//       children: [
+//         IconButton(
+//           icon: const Icon(Icons.arrow_back, color: Colors.black),
+//           onPressed: () => Navigator.pop(context),
+//         ),
+//         Expanded(
+//           child: LinearProgressIndicator(
+//             value: 0.5,
+//             backgroundColor: Colors.grey[300],
+//             valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF006C4E)),
+//           ),
+//         ),
+//       ],
+//     );
+//   }
+
+//   // Widget builder untuk background gradient
+//   Widget _buildBackground() {
+//     return Container(
+//       width: double.infinity,
+//       height: double.infinity,
+//       decoration: const BoxDecoration(
+//         gradient: LinearGradient(
+//           begin: Alignment.topCenter,
+//           end: Alignment.bottomCenter,
+//           colors: _gradientColors,
+//           stops: _gradientStops,
+//         ),
+//       ),
+//     );
+//   }
+
+//   // Widget builder untuk logo
+//   Widget _buildLogo({
+//     double? height,
+//     double? width,
+//     Alignment alignment = Alignment.center,
+//     EdgeInsetsGeometry? padding,
+//   }) {
+//     return Padding(
+//       padding: padding ?? const EdgeInsets.only(top: 20.0),
+//       child: Align(
+//         alignment: alignment,
+//         child: Image.asset(
+//           'assets/pensiunkuplus/pensiunku.png',
+//           height: height ?? _logoHeight,
+//           width: width,
+//           fit: BoxFit.contain,
+//         ),
+//       ),
+//     );
+//   }
+
+//   // Widget builder untuk instruksi tampilan
+//   Widget _buildInstructionImage() {
+//     return Padding(
+//       padding: const EdgeInsets.only(top: 0.0, bottom: 10.0),
+//       child: Center(
+//         child: Column(
+//           mainAxisSize: MainAxisSize.min,
+//           children: [
+//             SizedBox(
+//               height: _instructionImageHeight,
+//               child: Image.asset(
+//                 'assets/pensiunkuplus/uploadktp.png', // Gunakan asset untuk foto KTP
+//                 height: 150,
+//                 // fit: BoxFit.fill,
+//               ),
+//             ),
+//             const Text(
+//               'Ambil foto KTP',
+//               style: TextStyle(
+//                 fontSize: 20,
+//                 fontWeight: FontWeight.bold,
+//                 color: Colors.black,
+//               ),
+//             ),
+//           ],
+//         ),
+//       ),
+//     );
+//   }
+
+//   // Method untuk membuka gallery (jika diperlukan)
+//   void _openGallery() async {
+//     var picture = await ImagePicker().pickImage(source: ImageSource.gallery);
+//     if (picture != null) {
+//       setState(() {});
+//     }
+//     Navigator.pop(context);
+//   }
+
+//   // Dialog yang menjelaskan cara pengambilan foto KTP yang tepat
+//   Future<void> _showDescriptionDialog(BuildContext context) {
+//     return showDialog(
+//       context: context,
+//       builder: (BuildContext context) {
+//         return AlertDialog(
+//           title: const Text(
+//             'Cara Pengambilan Foto KTP Yang Tepat',
+//             textAlign: TextAlign.center,
+//             style: TextStyle(
+//               color: Colors.black,
+//               fontSize: 18,
+//               fontWeight: FontWeight.bold,
+//             ),
+//           ),
+//           content: SingleChildScrollView(
+//             child: ListBody(
+//               children: <Widget>[
+//                 const Text('\u2022 Pencahayaan terang'),
+//                 const SizedBox(height: 5),
+//                 const Text(
+//                     '\u2022 Posisikan KTP sesuaikan informasi KTP sejajar dengan tanda garis'),
+//                 const SizedBox(height: 5),
+//                 const Text(
+//                     '\u2022 Letakkan foto sejajar atau letakkan tepat masuk dalam kotak'),
+//                 const SizedBox(height: 5),
+//                 const Text(
+//                     '\u2022 Gunakan KTP yang jelas tidak Blur sehingga data dapat terbaca oleh sistem'),
+//                 const SizedBox(height: 5),
+//                 ElevatedButton(
+//                   style: raisedButtonStyle,
+//                   onPressed: () => _handleCameraPermission(),
+//                   child: const Text('Open Camera'),
+//                 ),
+//               ],
+//             ),
+//           ),
+//         );
+//       },
+//     );
+//   }
+
+//   // Menangani permission kamera dan membuka kamera KTP jika diizinkan
+//   void _handleCameraPermission() {
+//     Navigator.of(context, rootNavigator: true)
+//         .pushNamed(PermissionScreen.ROUTE_NAME)
+//         .then((permissionStatus) {
+//       if (permissionStatus == PermissionStatus.granted) {
+//         _openKtpCamera();
+//       } else {
+//         _showPermissionDeniedMessage();
+//       }
+//     });
+//   }
+
+//   // Membuka kamera KTP dengan filter dan callback yang telah didefinisikan
+//   void _openKtpCamera() {
+//     Navigator.of(context, rootNavigator: true)
+//         .pushNamed(
+//           CameraKtpScreen.ROUTE_NAME,
+//           arguments: CameraKtpScreenArgs(
+//             cameraFilter: 'assets/ktp_filter.png',
+//             buildFilter: _buildKtpFilter,
+//             onProcessImage: _processKtpImage,
+//             onPreviewImage: _previewKtpImage,
+//           ),
+//         )
+//         .then(_handleCameraResult);
+//   }
+
+//   // Widget builder untuk filter KTP yang ditampilkan di kamera
+//   Widget _buildKtpFilter(BuildContext context) {
+//     return Container(
+//       constraints: const BoxConstraints.expand(),
+//       child: CustomPaint(
+//         painter: KtpFramePainter(
+//           screenSize: MediaQuery.of(context).size,
+//           outerFrameColor: const Color(0x73442C2E),
+//           innerFrameColor: Colors.transparent,
+//         ),
+//       ),
+//     );
+//   }
+
+//   // Proses gambar KTP menggunakan Firebase Vision
+//   Future<ResultModel<KtpModel>> _processKtpImage(
+//       XFile file, CameraLensDirection lensDirection) async {
+//     try {
+//       // Langsung gunakan objek file (XFile) tanpa konversi ke File
+//       ResultModel<KtpModel> ktpData =
+//           await FirebaseVisionUtils.getKtpVisionDataFromImage(
+//         file,
+//         isDrawSearchingArea: false,
+//         isDrawExtractedArea: true,
+//       );
+
+//       return ResultModel<KtpModel>(
+//         isSuccess: true,
+//         data: ktpData.data!, // Pastikan data tidak null jika isSuccess true
+//         message: 'Berhasil mengambil data KTP',
+//       );
+//     } catch (e) {
+//       return ResultModel<KtpModel>(
+//         isSuccess: false,
+//         data: null,
+//         message: 'Gagal memproses KTP: ${e.toString()}',
+//       );
+//     }
+//   }
+
+//   // Menampilkan preview gambar KTP yang telah diambil
+//   Future<dynamic> _previewKtpImage(BuildContext pageContext, dynamic ktpModel) {
+//     return Navigator.of(pageContext).pushNamed(
+//       PreviewKtpScreen.ROUTE_NAME,
+//       arguments: PreviewKtpScreenArgs(
+//         ktpModel: ktpModel as KtpModel,
+//       ),
+//     );
+//   }
+
+//   // Menangani hasil dari kamera
+//   void _handleCameraResult(dynamic value) {
+//     if (value != null) {
+//       if (value is ResultModel<KtpModel> &&
+//           value.isSuccess &&
+//           value.data != null) {
+//         KtpModel ktpModel = value.data!; // Perbaiki di sini
+//         _navigateToConfirmScreen(ktpModel);
+//       } else if (value is KtpModel) {
+//         // Jika masih menggunakan format lama
+//         _navigateToConfirmScreen(value);
+//       }
+//     }
+//   }
+
+//   // Navigasi ke halaman konfirmasi KTP
+//   void _navigateToConfirmScreen(KtpModel ktpModel) {
+//     Navigator.of(context)
+//         .pushNamed(
+//           ConfirmKtpScreen.ROUTE_NAME,
+//           arguments: ConfirmKtpScreenArgs(
+//             submissionModel: widget.submissionModel,
+//             ktpModel: ktpModel,
+//             onSuccess: (_) => widget.onSuccess(context),
+//           ),
+//         )
+//         .then(_handleConfirmResult);
+//   }
+
+//   // Menangani hasil dari halaman konfirmasi
+//   void _handleConfirmResult(dynamic returnValue) {
+//     if (returnValue is int) {
+//       Navigator.of(context).pop(returnValue);
+//     } else if (returnValue == true) {
+//       widget.onSuccess(context);
+//     }
+//   }
+
+//   // Menampilkan pesan jika permission kamera ditolak
+//   void _showPermissionDeniedMessage() {
+//     WidgetUtil.showSnackbar(
+//       context,
+//       'Tolong izinkan Pensiunku untuk mengakses kamera Anda.',
+//       snackbarAction: SnackBarAction(
+//         label: 'Pengaturan',
+//         onPressed: openAppSettings,
+//       ),
+//     );
+//   }
+
+//   @override
+//   Widget build(BuildContext context) {
+//     ThemeData theme = Theme.of(context);
+
+//     return Scaffold(
+//       appBar: AppBar(
+//         backgroundColor: Colors.transparent,
+//         elevation: 0,
+//         title: const Text(''),
+//         centerTitle: true,
+//         automaticallyImplyLeading: false, // Hilangkan back button default
+//         flexibleSpace: Container(
+//           padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
+//           child: Column(
+//             children: [
+//               _buildHeader(context),
+//               _buildLogo(
+//                 height: _logoHeight / 1.9,
+//                 alignment: Alignment.center,
+//               ),
+//             ],
+//           ),
+//         ),
+//       ),
+//       extendBodyBehindAppBar: true,
+//       body: Stack(
+//         children: [
+//           _buildBackground(), // Background gradient
+//           SafeArea(
+//             child: SingleChildScrollView(
+//               child: Padding(
+//                 padding: const EdgeInsets.symmetric(
+//                   vertical: 32.0,
+//                   horizontal: 24.0,
+//                 ),
+//                 child: Column(
+//                   crossAxisAlignment: CrossAxisAlignment.stretch,
+//                   children: [
+//                     // Ganti tampilan instruksi dengan widget _buildInstructionImage()
+//                     _buildInstructionImage(),
+//                     const SizedBox(height: 8.0),
+//                     const Text(
+//                       'Arahkan kamera Anda tepat sesuai frame yang telah kami tentukan. '
+//                       'Setelah foto, mohon untuk melakukan verifikasi data KTP anda!',
+//                       textAlign: TextAlign.center,
+//                     ),
+//                     const SizedBox(height: 32.0),
+//                     Center(
+//                       child: ElevatedButton(
+//                         style: raisedButtonStyle,
+//                         onPressed: () {
+//                           _showDescriptionDialog(context);
+//                         },
+//                         child: const Text('Ambil Foto'),
+//                       ),
+//                     ),
+//                     const SizedBox(height: 80.0),
+//                   ],
+//                 ),
+//               ),
+//             ),
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+// }
