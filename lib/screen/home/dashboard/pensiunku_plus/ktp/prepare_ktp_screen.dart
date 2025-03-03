@@ -58,7 +58,7 @@ class _PrepareKtpScreenState extends State<PrepareKtpScreen> {
   bool _isBottomNavBarVisible = false;
 
   // Constants
-  static const double _logoHeight = 120.0;
+  static const double _logoHeight = 60.0;
   static const double _instructionImageHeight = 150.0;
   static const List<Color> _gradientColors = [
     Colors.white,
@@ -79,20 +79,24 @@ class _PrepareKtpScreenState extends State<PrepareKtpScreen> {
 
   // Widget builder untuk header yang berisi tombol back dan progress indicator
   Widget _buildHeader(BuildContext context) {
-    return Row(
-      children: [
-        IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
-        ),
-        Expanded(
-          child: LinearProgressIndicator(
-            value: 0.5,
-            backgroundColor: Colors.grey[300],
-            valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF006C4E)),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      child: Row(
+        children: [
+          IconButton(
+            icon: const Icon(Icons.arrow_back, color: Color(0xFF006C4E)),
+            onPressed: () => Navigator.pop(context),
           ),
-        ),
-      ],
+          Expanded(
+            child: LinearProgressIndicator(
+              value: 0.5,
+              backgroundColor: Colors.grey[300],
+              valueColor:
+                  const AlwaysStoppedAnimation<Color>(Color(0xFF006C4E)),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -115,19 +119,18 @@ class _PrepareKtpScreenState extends State<PrepareKtpScreen> {
   // Widget builder untuk logo
   Widget _buildLogo({
     double? height,
-    double? width,
     Alignment alignment = Alignment.center,
     EdgeInsetsGeometry? padding,
   }) {
-    return Flexible(
-      child: Padding(
-        padding: padding ?? const EdgeInsets.only(top: 20.0),
-        child: Align(
-          alignment: alignment,
+    double effectiveHeight = height ?? _logoHeight;
+    return Padding(
+      padding: padding ?? const EdgeInsets.only(top: 8.0),
+      child: Align(
+        alignment: alignment,
+        child: SizedBox(
+          height: effectiveHeight,
           child: Image.asset(
             'assets/pensiunkuplus/pensiunku.png',
-            height: height ?? _logoHeight,
-            width: width,
             fit: BoxFit.contain,
           ),
         ),
@@ -166,9 +169,7 @@ class _PrepareKtpScreenState extends State<PrepareKtpScreen> {
   void _openGallery() async {
     var picture = await ImagePicker().pickImage(source: ImageSource.gallery);
     if (picture != null) {
-      setState(() {
-        // TODO: Tangani gambar yang dipilih
-      });
+      setState(() {});
     }
     Navigator.pop(context);
   }
@@ -258,9 +259,10 @@ class _PrepareKtpScreenState extends State<PrepareKtpScreen> {
   }
 
   // Proses gambar KTP menggunakan Firebase Vision
-  Future<ResultModel<KtpModel>> _processKtpImage(
+  Future<ResultModel<CameraResultModel>> _processKtpImage(
       XFile file, CameraLensDirection lensDirection) async {
     try {
+      print('Memproses gambar KTP...');
       // Langsung gunakan objek file (XFile) tanpa konversi ke File
       ResultModel<KtpModel> ktpData =
           await FirebaseVisionUtils.getKtpVisionDataFromImage(
@@ -269,13 +271,28 @@ class _PrepareKtpScreenState extends State<PrepareKtpScreen> {
         isDrawExtractedArea: true,
       );
 
-      return ResultModel<KtpModel>(
+      if (!ktpData.isSuccess || ktpData.data == null) {
+        return ResultModel<CameraResultModel>(
+          isSuccess: false,
+          data: null,
+          message: ktpData.message ?? 'Gagal memproses KTP',
+        );
+      }
+
+// Convert KtpModel to CameraResultModel
+      final cameraResult = CameraResultModel(
+        imagePath: file.path,
+        ktpData: ktpData.data, // Pass the ktpData here
+      );
+      print('Berhasil memproses gambar KTP');
+      return ResultModel<CameraResultModel>(
         isSuccess: true,
-        data: ktpData.data!, // Pastikan data tidak null jika isSuccess true
+        data: cameraResult,
         message: 'Berhasil mengambil data KTP',
       );
     } catch (e) {
-      return ResultModel<KtpModel>(
+      print('Gagal memproses gambar KTP: ${e.toString()}');
+      return ResultModel<CameraResultModel>(
         isSuccess: false,
         data: null,
         message: 'Gagal memproses KTP: ${e.toString()}',
@@ -283,24 +300,50 @@ class _PrepareKtpScreenState extends State<PrepareKtpScreen> {
     }
   }
 
-  // Menampilkan preview gambar KTP yang telah diambil
-  Future<dynamic> _previewKtpImage(BuildContext pageContext, dynamic ktpModel) {
-    return Navigator.of(pageContext).pushNamed(
-      PreviewKtpScreen.ROUTE_NAME,
-      arguments: PreviewKtpScreenArgs(
-        ktpModel: ktpModel as KtpModel,
-      ),
-    );
+// Menampilkan preview gambar KTP yang telah diambil
+  Future<dynamic> _previewKtpImage(
+      BuildContext pageContext, dynamic resultModel) {
+    print('Menampilkan preview gambar KTP...');
+    print(22222);
+    if (resultModel is CameraResultModel) {
+      if (resultModel.ktpData != null) {
+        return Navigator.of(pageContext).pushNamed(
+          PreviewKtpScreen.ROUTE_NAME,
+          arguments: PreviewKtpScreenArgs(
+            ktpModel:
+                resultModel.ktpData!, // Akses ktpData dari CameraResultModel
+          ),
+        );
+      } else {
+        // Tangani kasus di mana ktpData adalah null
+        throw Exception('KtpData is null');
+      }
+    } else if (resultModel is KtpModel) {
+      return Navigator.of(pageContext).pushNamed(
+        PreviewKtpScreen.ROUTE_NAME,
+        arguments: PreviewKtpScreenArgs(
+          ktpModel: resultModel,
+        ),
+      );
+    } else {
+      throw Exception('Invalid result model type');
+    }
   }
 
-  // Menangani hasil dari kamera
+// Menangani hasil dari kamera
   void _handleCameraResult(dynamic value) {
+    print('Menangani hasil dari kamera...');
     if (value != null) {
-      if (value is ResultModel<KtpModel> &&
+      if (value is ResultModel<CameraResultModel> &&
           value.isSuccess &&
           value.data != null) {
-        KtpModel ktpModel = value.data!;
-        _navigateToConfirmScreen(ktpModel);
+        CameraResultModel cameraResult = value.data!;
+        if (cameraResult.ktpData != null) {
+          _navigateToConfirmScreen(cameraResult.ktpData!);
+        } else {
+          // Handle the case where ktpData is null
+          // You might want to show an error message or take some other action
+        }
       } else if (value is KtpModel) {
         // Jika masih menggunakan format lama
         _navigateToConfirmScreen(value);
@@ -308,8 +351,9 @@ class _PrepareKtpScreenState extends State<PrepareKtpScreen> {
     }
   }
 
-  // Navigasi ke halaman konfirmasi KTP
+// Navigasi ke halaman konfirmasi KTP
   void _navigateToConfirmScreen(KtpModel ktpModel) {
+    print('Navigasi ke halaman konfirmasi KTP...');
     Navigator.of(context)
         .pushNamed(
           ConfirmKtpScreen.ROUTE_NAME,
@@ -322,8 +366,9 @@ class _PrepareKtpScreenState extends State<PrepareKtpScreen> {
         .then(_handleConfirmResult);
   }
 
-  // Menangani hasil dari halaman konfirmasi
+// Menangani hasil dari halaman konfirmasi
   void _handleConfirmResult(dynamic returnValue) {
+    print('Menangani hasil dari halaman konfirmasi...');
     if (returnValue is int) {
       Navigator.of(context).pop(returnValue);
     } else if (returnValue == true) {
@@ -331,8 +376,9 @@ class _PrepareKtpScreenState extends State<PrepareKtpScreen> {
     }
   }
 
-  // Menampilkan pesan jika permission kamera ditolak
+// Menampilkan pesan jika permission kamera ditolak
   void _showPermissionDeniedMessage() {
+    print('Permission kamera ditolak...');
     WidgetUtil.showSnackbar(
       context,
       'Tolong izinkan Pensiunku untuk mengakses kamera Anda.',
@@ -359,15 +405,18 @@ class _PrepareKtpScreenState extends State<PrepareKtpScreen> {
         flexibleSpace: Container(
           padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
           // Gunakan mainAxisSize.min agar Column tidak memaksa tinggi penuh
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildHeader(context),
-              _buildLogo(
-                height: _logoHeight / 1,
-                alignment: Alignment.center,
-              ),
-            ],
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildHeader(context),
+                _buildLogo(
+                  height:
+                      _logoHeight, // atau bisa dihilangkan jika ingin menggunakan nilai default
+                  alignment: Alignment.center,
+                )
+              ],
+            ),
           ),
         ),
       ),
@@ -414,6 +463,8 @@ class _PrepareKtpScreenState extends State<PrepareKtpScreen> {
     );
   }
 }
+
+
 
 // final ButtonStyle raisedButtonStyle = ElevatedButton.styleFrom(
 //   backgroundColor: const Color(0xFF16826E),

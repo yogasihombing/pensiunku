@@ -1,17 +1,17 @@
+// Definisi SelfieModel
 import 'dart:io';
 
 import 'package:pensiunku/model/camera_result_model.dart';
 
 class SelfieModel extends CameraResultModel {
   final File image;
-  final String imagePath;
   double? faceConfidence;
 
   SelfieModel({
     required this.image,
-    required this.imagePath,
+    required String imagePath,
     this.faceConfidence,
-  });
+  }) : super(imagePath: imagePath);
 
   SelfieModel clone() {
     return SelfieModel(

@@ -1,9 +1,7 @@
 import 'dart:convert';
-import 'dart:developer';
-import 'dart:io';
 
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
+
 import 'package:pensiunku/data/api/submission_api.dart';
 import 'package:pensiunku/data/db/app_database.dart';
 import 'package:pensiunku/model/submission_model.dart';
@@ -16,14 +14,18 @@ class SubmissionRepository extends BaseRepository {
   AppDatabase database = AppDatabase();
 
   Future<ResultModel<SubmissionModel>> uploadSelfie(
-    String token,
-    SubmissionModel submissionModel,
-    String selfieFile,
-  ) async {
+      String token, SubmissionModel submissionModel, String selfieFile,
+      {required String idUser}
+      ) async {
     print('=== Repository.uploadSelfie started ===');
 
     try {
-      Response response = await api.uploadSelfie(token, selfieFile);
+      // Mengambil userId dari submissionModel dan mengonversinya ke String
+      Response response = await api.uploadSelfie(
+        token,
+        selfieFile,
+        idUser, // menempelkan User ID
+      );
       print('Raw response: ${response.data}');
 
       if (response.statusCode != 200) {
@@ -37,7 +39,7 @@ class SubmissionRepository extends BaseRepository {
       print('Response type: ${responseData.runtimeType}');
       print('Response content: $responseData');
 
-      // Parse response jika masih dalam bentuk String
+      // Jika response masih berupa String, coba parse ke JSON
       if (responseData is String) {
         try {
           responseData = jsonDecode(responseData);
@@ -47,21 +49,18 @@ class SubmissionRepository extends BaseRepository {
         }
       }
 
-      // Handle berbagai kemungkinan format response
+      // Tangani berbagai format response
       if (responseData is Map) {
-        // Menangani format respons {"text": {"message":"success"}}
         if (responseData.containsKey('text') &&
             responseData['text'] is Map &&
             responseData['text']['message'] == 'success') {
-          // Ini adalah respons sukses dari API
-          print('✅ Response success ditemukan');
+          print('Response success ditemukan');
           return ResultModel(
             isSuccess: true,
-            data: submissionModel, // Gunakan model yang sudah ada
+            data: submissionModel,
           );
         }
 
-        // Cek pesan error dalam format {text: {message: ...}}
         if (responseData.containsKey('text') &&
             responseData['text'] is Map &&
             responseData['text']['message'] != null &&
@@ -74,7 +73,6 @@ class SubmissionRepository extends BaseRepository {
           );
         }
 
-        // Format success lama
         if (responseData['status'] == 'success' &&
             responseData['data'] != null) {
           return ResultModel(
@@ -84,7 +82,6 @@ class SubmissionRepository extends BaseRepository {
         }
       }
 
-      // Coba parse lagi dengan format berbeda jika respons berisi "success"
       if (responseData is String && responseData.contains('success')) {
         print('String response contains "success"');
         return ResultModel(
@@ -93,7 +90,6 @@ class SubmissionRepository extends BaseRepository {
         );
       }
 
-      // Jika format tidak sesuai ekspektasi
       return ResultModel(
         isSuccess: false,
         error: 'Format response tidak valid: $responseData',
@@ -107,6 +103,7 @@ class SubmissionRepository extends BaseRepository {
     }
   }
 }
+
 
 
 

@@ -84,7 +84,7 @@ class _PrepareSelfieScreenState extends State<PrepareSelfieScreen> {
       child: Row(
         children: [
           IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.black),
+            icon: const Icon(Icons.arrow_back, color: Color(0xFF006C4E)),
             onPressed: () => Navigator.pop(context),
           ),
           Expanded(

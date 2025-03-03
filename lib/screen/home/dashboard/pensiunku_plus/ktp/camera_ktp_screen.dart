@@ -1,9 +1,9 @@
+import 'dart:io';
 import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:pensiunku/model/camera_result_model.dart';
 import 'package:pensiunku/repository/result_model.dart';
 import 'package:pensiunku/util/widget_util.dart';
@@ -14,7 +14,7 @@ class CameraKtpScreenArgs {
   final Future<ResultModel<CameraResultModel>> Function(
       XFile file, CameraLensDirection cameraLensDirection) onProcessImage;
   final Future<dynamic> Function(BuildContext context, CameraResultModel result)
-  onPreviewImage;
+      onPreviewImage;
   final Widget Function(BuildContext context) buildFilter;
 
   CameraKtpScreenArgs({
@@ -30,7 +30,7 @@ class CameraKtpScreen extends StatefulWidget {
   final Future<ResultModel<CameraResultModel>> Function(
       XFile file, CameraLensDirection cameraLensDirection) onProcessImage;
   final Future<dynamic> Function(BuildContext context, CameraResultModel result)
-  onPreviewImage;
+      onPreviewImage;
   final Widget Function(BuildContext context) buildFilter;
 
   static const String ROUTE_NAME = '/ktp/camera';
@@ -70,59 +70,116 @@ class _CameraKtpScreenState extends State<CameraKtpScreen>
   }
 
   void _onTakePictureButtonPressed() {
+    if (_isProcessingImage) return; // Mencegah tap berulang
+
+    setState(() {
+      _isProcessingImage = true;
+    });
+
     _takePicture().then((XFile? file) async {
-      if (mounted) {
-        setState(() {
-          _isProcessingImage = true;
-        });
-        var result = await widget.onProcessImage(file!, _cameraDirection!);
+      if (!mounted || file == null) {
         setState(() {
           _isProcessingImage = false;
         });
-        if (!result.isSuccess) {
-          // showDialog(
-          //   context: context,
-          //   builder: (_) => AlertDialog(
-          //         content: Text(result.error ?? 'Gagal mengajukan form',
-          //             style: TextStyle(color: Colors.white)),
-          //         backgroundColor: Colors.red,
-          //         elevation: 24.0,
-          //       ));
+        return;
+      }
+
+      try {
+        print('Processing image from path: ${file.path}');
+
+        // Validasi file ada dan dapat dibaca
+        if (!await File(file.path).exists()) {
+          throw Exception('File tidak ditemukan');
+        }
+
+        // Proses gambar
+        final result = await widget.onProcessImage(file, _cameraDirection!);
+
+        if (!mounted) return;
+
+        setState(() {
+          _isProcessingImage = false;
+        });
+
+        // Penanganan error yang lebih baik
+        if (!result.isSuccess || result.data == null) {
+          String errorMessage = result.error ?? 'Gagal mendeteksi KTP';
+          print('Image processing failed: $errorMessage');
+
+          // Pesan error yang lebih spesifik berdasarkan jenis error
+          if (errorMessage.contains('Null check operator')) {
+            errorMessage =
+                'Beberapa data KTP tidak terbaca dengan jelas. Coba ambil ulang dengan pencahayaan yang lebih baik.';
+          }
+
           WidgetUtil.showSnackbar(
             context,
-            result.error ?? 'Gagal mendeteksi KTP. Mohon ulangi sekali lagi.',
+            'Pastikan KTP berada dalam bingkai dan pencahayaan cukup. $errorMessage',
           );
+          return;
+        }
+
+        // Penanganan sukses dengan pemeriksaan tipe data
+        if (result.data is CameraResultModel) {
+          final previewResult = await widget.onPreviewImage(
+              context, result.data as CameraResultModel);
+
+          if (previewResult == true) {
+            Navigator.of(context).pop(result.data);
+          }
         } else {
-          widget.onPreviewImage(context, result.data as CameraResultModel).then(
-                (value) {
-              if (value == true) {
-                Navigator.of(context).pop(result.data);
-              }
-            },
+          throw Exception('Tipe data hasil tidak sesuai');
+        }
+      } catch (e) {
+        print('Error during image processing: $e');
+
+        if (mounted) {
+          setState(() {
+            _isProcessingImage = false;
+          });
+
+          WidgetUtil.showSnackbar(
+            context,
+            'Terjadi kesalahan: ${e.toString()}',
           );
         }
-        // if (file != null) print('Picture saved to ${file.path}');
+      }
+    }).catchError((error) {
+      print('Error taking picture: $error');
+
+      if (mounted) {
+        setState(() {
+          _isProcessingImage = false;
+        });
+
+        WidgetUtil.showSnackbar(
+          context,
+          'Gagal mengambil gambar: ${error.toString()}',
+        );
       }
     });
   }
 
   Future<XFile?> _takePicture() async {
-    final CameraController? cameraController = _controller;
-    if (cameraController == null || !cameraController.value.isInitialized) {
-      print('Error: select a camera first.');
+    if (_controller == null || !_controller!.value.isInitialized) {
+      print('Error: Camera not initialized');
       return null;
     }
 
-    if (cameraController.value.isTakingPicture) {
-      // A capture is already pending, do nothing.
+    if (_controller!.value.isTakingPicture) {
+      print('Error: Already taking picture');
       return null;
     }
 
     try {
-      XFile file = await cameraController.takePicture();
+      // Ensure camera is focused before taking picture
+      await _controller!.setFocusMode(FocusMode.auto);
+      await Future.delayed(Duration(milliseconds: 500));
+
+      final XFile file = await _controller!.takePicture();
       return file;
-    } on CameraException catch (_) {
-      // _showCameraException(e);
+    } catch (e) {
+      print('Error taking picture: $e');
       return null;
     }
   }
@@ -160,8 +217,8 @@ class _CameraKtpScreenState extends State<CameraKtpScreen>
                     ),
                   ),
                   onTap: cameraController != null &&
-                      cameraController.value.isInitialized &&
-                      !_isProcessingImage
+                          cameraController.value.isInitialized &&
+                          !_isProcessingImage
                       ? _onTakePictureButtonPressed
                       : null,
                 ),
@@ -174,8 +231,8 @@ class _CameraKtpScreenState extends State<CameraKtpScreen>
               icon: const Icon(Icons.switch_camera),
               color: Colors.white70,
               onPressed: cameraController != null &&
-                  cameraController.value.isInitialized &&
-                  !_isProcessingImage
+                      cameraController.value.isInitialized &&
+                      !_isProcessingImage
                   ? _onRotateCamera
                   : null,
             ),
@@ -205,33 +262,37 @@ class _CameraKtpScreenState extends State<CameraKtpScreen>
     }
   }
 
-  void _onNewCameraSelected(CameraDescription cameraDescription) async {
+  Future<void> _onNewCameraSelected(CameraDescription cameraDescription) async {
     if (_controller != null) {
-      await _controller?.dispose();
+      await _controller!.dispose();
     }
-    _controller = CameraController(
-      cameraDescription,
-      ResolutionPreset.medium,
-      enableAudio: false,
-    );
-
-    // If the controller is updated then update the UI.
-    _controller?.addListener(() {
-      if (mounted) setState(() {});
-      if (_controller?.value.hasError == true) {
-        // showInSnackBar('Camera error ${controller.value.errorDescription}');
-      }
-    });
 
     try {
-      await _controller?.initialize();
-      await _controller?.setFlashMode(FlashMode.off);
-    } on CameraException catch (_) {
-      // _showCameraException(e);
-    }
+      final CameraController controller = CameraController(
+        cameraDescription,
+        ResolutionPreset.high,
+        enableAudio: false,
+        imageFormatGroup: ImageFormatGroup.jpeg,
+      );
 
-    if (mounted) {
-      setState(() {});
+      _controller = controller;
+
+      await controller.initialize();
+
+      // Set optimal camera settings
+      await controller.setFlashMode(FlashMode.off);
+      await controller.setExposureMode(ExposureMode.auto);
+      await controller.setFocusMode(FocusMode.auto);
+
+      if (mounted) {
+        setState(() {});
+      }
+    } catch (e) {
+      print('Error initializing camera: $e');
+      WidgetUtil.showSnackbar(
+        context,
+        'Gagal menginisialisasi kamera: ${e.toString()}',
+      );
     }
   }
 
@@ -261,8 +322,8 @@ class _CameraKtpScreenState extends State<CameraKtpScreen>
     return Scaffold(
       body: _controller?.value.isInitialized != true
           ? Center(
-        child: CircularProgressIndicator(),
-      )
+              child: CircularProgressIndicator(),
+            )
           : _buildCameraPreview(),
     );
   }
@@ -353,12 +414,6 @@ class KtpFramePainter extends CustomPainter {
       ),
     );
 
-    // TextSpan span = new TextSpan(
-    //     style: new TextStyle(color: Colors.red[600]), text: 'Yrfc');
-    // TextPainter tp = new TextPainter(text: span, textAlign: TextAlign.left);
-    // tp.layout();
-    // tp.paint(canvas, new Offset(5.0, 5.0));
-
     // Draw KTP lines
     final ktpLineRect1 = Rect.fromLTRB(
       center.dx + (ktpHeight * (1.40 / 5.5)),
@@ -415,12 +470,6 @@ class KtpFramePainter extends CustomPainter {
         Radius.circular(radius / 4),
       ),
     );
-    // path.addRRect(
-    //   RRect.fromRectAndRadius(
-    //     ktpLineRect5,
-    //     Radius.circular(radius / 4),
-    //   ),
-    // );
 
     canvas.drawPath(path, paint);
   }
@@ -495,7 +544,7 @@ class SelfieFramePainter extends CustomPainter {
     final Offset centerFace = size.center(
       Offset(
         0.0,
-        -screenSize.height / 5 ,
+        -screenSize.height / 5,
       ),
     );
     path.addOval(
@@ -531,55 +580,15 @@ class WindowPainterOld extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final Offset center = size.center(offset);
-    // final double windowHalfWidth = windowSize.width / 2;
-    // final double windowHalfHeight = windowSize.height / 2;
-
-    // final Rect windowRect = Rect.fromLTRB(
-    //   center.dx - windowHalfWidth,
-    //   center.dy - windowHalfHeight,
-    //   center.dx + windowHalfWidth,
-    //   center.dy + windowHalfHeight,
-    // );
-
-    // final Rect left =
-    //     Rect.fromLTRB(0, windowRect.top, windowRect.left, windowRect.bottom);
-    // final Rect top = Rect.fromLTRB(0, 0, size.width, windowRect.top);
-    // final Rect right = Rect.fromLTRB(
-    //   windowRect.right,
-    //   windowRect.top,
-    //   size.width,
-    //   windowRect.bottom,
-    // );
-    // final Rect bottom = Rect.fromLTRB(
-    //   0,
-    //   windowRect.bottom,
-    //   size.width,
-    //   size.height,
-    // );
-
-    // canvas.drawRect(
-    //     windowRect,
-    //     Paint()
-    //       ..color = innerFrameColor
-    //       ..style = PaintingStyle.stroke
-    //       ..strokeWidth = innerFrameStrokeWidth);
 
     final Paint paint = Paint()..color = outerFrameColor;
-    // canvas.drawRect(left, paint);
-    // canvas.drawRect(top, paint);
-    // canvas.drawRect(right, paint);
-    // canvas.drawRect(bottom, paint);
-
-    // if (closeWindow) {
-    //   canvas.drawRect(windowRect, paint);
-    // }
 
     final radius = 200.0;
 
     final Path path = Path();
     path.fillType = PathFillType.evenOdd;
     path.addRect(Rect.fromLTRB(0.0, 0.0, windowSize.width, windowSize.height));
-    // path.addOval(Rect.fromCircle(center: center, radius: radius));
+
     path.addRRect(RRect.fromRectAndRadius(
         Rect.fromCircle(center: center, radius: radius / 2),
         Radius.circular(radius / 10)));
@@ -626,6 +635,7 @@ class Rectangle {
 //       XFile file, CameraLensDirection cameraLensDirection) onProcessImage;
 //   final Future<dynamic> Function(BuildContext context, CameraResultModel result)
 //       onPreviewImage;
+
 //   final Widget Function(BuildContext context) buildFilter;
 
 //   CameraKtpScreenArgs({

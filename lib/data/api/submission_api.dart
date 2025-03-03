@@ -1,52 +1,54 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:http_parser/http_parser.dart';
+
 import 'package:dio/dio.dart';
 import 'package:pensiunku/data/api/base_api.dart';
 
 class SubmissionApi extends BaseApi {
-  bool bypassPengajuan = false; // TODO: Set to true to bypass pengajuan
+  bool bypassPengajuan = false;
   Dio dio = Dio();
 
-  Future<Response> uploadSelfie(String token, String selfieFilePath) async {
+  Future<Response> uploadSelfie(
+      String token, String selfieFilePath, String idUser) async {
     print('=== Start uploadWajah di API ===');
     print('URL: https://api.pensiunku.id/new.php/uploadWajah');
+    print('User ID: $idUser');
 
     final file = File(selfieFilePath);
     if (!await file.exists()) {
-      print('❌ File tidak ditemukan: $selfieFilePath');
+      print('File tidak ditemukan: $selfieFilePath');
       throw Exception('File selfie tidak ditemukan');
     }
 
-    print('✅ File ditemukan: $selfieFilePath');
-    print('📏 Ukuran file: ${await file.length()} bytes');
+    print('File ditemukan: $selfieFilePath');
+    print('Ukuran file: ${await file.length()} bytes');
 
-    // Ubah gambar menjadi base64
     List<int> imageBytes = await file.readAsBytes();
     String base64Image = base64Encode(imageBytes);
 
-    // Kirim sebagai JSON
-    final data = {
-      "foto_selfie": base64Image, // Kirim file dalam base64
-      "nama_foto_selfie": "selfie.jpg"
+    Map<String, dynamic> formData = {
+      "foto_selfie": base64Image,
+      "nama_foto_selfie": "selfie.jpg",
+      "id_user": idUser
     };
 
-    print('📤 Mengirim JSON ke API: $data');
+    print('Mengirim JSON ke API (foto dan nama file)');
 
     return await dio.post(
       'https://api.pensiunku.id/new.php/uploadWajah',
-      data: jsonEncode(data), // Ubah ke JSON
+      data: jsonEncode(formData),
       options: Options(
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
+          'X-User-ID': idUser, // Kirim user ID melalui header
         },
-        responseType:
-            ResponseType.json, // Pastikan response di-parse sebagai JSON
+        responseType: ResponseType.json,
       ),
     );
   }
 }
+
 
 
 

@@ -3,9 +3,9 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:pensiunku/model/ktp_model.dart';
-import 'package:pensiunku/model/referral_model.dart';
+
 import 'package:pensiunku/model/user_model.dart';
-import 'package:pensiunku/repository/referral_repository.dart';
+
 import 'package:pensiunku/repository/result_model.dart';
 import 'package:pensiunku/repository/user_repository.dart';
 import 'package:pensiunku/screen/home/account/TNC/term_and_condition.dart';
@@ -35,7 +35,7 @@ class AccountScreen extends StatefulWidget {
 }
 
 class _AccountScreenState extends State<AccountScreen> {
-  late ResultModel<ReferralModel> resultReferralModel;
+ 
   UserModel? _userModel; // Model pengguna (opsional)
   late Future<ResultModel<UserModel>> _future;
   bool _isActivated = false;
@@ -62,11 +62,11 @@ class _AccountScreenState extends State<AccountScreen> {
         }
       });
 
-      ReferralRepository().getAll(token).then((result) {
-        setState(() {
-          resultReferralModel = result;
-        });
-      });
+      // ReferralRepository().getAll(token).then((result) {
+      //   setState(() {
+      //     resultReferralModel = result;
+      //   });
+      // });
     }
   }
 

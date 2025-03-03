@@ -3,11 +3,13 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:pensiunku/model/selfie_model.dart';
 import 'package:pensiunku/model/submission_model.dart';
+import 'package:pensiunku/model/user_model.dart';
+import 'package:pensiunku/repository/result_model.dart';
 import 'package:pensiunku/repository/submission_repository.dart';
+import 'package:pensiunku/repository/user_repository.dart';
 import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/ktp/prepare_ktp_screen.dart';
 import 'package:pensiunku/util/shared_preferences_util.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class PreviewSelfieScreenArgs {
   final SubmissionModel submissionModel;
@@ -36,13 +38,17 @@ class PreviewSelfieScreen extends StatefulWidget {
 }
 
 class _PreviewSelfieScreenState extends State<PreviewSelfieScreen> {
+  UserModel? _userModel; // Deklarasi variable UserModel
   bool _isLoading = false;
   bool _isImageLoaded = false;
+  bool _isActivated = false; // Menambahkan variabel aktifasi
+  late Future<ResultModel<UserModel>> _future;
 
   @override
   void initState() {
     super.initState();
     _checkImage();
+    _refreshData();
   }
 
   Future<void> requestCameraPermission() async {
@@ -67,11 +73,49 @@ class _PreviewSelfieScreenState extends State<PreviewSelfieScreen> {
     Navigator.of(context).pop(false);
   }
 
+  Future<void> _refreshData() async {
+    String? token = SharedPreferencesUtil()
+        .sharedPreferences
+        .getString(SharedPreferencesUtil.SP_KEY_TOKEN);
+
+    if (token != null) {
+      try {
+        final result = await UserRepository().getOne(token);
+        if (result.error == null) {
+          setState(() {
+            _userModel = result.data;
+            _isActivated = _userModel?.isActivated ?? false;
+            print('User data loaded successfully:');
+            print('User ID: ${_userModel?.id}');
+            print('Is Activated: $_isActivated');
+          });
+        } else {
+          print('Error loading user data: ${result.error}');
+          _showErrorDialog('Gagal memuat data user: ${result.error}');
+        }
+      } catch (error) {
+        print('Exception while loading user data: $error');
+        _showErrorDialog('Terjadi kesalahan saat memuat data user');
+      }
+    } else {
+      print('Token tidak ditemukan');
+      _showErrorDialog('Sesi telah berakhir. Silakan login kembali.');
+    }
+  }
+
   Future<void> _confirmPhoto(BuildContext context) async {
     print('1. Memulai proses confirm photo');
-    if (!mounted) {
-      print('Widget tidak mounted, membatalkan proses');
-      return;
+    if (!mounted) return;
+
+    // Cek apakah user data sudah dimuat
+    if (_userModel == null) {
+      print('Error: User data belum dimuat');
+      await _refreshData(); // Coba muat ulang data user
+
+      if (_userModel == null) {
+        _showErrorDialog('Data user tidak tersedia. Silakan login ulang.');
+        return;
+      }
     }
 
     final file = File(widget.selfieModel.image.path);
@@ -87,57 +131,52 @@ class _PreviewSelfieScreenState extends State<PreviewSelfieScreen> {
     });
 
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString(SharedPreferencesUtil.SP_KEY_TOKEN);
-
-      print('Token: $token'); // Print token
-      print('Image path: ${widget.selfieModel.image.path}'); // Print image path
+      final token = SharedPreferencesUtil()
+          .sharedPreferences
+          .getString(SharedPreferencesUtil.SP_KEY_TOKEN);
 
       if (token == null) {
         throw Exception('Token not found');
       }
 
-      print('Mulai upload selfie ke repository...'); // Print sebelum upload
+      print('Token: $token');
+      print('Image path: ${widget.selfieModel.image.path}');
+      print('User ID: ${_userModel?.id}');
+
+      // Teruskan user ID ke metode repository
       final result = await SubmissionRepository().uploadSelfie(
         token,
         widget.submissionModel,
         widget.selfieModel.image.path,
+        idUser: _userModel?.id.toString() ?? '', // Tambahkan parameter ini
       );
-
-      print('Hasil upload: ${result.isSuccess}'); // Print hasil upload
-      print('Error message jika ada: ${result.error}'); // Print error jika ada
 
       if (!mounted) return;
 
       if (result.isSuccess) {
-        // Tampilkan pemberitahuan bahwa selfie berhasil diupload
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Foto selfie berhasil diupload'),
+            content:
+                Text('Foto selfie ${_userModel?.username} berhasil diupload'),
             backgroundColor: Colors.green,
             duration: Duration(seconds: 2),
           ),
         );
 
-        // Arahkan ke PrepareKtpScreen dengan parameter onSuccess
         Navigator.of(context).pushReplacementNamed(
           PrepareKtpScreen.ROUTE_NAME,
           arguments: PrepareKtpScreenArguments(
             submissionModel: widget.submissionModel,
             onSuccess: (BuildContext ctx) {
-              // Definisikan apa yang terjadi saat KTP berhasil diupload
-              // Sebagai contoh, bisa navigasi ke halaman berikutnya:
-              // Navigator.of(ctx).pushReplacementNamed(NextScreen.ROUTE_NAME);
               print('KTP berhasil diupload dan diproses');
             },
           ),
         );
       } else {
-        print('Upload gagal: ${result.error}');
         _showErrorDialog(result.error ?? 'Gagal mengirimkan foto selfie');
       }
     } catch (e) {
-      print('Terjadi exception: $e'); // Print exception
+      print('Terjadi exception: $e');
       _showErrorDialog('Terjadi kesalahan: ${e.toString()}');
     } finally {
       if (mounted) {

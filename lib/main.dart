@@ -3,6 +3,9 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pensiunku/data/api/pengajuan_anda_api.dart';
+import 'package:pensiunku/model/ktp_model.dart';
+import 'package:pensiunku/model/ktp_model.dart';
+import 'package:pensiunku/model/ktp_model.dart';
 import 'package:pensiunku/screen/article/article_detail_screen.dart';
 import 'package:pensiunku/screen/article/article_screen.dart';
 import 'package:pensiunku/screen/common/galery_fullscreen.dart';
@@ -20,8 +23,10 @@ import 'package:pensiunku/screen/home/dashboard/dashboard_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/event/event_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/forum/forum_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/halopensiun/halopensiun_screen.dart';
+import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/daftarkan_pin_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/ktp/camera_ktp_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/ktp/prepare_ktp_screen.dart';
+import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/ktp/preview_ktp_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/pensiunkuplus_success_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/selfie/preview_selfie_screen.dart';
 import 'package:pensiunku/screen/home/home_screen.dart';
@@ -360,6 +365,16 @@ class MyApp extends StatelessWidget {
             break;
           case PensiunkuPlusSuccessScreen.ROUTE_NAME:
             page = PensiunkuPlusSuccessScreen();
+            break;
+          case PreviewKtpScreen.ROUTE_NAME:
+            var args = settings.arguments as PreviewKtpScreenArgs;
+            page = PreviewKtpScreen(
+              ktpModel: args.ktpModel,
+            );
+            break;
+
+          case DaftarkanPinPensiunkuPlusScreen.ROUTE_NAME:
+            page = DaftarkanPinPensiunkuPlusScreen();
             break;
           case DashboardScreen.ROUTE_NAME:
             print('DashboardScreen route detected');

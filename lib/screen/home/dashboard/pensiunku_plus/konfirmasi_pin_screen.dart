@@ -14,10 +14,12 @@ class KonfirmasiPinPensiunkuPlusScreen extends StatefulWidget {
   const KonfirmasiPinPensiunkuPlusScreen({Key? key}) : super(key: key);
 
   @override
-  State<KonfirmasiPinPensiunkuPlusScreen> createState() => _KonfirmasiPinPensiunkuPlusScreenState();
+  State<KonfirmasiPinPensiunkuPlusScreen> createState() =>
+      _KonfirmasiPinPensiunkuPlusScreenState();
 }
 
-class _KonfirmasiPinPensiunkuPlusScreenState extends State<KonfirmasiPinPensiunkuPlusScreen> {
+class _KonfirmasiPinPensiunkuPlusScreenState
+    extends State<KonfirmasiPinPensiunkuPlusScreen> {
   final List<TextEditingController> pinControllers =
       List.generate(6, (index) => TextEditingController());
   bool _isLoading = false;
@@ -37,7 +39,7 @@ class _KonfirmasiPinPensiunkuPlusScreenState extends State<KonfirmasiPinPensiunk
       String? token = SharedPreferencesUtil()
           .sharedPreferences
           .getString(SharedPreferencesUtil.SP_KEY_TOKEN);
-          
+
       print('Token: $token');
 
       if (token == null) {
@@ -47,7 +49,7 @@ class _KonfirmasiPinPensiunkuPlusScreenState extends State<KonfirmasiPinPensiunk
 
       _futureData = UserRepository().getOne(token).then((value) {
         print('Response from UserRepository: $value');
-        
+
         if (value.error != null) {
           print('Error from UserRepository: ${value.error}');
           showDialog(
@@ -83,7 +85,7 @@ class _KonfirmasiPinPensiunkuPlusScreenState extends State<KonfirmasiPinPensiunk
 
       print('=== Memulai proses verifikasi PIN ===');
       bool isSuccess = false;
-      
+
       if (_userModel == null) {
         print('Error: User model is null');
         ScaffoldMessenger.of(context).showSnackBar(
@@ -99,14 +101,15 @@ class _KonfirmasiPinPensiunkuPlusScreenState extends State<KonfirmasiPinPensiunk
         'id_user': _userModel?.id,
         'pin': pin,
       };
-      
+
       print('Request body: ${jsonEncode(requestBody)}');
 
       var response = await http.post(
         Uri.parse('https://api.pensiunku.id/new.php/KonfirmasiPIN'),
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer ${SharedPreferencesUtil().sharedPreferences.getString(SharedPreferencesUtil.SP_KEY_TOKEN)}',
+          'Authorization':
+              'Bearer ${SharedPreferencesUtil().sharedPreferences.getString(SharedPreferencesUtil.SP_KEY_TOKEN)}',
         },
         body: jsonEncode(requestBody),
       );
@@ -116,19 +119,29 @@ class _KonfirmasiPinPensiunkuPlusScreenState extends State<KonfirmasiPinPensiunk
       print('Response Body: ${response.body}');
 
       if (response.statusCode == 200) {
-        print('PIN berhasil diverifikasi');
-        isSuccess = true;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('PIN berhasil diverifikasi')),
-        );
-        
-        if (isSuccess) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => PensiunkuPlusSuccessScreen(),
-            ),
+        var responseBody = jsonDecode(response.body);
+        if (responseBody['text']['message'] == "PIN Anda Belum Sesuai!") {
+          print('Gagal memverifikasi PIN: ${responseBody['text']['message']}');
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content: Text(
+                    'Gagal memverifikasi PIN: ${responseBody['text']['message']}')),
           );
+        } else {
+          print('PIN berhasil diverifikasi');
+          isSuccess = true;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('PIN berhasil diverifikasi')),
+          );
+
+          if (isSuccess) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => PensiunkuPlusSuccessScreen(),
+              ),
+            );
+          }
         }
       } else {
         print('Gagal memverifikasi PIN: ${response.body}');
@@ -138,8 +151,8 @@ class _KonfirmasiPinPensiunkuPlusScreenState extends State<KonfirmasiPinPensiunk
       }
     } catch (e, stackTrace) {
       print('=== Error Detail ===');
-      print('Error message: $e');
-      print('Stack trace: $stackTrace');
+      print('Pesan kesalahan: $e');
+      print('Jejak tumpukan: $stackTrace');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Terjadi kesalahan: $e')),
       );
@@ -180,7 +193,8 @@ class _KonfirmasiPinPensiunkuPlusScreenState extends State<KonfirmasiPinPensiunk
         child: SafeArea(
           child: SingleChildScrollView(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 20.0),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 20.0, vertical: 20.0),
               child: Column(
                 children: [
                   Row(
@@ -193,7 +207,8 @@ class _KonfirmasiPinPensiunkuPlusScreenState extends State<KonfirmasiPinPensiunk
                         child: LinearProgressIndicator(
                           value: 1,
                           backgroundColor: Colors.grey[300],
-                          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF006C4E)),
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(Color(0xFF006C4E)),
                         ),
                       ),
                     ],
@@ -234,7 +249,8 @@ class _KonfirmasiPinPensiunkuPlusScreenState extends State<KonfirmasiPinPensiunk
                         children: List.generate(6, (index) {
                           return Expanded(
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 4.0),
                               child: SizedBox(
                                 height: 45.0,
                                 child: TextFormField(
