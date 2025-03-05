@@ -231,18 +231,37 @@ class _PrepareKtpScreenState extends State<PrepareKtpScreen> {
 
   // Membuka kamera KTP dengan filter dan callback yang telah didefinisikan
   void _openKtpCamera() {
-    Navigator.of(context, rootNavigator: true)
-        .pushNamed(
-          CameraKtpScreen.ROUTE_NAME,
-          arguments: CameraKtpScreenArgs(
-            cameraFilter: 'assets/ktp_filter.png',
-            buildFilter: _buildKtpFilter,
-            onProcessImage: _processKtpImage,
-            onPreviewImage: _previewKtpImage,
-          ),
-        )
-        .then(_handleCameraResult);
-  }
+  Navigator.of(context, rootNavigator: true)
+      .pushNamed(
+        CameraKtpScreen.ROUTE_NAME,
+        arguments: CameraKtpScreenArgs(
+          cameraFilter: 'assets/ktp_filter.png',
+          buildFilter: (BuildContext context, CameraResultModel? detectionResult) {
+            // Jika mode selfie, nonaktifkan filter (ubah logika jika perlu)
+            if ('assets/ktp_filter.png' == 'selfie') {
+              return Container();
+            } else {
+              // Untuk mode KTP, tampilkan overlay filter KTP dengan bounding box OCR
+              return Positioned.fill(
+                child: Container(
+                  color: Colors.transparent,
+                  child: CustomPaint(
+                    painter: KtpFramePainter(
+                      screenSize: MediaQuery.of(context).size,
+                      detectedTextBoxes: detectionResult?.textBoxes, // kirim data OCR
+                    ),
+                  ),
+                ),
+              );
+            }
+          },
+          onProcessImage: _processKtpImage,
+          onPreviewImage: _previewKtpImage,
+        ),
+      )
+      .then(_handleCameraResult);
+}
+
 
   // Widget builder untuk filter KTP yang ditampilkan di kamera
   Widget _buildKtpFilter(BuildContext context) {
@@ -282,7 +301,8 @@ class _PrepareKtpScreenState extends State<PrepareKtpScreen> {
 // Convert KtpModel to CameraResultModel
       final cameraResult = CameraResultModel(
         imagePath: file.path,
-        ktpData: ktpData.data, // Pass the ktpData here
+        ktpData: ktpData.data,
+        textBoxes: [],
       );
       print('Berhasil memproses gambar KTP');
       return ResultModel<CameraResultModel>(

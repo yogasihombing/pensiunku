@@ -154,24 +154,19 @@ class _PreviewSelfieScreenState extends State<PreviewSelfieScreen> {
       if (!mounted) return;
 
       if (result.isSuccess) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content:
-                Text('Foto selfie ${_userModel?.username} berhasil diupload'),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
-          ),
-        );
-
-        Navigator.of(context).pushReplacementNamed(
-          PrepareKtpScreen.ROUTE_NAME,
-          arguments: PrepareKtpScreenArguments(
-            submissionModel: widget.submissionModel,
-            onSuccess: (BuildContext ctx) {
-              print('KTP berhasil diupload dan diproses');
-            },
-          ),
-        );
+        _showCustomDialog(
+            context, 'Foto selfie ${_userModel?.username} berhasil diupload');
+        Future.delayed(Duration(seconds: 3), () {
+          Navigator.of(context).pushReplacementNamed(
+            PrepareKtpScreen.ROUTE_NAME,
+            arguments: PrepareKtpScreenArguments(
+              submissionModel: widget.submissionModel,
+              onSuccess: (BuildContext ctx) {
+                print('KTP berhasil diupload dan diproses');
+              },
+            ),
+          );
+        });
       } else {
         _showErrorDialog(result.error ?? 'Gagal mengirimkan foto selfie');
       }
@@ -185,6 +180,29 @@ class _PreviewSelfieScreenState extends State<PreviewSelfieScreen> {
         });
       }
     }
+  }
+
+  void _showCustomDialog(BuildContext context, String message) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        Future.delayed(Duration(seconds: 2), () {
+          Navigator.of(context).pop(true);
+        });
+        return AlertDialog(
+          content: Text(
+            message,
+            textAlign: TextAlign.center,
+          ),
+          backgroundColor: Colors.green,
+          contentTextStyle: TextStyle(color: Colors.white),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10.0),
+          ),
+        );
+      },
+    );
   }
 
   void _showErrorDialog(String message) {
@@ -211,9 +229,13 @@ class _PreviewSelfieScreenState extends State<PreviewSelfieScreen> {
     return Scaffold(
       backgroundColor: Color(0xfff2f2f2),
       appBar: AppBar(
-        title: Text('Preview Foto'),
+        title: Text(
+          'Preview Foto',
+          style: TextStyle(color: Color(0xff017964)),
+        ),
         backgroundColor: Colors.transparent,
         elevation: 0,
+        iconTheme: IconThemeData(color: Color(0xFF017964)), // Warna tombol back
       ),
       body: SafeArea(
         child: Stack(

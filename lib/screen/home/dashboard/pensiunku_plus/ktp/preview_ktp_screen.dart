@@ -2,8 +2,10 @@ import 'dart:convert';
 import 'dart:io'; // Mengimpor pustaka dart:io untuk bekerja dengan file.
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart'; // Mengimpor pustaka Flutter untuk membangun antarmuka pengguna.
+import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:pensiunku/model/ktp_model.dart'; // Mengimpor model KtpModel dari proyek Anda.
-import 'package:http/http.dart' as http;
+import 'package:image/image.dart' as img;
+
 import 'package:path/path.dart' as path;
 import 'package:pensiunku/model/user_model.dart';
 import 'package:pensiunku/repository/user_repository.dart';
@@ -42,12 +44,132 @@ class _PreviewKtpScreenState extends State<PreviewKtpScreen> {
   bool _isImageLoaded = false;
   bool _isActivated = false;
   final Dio dio = Dio();
+  List<Rect> _detectedTextBoxes = [];
 
   @override
   void initState() {
     super.initState();
     _checkImage();
     _refreshData();
+    _detectText();
+  }
+
+  Future<void> _detectText() async {
+    final file = File(widget.ktpModel.image.path);
+    final inputImage = InputImage.fromFilePath(file.path);
+    final textRecognizer = TextRecognizer();
+    final recognisedText = await textRecognizer.processImage(inputImage);
+
+    List<Rect> detectedBoxes = [];
+    String fullText = '';
+    for (TextBlock block in recognisedText.blocks) {
+      for (TextLine line in block.lines) {
+        // Sesuaikan bounding box dengan ukuran tampilan
+        final adjustedRect = await _adjustBoundingBox(line.boundingBox, file);
+        detectedBoxes.add(adjustedRect);
+        fullText += line.text + '\n';
+      }
+    }
+
+    print('Extracted Text: $fullText');
+
+    final ktpInfo = extractKtpInfo(fullText);
+    print('KTP Info: $ktpInfo');
+
+    setState(() {
+      _detectedTextBoxes = detectedBoxes;
+    });
+  }
+
+  Future<Rect> _adjustBoundingBox(Rect boundingBox, File file) async {
+    // Sesuaikan bounding box dengan ukuran tampilan
+    final image = img.decodeImage(await file.readAsBytes());
+    if (image == null) return boundingBox;
+
+    final imageWidth = image.width.toDouble();
+    final imageHeight = image.height.toDouble();
+
+    final displayWidth = MediaQuery.of(context).size.width;
+    final displayHeight = MediaQuery.of(context).size.height;
+
+    // Hitung aspek rasio gambar asli dan tampilan di layar
+    final imageAspectRatio = imageWidth / imageHeight;
+    final displayAspectRatio = displayWidth / displayHeight;
+
+    // Sesuaikan bounding box dengan mempertimbangkan aspek rasio
+    double scaleX, scaleY;
+    if (imageAspectRatio > displayAspectRatio) {
+      scaleX = displayWidth / imageWidth;
+      scaleY = scaleX;
+    } else {
+      scaleY = displayHeight / imageHeight;
+      scaleX = scaleY;
+    }
+
+    print('Original Image Size: ${imageWidth}x${imageHeight}');
+    print('Display Size: ${displayWidth}x${displayHeight}');
+    print('Original Bounding Box: $boundingBox');
+
+    final adjustedRect = Rect.fromLTRB(
+      boundingBox.left * scaleX,
+      boundingBox.top * scaleY,
+      boundingBox.right * scaleX,
+      boundingBox.bottom * scaleY,
+    );
+
+    print('Adjusted Bounding Box: $adjustedRect');
+
+    return adjustedRect;
+  }
+
+  Map<String, String> extractKtpInfo(String text) {
+    final Map<String, String> ktpInfo = {};
+
+    final nikRegex = RegExp(r'NIK\s*:\s*(\d{16})');
+    final namaRegex = RegExp(r'Nama\s*:\s*([a-zA-Z\s]+)');
+    final tanggalLahirRegex = RegExp(r'Tanggal Lahir\s*:\s*([\d-]+)');
+    final alamatRegex = RegExp(r'Alamat\s*:\s*([a-zA-Z0-9\s,]+)');
+    final agamaRegex = RegExp(r'Agama\s*:\s*([a-zA-Z\s]+)');
+    final statusPerkawinanRegex =
+        RegExp(r'Status Perkawinan\s*:\s*([a-zA-Z\s]+)');
+    final pekerjaanRegex = RegExp(r'Pekerjaan\s*:\s*([a-zA-Z\s]+)');
+    final kewarganegaraanRegex = RegExp(r'Kewarganegaraan\s*:\s*([a-zA-Z\s]+)');
+
+    final nikMatch = nikRegex.firstMatch(text);
+    final namaMatch = namaRegex.firstMatch(text);
+    final tanggalLahirMatch = tanggalLahirRegex.firstMatch(text);
+    final alamatMatch = alamatRegex.firstMatch(text);
+    final agamaMatch = agamaRegex.firstMatch(text);
+    final statusPerkawinanMatch = statusPerkawinanRegex.firstMatch(text);
+    final pekerjaanMatch = pekerjaanRegex.firstMatch(text);
+    final kewarganegaraanMatch = kewarganegaraanRegex.firstMatch(text);
+
+    if (nikMatch != null) {
+      ktpInfo['NIK'] = nikMatch.group(1) ?? '';
+    }
+    if (namaMatch != null) {
+      ktpInfo['Nama'] = namaMatch.group(1) ?? '';
+    }
+    if (tanggalLahirMatch != null) {
+      ktpInfo['Tanggal Lahir'] = tanggalLahirMatch.group(1) ?? '';
+    }
+    if (alamatMatch != null) {
+      ktpInfo['Alamat'] = alamatMatch.group(1) ?? '';
+    }
+    if (agamaMatch != null) {
+      ktpInfo['Agama'] = agamaMatch.group(1) ?? '';
+    }
+    if (statusPerkawinanMatch != null) {
+      ktpInfo['Status Perkawinan'] = statusPerkawinanMatch.group(1) ?? '';
+    }
+    if (pekerjaanMatch != null) {
+      ktpInfo['Pekerjaan'] = pekerjaanMatch.group(1) ?? '';
+    }
+    if (kewarganegaraanMatch != null) {
+      ktpInfo['Kewarganegaraan'] = kewarganegaraanMatch.group(1) ?? '';
+    }
+
+    return ktpInfo;
   }
 
   // Fungsi untuk memeriksa apakah file gambar KTP tersedia.
@@ -61,7 +183,8 @@ class _PreviewKtpScreenState extends State<PreviewKtpScreen> {
   }
 
   // Fungsi uploadKtpImage menggunakan format JSON (Base64) agar sesuai dengan API.
-  Future<Response?> uploadKtpImage(String token, String ktpFilePath, String idUser) async {
+  Future<Response?> uploadKtpImage(
+      String token, String ktpFilePath, String idUser) async {
     print('=== Mulai upload KTP ke API ===');
     print('URL: https://api.pensiunku.id/new.php/uploadKTP');
     print('User ID: $idUser');
@@ -154,7 +277,8 @@ class _PreviewKtpScreenState extends State<PreviewKtpScreen> {
           final result = await UserRepository().getOne(token);
           // Lanjutkan proses jika diperlukan
         } else {
-          _showErrorDialog(context, 'Sesi telah berakhir. Silakan login kembali.');
+          _showErrorDialog(
+              context, 'Sesi telah berakhir. Silakan login kembali.');
         }
       } catch (e) {
         print('Error saat mencoba cara alternatif: $e');
@@ -165,23 +289,30 @@ class _PreviewKtpScreenState extends State<PreviewKtpScreen> {
 
   // Fungsi untuk mengonfirmasi foto KTP dan mengunggahnya ke server.
   Future<void> _confirmPhoto(BuildContext context) async {
-    print('Mengonfirmasi foto KTP...');
+    print('1. Memulai proses confirm photo');
+    if (!mounted) return;
+
     if (_userModel == null) {
-      print('Error: Data user belum dimuat');
+      print('Error: User data belum dimuat');
       await _refreshData();
+
       if (_userModel == null) {
-        _showErrorDialog(context, 'Data user tidak tersedia. Silakan login ulang.');
+        _showErrorDialog(
+            context, 'Data user tidak tersedia. Silakan login ulang.');
         return;
       }
     }
+
     final file = File(widget.ktpModel.image.path);
     if (!await file.exists()) {
       print('Error: File KTP tidak ditemukan!');
       _showErrorDialog(context, 'File KTP tidak ditemukan. Silakan ulangi.');
       return;
     }
+
     setState(() {
       _isLoading = true;
+      print('2. Set loading state ke true');
     });
     try {
       print('Mengunggah foto KTP...');
@@ -190,7 +321,8 @@ class _PreviewKtpScreenState extends State<PreviewKtpScreen> {
           .sharedPreferences
           .getString(SharedPreferencesUtil.SP_KEY_TOKEN);
       if (token == null || token.isEmpty) {
-        _showErrorDialog(context, 'Token tidak ditemukan. Silakan login kembali.');
+        _showErrorDialog(
+            context, 'Token tidak ditemukan. Silakan login kembali.');
         setState(() {
           _isLoading = false;
         });
@@ -212,17 +344,15 @@ class _PreviewKtpScreenState extends State<PreviewKtpScreen> {
       String responseBody = jsonEncode(response.data);
       if (responseBody.contains('"message":"Foto KTP belum diupload!"')) {
         print('Pengunggahan gagal: Foto KTP belum diupload!');
-        _showErrorDialog(context, 'Pengunggahan gagal: Foto KTP belum diupload!');
+        _showErrorDialog(
+            context, 'Pengunggahan gagal: Foto KTP belum diupload!');
       } else {
         print('Pengunggahan selesai');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Foto KTP berhasil diupload'),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
-          ),
-        );
-        Navigator.of(context).pushNamed(DaftarkanPinPensiunkuPlusScreen.ROUTE_NAME);
+        _showCustomDialog(context, 'Foto KTP berhasil diupload');
+        Future.delayed(Duration(seconds: 3), () {
+          Navigator.of(context)
+              .pushNamed(DaftarkanPinPensiunkuPlusScreen.ROUTE_NAME);
+        });
       }
     } catch (e) {
       print('Error saat mengonfirmasi foto KTP: $e');
@@ -231,6 +361,29 @@ class _PreviewKtpScreenState extends State<PreviewKtpScreen> {
       });
       _showErrorDialog(context, 'Terjadi kesalahan: ${e.toString()}');
     }
+  }
+
+  void _showCustomDialog(BuildContext context, String message) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        Future.delayed(Duration(seconds: 2), () {
+          Navigator.of(context).pop(true);
+        });
+        return AlertDialog(
+          content: Text(
+            message,
+            textAlign: TextAlign.center,
+          ),
+          backgroundColor: Colors.green,
+          contentTextStyle: TextStyle(color: Colors.white),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10.0),
+          ),
+        );
+      },
+    );
   }
 
   // Fungsi untuk menampilkan dialog kesalahan.
@@ -254,7 +407,6 @@ class _PreviewKtpScreenState extends State<PreviewKtpScreen> {
     );
   }
 
-
   @override
   Widget build(BuildContext context) {
     print('Membangun widget PreviewKtpScreen...');
@@ -265,9 +417,13 @@ class _PreviewKtpScreenState extends State<PreviewKtpScreen> {
       backgroundColor:
           Color(0xfff2f2f2), // Mengatur warna latar belakang layar.
       appBar: AppBar(
-        title: Text('Preview KTP'),
+        title: Text(
+          'Preview KTP',
+          style: TextStyle(color: Color(0xFF017964)),
+        ),
         backgroundColor: Colors.transparent,
         elevation: 0,
+        iconTheme: IconThemeData(color: Color(0xFF017964)), // Warna tombol back
       ),
       body: Stack(
         children: [
@@ -295,9 +451,16 @@ class _PreviewKtpScreenState extends State<PreviewKtpScreen> {
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(12),
-                    child: Image.file(
-                      File(widget.ktpModel.image.path),
-                      fit: BoxFit.contain,
+                    child: Stack(
+                      children: [
+                        Image.file(
+                          File(widget.ktpModel.image.path),
+                          fit: BoxFit.contain,
+                        ),
+                        CustomPaint(
+                          painter: TextBoxPainter(_detectedTextBoxes),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -349,5 +512,28 @@ class _PreviewKtpScreenState extends State<PreviewKtpScreen> {
         ],
       ),
     );
+  }
+}
+
+class TextBoxPainter extends CustomPainter {
+  final List<Rect> textBoxes;
+
+  TextBoxPainter(this.textBoxes);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.red
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.0;
+
+    for (final box in textBoxes) {
+      canvas.drawRect(box, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) {
+    return true;
   }
 }

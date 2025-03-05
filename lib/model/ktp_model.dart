@@ -36,7 +36,10 @@ class KtpModel extends CameraResultModel {
     this.birthDateRect,
     this.addressRect,
     this.jobRect,
-  }) : super(imagePath: image.path);
+  }) : super(
+          imagePath: image.path,
+          textBoxes: [],
+        );
 
   KtpModel clone() {
     return KtpModel(
@@ -61,12 +64,12 @@ class KtpModel extends CameraResultModel {
     // Contoh fungsi untuk mengekstraksi data KTP dan kotak pembatas
     // Gantilah dengan implementasi ekstraksi data KTP yang sesuai
 
-    // Misalnya, hasil ekstraksi data KTP
-    String nik = "3171234567890123";
-    String name = "MIRA SETIAWAN";
-    DateTime birthDate = DateTime.parse("1996-02-18");
-    String address = "JL PASTI CEPAT A7IGG";
-    String job = "22-02-2017";
+    // // Misalnya, hasil ekstraksi data KTP
+    // String nik = "3171234567890123";
+    // String name = "MIRA SETIAWAN";
+    // DateTime birthDate = DateTime.parse("1996-02-18");
+    // String address = "JL PASTI CEPAT A7IGG";
+    // String job = "22-02-2017";
 
     // Misalnya, hasil ekstraksi kotak pembatas
     Rect nikRect = Rect.fromLTWH(50, 100, 200, 50);

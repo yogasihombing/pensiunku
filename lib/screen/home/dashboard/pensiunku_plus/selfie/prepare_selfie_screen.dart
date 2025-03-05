@@ -1,5 +1,6 @@
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:pensiunku/model/camera_result_model.dart';
 import 'package:pensiunku/model/selfie_model.dart';
 import 'package:pensiunku/model/submission_model.dart';
 import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/ktp/camera_ktp_screen.dart';
@@ -116,37 +117,35 @@ class _PrepareSelfieScreenState extends State<PrepareSelfieScreen> {
   }
 
   // Widget untuk gambar instruksi selfie
-Widget _buildInstructionImage() {
-  return Padding(
-    padding: const EdgeInsets.only(top: 0.0, bottom: 10.0),
-    child: Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(
-            height: _instructionImageHeight,
-            child: Image.asset(
-              'assets/pensiunkuplus/uploadfotowajah.png',
-              height: 150,
-              // fit: BoxFit.fill,
+  Widget _buildInstructionImage() {
+    return Padding(
+      padding: const EdgeInsets.only(top: 0.0, bottom: 10.0),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              height: _instructionImageHeight,
+              child: Image.asset(
+                'assets/pensiunkuplus/uploadfotowajah.png',
+                height: 150,
+                // fit: BoxFit.fill,
+              ),
             ),
-          ),
-          // Title
-          const Text(
-            'Upload foto wajah',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.black,
+            // Title
+            const Text(
+              'Upload foto wajah',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
             ),
-          ),
-    
-        ],
+          ],
+        ),
       ),
-    ),
-  );
-}
-
+    );
+  }
 
   // Widget untuk teks instruksi
   Widget _buildInstructions(ThemeData theme) {
@@ -203,7 +202,8 @@ Widget _buildInstructionImage() {
           CameraKtpScreen.ROUTE_NAME,
           arguments: CameraKtpScreenArgs(
             cameraFilter: 'assets/selfie_filter.png',
-            buildFilter: (context) {
+            buildFilter:
+                (BuildContext context, CameraResultModel? detectionResult) {
               return Container(
                 constraints: const BoxConstraints.expand(),
                 child: CustomPaint(
