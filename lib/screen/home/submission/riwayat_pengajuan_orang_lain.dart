@@ -1,15 +1,13 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:pensiunku/model/riwayat_pengajuan_orang_lain_model.dart';
 import 'package:pensiunku/model/user_model.dart';
 import 'package:pensiunku/repository/riwayat_pengajuan_orang_lain_repository.dart';
 import 'package:pensiunku/repository/user_repository.dart';
-import 'package:pensiunku/screen/home/dashboard/ajukan/pengajuan_orang_lain_screen.dart';
-import 'package:pensiunku/screen/home/dashboard/dashboard_screen.dart';
 import 'package:pensiunku/screen/home/submission/status_pengajuan_orang_lain.dart';
 import 'package:pensiunku/util/shared_preferences_util.dart';
-import '../../../util/widget_util.dart';
-import 'package:flutter/material.dart';
-import 'package:awesome_dialog/awesome_dialog.dart';
+import 'package:pensiunku/util/widget_util.dart';
 
 class RiwayatPengajuanOrangLainScreen extends StatefulWidget {
   static const String ROUTE_NAME =
@@ -31,7 +29,8 @@ class _RiwayatPengajuanOrangLainScreenState
       RiwayatPengajuanOrangLainRepository(); // Inisialisasi repository
   List<RiwayatPengajuanOrangLainModel> pengajuanOrangLainData =
       []; // Data yang akan ditampilkan
-  bool isLoading = true; // Indikator apakah data sedang dimuat
+  // bool isLoading = true; // Indikator apakah data sedang dimuat
+  bool _isLoadingOverlay = true;
   String telepon = '';
   UserModel? _userModel; // Model pengguna (opsional)
 
@@ -39,17 +38,20 @@ class _RiwayatPengajuanOrangLainScreenState
     String? token = SharedPreferencesUtil().sharedPreferences.getString(
         SharedPreferencesUtil.SP_KEY_TOKEN); // Mendapatkan token pengguna
 
-    UserRepository().getOne(token!).then((value) {
+    try {
+      final value = await UserRepository().getOne(token!); // 3️⃣ Gunakan await
       setState(() {
         _userModel = value.data;
-
-        /// simpan data pengguna ke _userModel
+        telepon = value.data?.phone ?? '';
       });
-      telepon = value.data?.phone ?? '';
-      print(value.data);
-      fetchPengajuanOrangLainData(
-          telepon); // Memanggil fungsi untuk mengambil data
-    });
+      await fetchPengajuanOrangLainData(telepon); // 4️⃣ Tunggu hingga selesai
+    } catch (e) {
+      print('Error mengambil profil: $e');
+      setState(() => _isLoadingOverlay = false); // 5️⃣ Matikan overlay jika gagal
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gagal memuat profil')),
+      );
+    }
   }
 
   @override
@@ -59,7 +61,7 @@ class _RiwayatPengajuanOrangLainScreenState
   }
 
   Future<void> fetchPengajuanOrangLainData(telepon) async {
-    setState(() => isLoading = true); // Set loading menjadi true
+    setState(() => _isLoadingOverlay = true); // Set loading menjadi true
     try {
       print('UI: memulai fetch data untuk telepon $telepon');
       final data = await _repository.getRiwayatPengajuanOrangLain(
@@ -68,7 +70,7 @@ class _RiwayatPengajuanOrangLainScreenState
 
       setState(() {
         pengajuanOrangLainData = data; // Update data ke state
-        isLoading = false; // Selesai loading
+        _isLoadingOverlay = false; // Selesai loading
       });
 
       // Cek apakah data kosong
@@ -79,7 +81,8 @@ class _RiwayatPengajuanOrangLainScreenState
       print('UI: Error saat fetch data - $e');
       print('UI: StackTrace - $stackTrace');
 
-      setState(() => isLoading = false); // Selesaikan loading meski ada error
+      setState(() =>
+          _isLoadingOverlay = false); // Selesaikan loading meski ada error
 
       // Tambahkan kondisi khusus untuk menangani "data tidak ditemukan"
       if (e.toString().contains('data tidak ditemukan')) {
@@ -96,42 +99,82 @@ class _RiwayatPengajuanOrangLainScreenState
   }
 
   void _showNoPengajuanDialog() {
-    AwesomeDialog(
-      context: context,
-      dialogType: DialogType.info,
-      animType: AnimType.bottomSlide,
-      title: 'Informasi',
-      desc: 'Anda belum Pernah melakukan Pengajuan, klik fitur Pensiunku+',
-      btnOkText: 'Kembali',
-      btnOkOnPress: () {
-        if (Navigator.canPop(context)) {
-          Navigator.pop(context); // Kembali ke layar sebelumnya
-        }
-      },
-    ).show();
+    showDialog(
+        context: context,
+        barrierDismissible: true,
+        builder: (BuildContext context) {
+          return BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+            child: AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15),
+              ),
+              backgroundColor: Colors
+                  .transparent, // Make the AlertDialog background transparent
+              insetPadding: EdgeInsets.symmetric(horizontal: 15),
+              content: Container(
+                decoration: BoxDecoration(
+                  color: Color(0xFF017964), // Set the background color to green
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                padding: EdgeInsets.all(16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                        'Anda belum Pernah melakukan Pengajuan, klik fitur Pensiunku+',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors
+                              .white, // Set the text color to white for better contrast
+                        ),
+                        textAlign: TextAlign.center),
+                    SizedBox(height: 20),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        foregroundColor: Color(0xFF017964),
+                        backgroundColor:
+                            Colors.white, // Set the text color to green
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      onPressed: () {
+                        if (Navigator.canPop(context)) {
+                          Navigator.pop(context); // Kembali ke layar sebelumnya
+                        }
+                      },
+                      child: Text('Kembali'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar:
-          WidgetUtil.getNewAppBar(context, 'Riwayat Pengajuan', 1, (newIndex) {
-        widget.onChangeBottomNavIndex(newIndex);
-      }, () {
-        if (Navigator.canPop(context)) {
-          Navigator.pop(context);
-        } else {
-          widget.onChangeBottomNavIndex(0);
-        }
-      }),
-      body: RefreshIndicator(
-        onRefresh: () async {
-          fetchPengajuanOrangLainData(telepon);
-        }, // Fungsi refresh saat swipe down
-        child: isLoading
-            ? const Center(
-                child: CircularProgressIndicator()) // Loader saat loading
-            : pengajuanOrangLainData.isEmpty
+    return Stack(
+      children: [
+        Scaffold(
+          appBar: WidgetUtil.getNewAppBar(context, 'Riwayat Pengajuan', 1,
+              (newIndex) {
+            widget.onChangeBottomNavIndex(newIndex);
+          }, () {
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            } else {
+              widget.onChangeBottomNavIndex(0);
+            }
+          }),
+          body: RefreshIndicator(
+            onRefresh: () async {
+              fetchPengajuanOrangLainData(telepon);
+            }, // Fungsi refresh saat swipe down
+
+            child: pengajuanOrangLainData.isEmpty
                 // Tambahkan ListView agar RefreshIndicator bekerja meskipun data kosong
                 ? ListView(children: const [
                     SizedBox(
@@ -201,7 +244,45 @@ class _RiwayatPengajuanOrangLainScreenState
                       );
                     },
                   ),
-      ),
+          ),
+        ),
+        // Tampilkan overlay loading bila _isLoadingOverlay true
+        if (_isLoadingOverlay)
+          Positioned.fill(
+            child: ModalBarrier(
+              color: Colors.black.withOpacity(0.5),
+              dismissible: false,
+            ),
+          ),
+        if (_isLoadingOverlay)
+          Center(
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: const [
+                  CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      Color(0xFF017964),
+                    ),
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    'Mohon tunggu...',
+                    style: TextStyle(
+                      color: Color(0xFF017964),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

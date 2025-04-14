@@ -9,17 +9,12 @@ class SelfieModel extends CameraResultModel {
 
   SelfieModel({
     required this.image,
-    required String imagePath,
     this.faceConfidence,
-  }) : super(
-          imagePath: imagePath,
-          textBoxes: [],
-        );
+  });
 
   SelfieModel clone() {
     return SelfieModel(
       image: image,
-      imagePath: imagePath,
       faceConfidence: faceConfidence,
     );
   }

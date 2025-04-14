@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:pensiunku/screen/home/home_screen.dart';
 import 'package:pensiunku/screen/otp/otp_screen.dart';
 
 class RecoveryAccountSuccessScreen extends StatelessWidget {
@@ -65,7 +64,7 @@ class RecoveryAccountSuccessScreen extends StatelessWidget {
                 ElevatedButton(
                   onPressed: () {
                     Navigator.of(context).pushReplacement(
-                      MaterialPageRoute(builder: (context) => OtpScreen(phone: phone),
+                      MaterialPageRoute(builder: (context) => OtpScreen(),
                       ), // Mengirim data nomor baru. // Mengarah ke OtpScreen
                     );
                   },

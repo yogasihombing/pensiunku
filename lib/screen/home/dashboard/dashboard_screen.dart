@@ -1,13 +1,14 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:ui';
 
-import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:dotted_border/dotted_border.dart';
 import 'package:flutter/material.dart';
 import 'package:pensiunku/model/article_model.dart';
 import 'package:pensiunku/model/event_model.dart';
 import 'package:pensiunku/model/forum_model.dart';
+import 'package:pensiunku/model/submission_model.dart';
 import 'package:pensiunku/model/user_model.dart';
 import 'package:pensiunku/repository/article_repository.dart';
 import 'package:pensiunku/repository/result_model.dart';
@@ -22,11 +23,20 @@ import 'package:pensiunku/screen/home/dashboard/halopensiun/halopensiun_screen.d
 import 'package:pensiunku/screen/home/dashboard/icon_menu.dart';
 import 'package:pensiunku/screen/home/dashboard/ajukan/pengajuan_anda_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/aktifkan_pensiunku_plus_screen.dart';
+import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/daftarkan_pin_screen.dart';
+import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/konfirmasi_pin_screen.dart';
+import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/ktp/prepare_ktp_screen.dart';
+import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/member_reject_screen.dart';
+import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/member_waiting_screen.dart';
+import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/selfie/prepare_selfie_screen.dart';
+import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/wallet/e_wallet_screen.dart';
+import 'package:pensiunku/screen/home/dashboard/simulasi/simulasi_cepat_screen.dart';
 import 'package:pensiunku/util/shared_preferences_util.dart';
 import 'package:pensiunku/widget/chip_tab.dart';
-import 'package:pensiunku/widget/error_card.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+
+import 'package:pensiunku/widget/dialog_helper_contoh.dart';
 
 // Kelas utama DashboardScreen dengan StatefulWidget agar memiliki state yang dapat berubah
 class DashboardScreen extends StatefulWidget {
@@ -63,11 +73,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Future<ResultModel<List<ForumModel>>>? _futureData;
   late Future<ResultModel<List<EventModel>>> _futureDataEventModel;
   late List<EventModel> _EventModel = [];
-  bool _isLoading = false; // Menandai apakah data sedang dimuat
+  late Future<String> _futureGreeting;
   UserModel? _userModel; // Model pengguna (opsional)
   late Future<ResultModel<UserModel>> _future;
+  // Variabel untuk menyimpan hasil cek member (dari API)
+  Future<int>? _futureMemberStatus;
+
+  bool _isLoadingOverlay = false; // Variabel baru untuk loading overlay
   bool _isActivated = false; // Menambahkan variabel aktifasi
   bool _isInDevelopment = true; // Atur ke true untuk mengunci fitur
+  // Variabel untuk menandai loading saat pengecekan API
+  bool _isLoadingCheckMemberBalanceCard = false;
+  bool _isLoadingCheckMemberActionButton = false;
 
   // Controller untuk input teks
   TextEditingController namaController = TextEditingController();
@@ -87,27 +104,33 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void initState() {
     super.initState();
     print('DashboardScreen initialized'); // Cetak saat widget diinisialisasi
+    _isLoadingOverlay = true;
     _refreshData(); // Memuat data awal
+    // Panggil fetchGreeting dan nonaktifkan overlay setelah selesai
+    _futureGreeting = fetchGreeting().whenComplete(() {
+      if (mounted) {
+        setState(() {
+          _isLoadingOverlay = false;
+        });
+      }
+    });
   }
 
-  // Fungsi untuk memuat ulang data
+  // Fungsi untuk memuat data user dan data lain seperti sebelumnya
   Future<void> _refreshData() async {
     String? token = SharedPreferencesUtil()
         .sharedPreferences
         .getString(SharedPreferencesUtil.SP_KEY_TOKEN);
-
     if (token != null) {
-      _future = UserRepository().getOne(token);
-      _future.then((result) {
+      // Memuat data user
+      UserRepository().getOne(token).then((result) {
         if (result.error == null) {
           setState(() {
             _userModel = result.data;
-            _isActivated = _userModel?.isActivated ??
-                false; // Mengecek status aktifasi dari user
-
-            // Tambahkan log ini untuk melihat ID di konsol
             print('User ID: ${_userModel?.id}');
           });
+        } else {
+          print("Error fetching user: ${result.error}");
         }
       });
 
@@ -162,6 +185,166 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
+  Future<int> cekMember(String id) async {
+    const String url = 'https://api.pensiunku.id/new.php/cekMember';
+    final response = await http.post(
+      Uri.parse(url),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'id_user': id}),
+    );
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      // Mencari field 'status' di dalam objek 'text'
+      if (data != null &&
+          data['text'] != null &&
+          data['text']['status'] != null) {
+        final statusStr = data['text']['status'].toString();
+        final status = int.tryParse(statusStr);
+        if (status != null) {
+          return status;
+        } else {
+          throw Exception(
+              "Nilai status '$statusStr' tidak dapat dikonversi ke int");
+        }
+      } else {
+        print(
+            "Error: Field 'status' tidak ditemukan dalam response: ${response.body}");
+        throw Exception("Field 'status' tidak ditemukan atau null");
+      }
+    } else {
+      throw Exception('Failed to load member status');
+    }
+  }
+
+  void _handleCheckMemberAndNavigateFromBalanceCard(
+      BuildContext context) async {
+    if (_userModel == null || _userModel!.id == null) {
+      print("Error: User tidak terautentikasi atau ID tidak tersedia");
+      return;
+    }
+
+    // Set status loading
+    if (mounted) {
+      setState(() {
+        _isLoadingOverlay = true;
+      });
+    }
+
+    try {
+      int status = await cekMember(_userModel!.id.toString());
+      print("Status member (Balance Card): $status");
+
+      final submission = SubmissionModel(
+        id: _userModel!.id,
+        produk: 'Produk Default',
+        name: _userModel!.username ?? 'Nama Default',
+        phone: _userModel!.phone,
+        birthDate: DateTime.now(),
+        salary: 0,
+        tenor: 0,
+        plafond: 0,
+        bankName: 'Bank Default',
+      );
+
+      // Sembunyikan overlay loading sebelum navigasi
+      if (mounted) {
+        setState(() {
+          _isLoadingOverlay = false;
+        });
+      }
+
+      // Navigasi setelah loading disembunyikan
+      Widget nextScreen =
+          _decideNextScreen(status, submission, isFromBalanceCard: true);
+      Navigator.push(
+          context, MaterialPageRoute(builder: (context) => nextScreen));
+    } catch (error) {
+      print("Error (Balance Card): $error");
+      // Sembunyikan loading saat terjadi error
+      if (mounted) {
+        setState(() {
+          _isLoadingOverlay = false;
+        });
+      }
+    }
+  }
+
+  void _handleCheckMemberAndNavigateFromActionButton(
+      BuildContext context) async {
+    if (_userModel == null || _userModel!.id == null) {
+      print("Error: User tidak terautentikasi atau ID tidak tersedia");
+      return;
+    }
+    if (mounted) {
+      setState(() {
+        _isLoadingOverlay = true;
+      });
+    }
+
+    try {
+      int status = await cekMember(_userModel!.id.toString());
+      print("Status member (Action Button): $status");
+
+      final submission = SubmissionModel(
+        id: _userModel!.id,
+        produk: 'Produk Default',
+        name: _userModel!.username ?? 'Nama Default',
+        phone: _userModel!.phone,
+        birthDate: DateTime.now(),
+        salary: 0,
+        tenor: 0,
+        plafond: 0,
+        bankName: 'Bank Default',
+      );
+      // Sembunyikan overlay loading sebelum navigasi
+      if (mounted) {
+        setState(() {
+          _isLoadingOverlay = false;
+        });
+      }
+
+      // Panggil dengan parameter tambahan isFromBalanceCard = false (default)
+      Widget nextScreen = _decideNextScreen(status, submission);
+      Navigator.push(
+          context, MaterialPageRoute(builder: (context) => nextScreen));
+    } catch (error) {
+      print("Error (Action Button): $error");
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingOverlay = false;
+        });
+      }
+    }
+  }
+
+  Widget _decideNextScreen(int status, SubmissionModel submission,
+      {bool isFromBalanceCard = false}) {
+    switch (status) {
+      case 0:
+        return AktifkanPensiunkuPlusScreen();
+      case 1:
+        return PrepareKtpScreen(
+          onSuccess: (ctx) {
+            print("PrepareKtpScreen onSuccess callback dipanggil");
+          },
+          submissionModel: submission,
+        );
+      case 2:
+        return DaftarkanPinPensiunkuPlusScreen();
+      case 3:
+        return MemberWaitingScreen();
+      case 4:
+        // Gunakan parameter isFromBalanceCard untuk menentukan screen tujuan
+        return isFromBalanceCard ? EWalletScreen() : PengajuanOrangLainScreen();
+      case 5:
+        return MemberRejectScreen();
+      default:
+        print("Error: Status member tidak dikenal: $status");
+        return AktifkanPensiunkuPlusScreen(); // fallback
+    }
+  }
+
   final List<String> programList = [
     'Pra-Pensiun',
     'Pensiun',
@@ -178,72 +361,133 @@ class _DashboardScreenState extends State<DashboardScreen> {
     ThemeData theme = Theme.of(context);
     Size screenSize = MediaQuery.of(context).size;
 
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Colors.white,
-            Colors.white,
-            Colors.white,
-            Color.fromARGB(255, 220, 226, 147),
-          ],
-          stops: [0.25, 0.5, 0.75, 1.0],
-        ),
-      ),
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        body: SafeArea(
-          child: RefreshIndicator(
-            onRefresh: _refreshData,
-            child: SingleChildScrollView(
-              controller: widget.scrollController,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    child: _buildHeader(),
-                  ),
-                  const SizedBox(height: 1),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    child: _buildGreeting(),
-                  ),
-                  const SizedBox(height: 6),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    child: _buildBalanceCard(),
-                  ),
-                  const SizedBox(height: 12),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    child: _buildBottomSectionTitle(),
-                  ),
-                  const SizedBox(height: 12),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    child: _buildActionButtons(context),
-                  ),
-                  const SizedBox(height: 16),
-                  // Full screen widgets without padding
-                  _buildHeaderImage(),
-                  const SizedBox(height: 12),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    child: _buildMenuFeatures(),
-                  ),
-                  const SizedBox(height: 16),
-                  _buildCarouselSlider(),
-                  const SizedBox(height: 16),
-                  _buildArticleFeatures(),
-                  const SizedBox(height: 100),
+    return Scaffold(
+      body: Stack(
+        // Wrap everything in a Stack
+        children: [
+          Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.white,
+                  Colors.white,
+                  Colors.white,
+                  Color.fromARGB(255, 220, 226, 147),
                 ],
+                stops: [0.25, 0.5, 0.75, 1.0],
+              ),
+            ),
+            child: Scaffold(
+              backgroundColor: Colors.transparent,
+              body: SafeArea(
+                child: RefreshIndicator(
+                  onRefresh: _refreshData,
+                  child: SingleChildScrollView(
+                    controller: widget.scrollController,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                          child: _buildHeader(),
+                        ),
+                        const SizedBox(height: 1),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                          child: _buildGreeting(),
+                        ),
+                        const SizedBox(height: 6),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                          child: _buildBalanceCard(),
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Padding(
+                        //   padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        //   child: _buildDialogHelper(context),
+                        // ),
+                        // const SizedBox(height: 12),
+
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                          child: _buildSimulasiPensiunku(context),
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Padding(
+                        //   padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        //   child: _buildWallet(context),
+                        // ),
+                        // const SizedBox(height: 12),
+                        // Padding(
+                        //   padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        //   child: _buildBottomSectionTitle(),
+                        // ),
+                        // const SizedBox(height: 12),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                          child: _buildActionButtons(context),
+                        ),
+                        const SizedBox(height: 16),
+                        // Full screen widgets without padding
+                        _buildHeaderImage(),
+                        const SizedBox(height: 12),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                          child: _buildMenuFeatures(),
+                        ),
+                        const SizedBox(height: 16),
+                        _buildCarouselSlider(),
+                        const SizedBox(height: 16),
+                        _buildArticleFeatures(),
+                        const SizedBox(height: 100),
+                      ],
+                    ),
+                  ),
+                ),
               ),
             ),
           ),
-        ),
+          // Tampilkan overlay loading bila _isLoadingOverlay true
+          if (_isLoadingOverlay)
+            Positioned.fill(
+              child: ModalBarrier(
+                color: Colors.black.withOpacity(0.5),
+                dismissible: false,
+              ),
+            ),
+          if (_isLoadingOverlay)
+            Center(
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: const [
+                    CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        Color(0xFF017964),
+                      ),
+                    ),
+                    SizedBox(height: 16),
+                    Text(
+                      'Mohon tunggu...',
+                      style: TextStyle(
+                        color: Color(0xFF017964),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -254,9 +498,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Image.asset(  
+          Image.asset(
             'assets/logo_pensiunku.png',
-            height: 80,
+            height: 42,
           ),
           IconButton(
             icon: const Icon(Icons.account_circle_outlined),
@@ -306,7 +550,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
               text: userName, // Nama pengguna dengan gaya bold
               style: boldStyle,
             ),
-            
           ],
         ),
       );
@@ -318,10 +561,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           FutureBuilder<String>(
-            future: fetchGreeting(),
+            future: _futureGreeting, // Pakai yang sudah fix di initState
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return const CircularProgressIndicator();
+                return buildGreetingText('Selamat Datang');
               } else if (snapshot.connectionState == ConnectionState.done) {
                 if (snapshot.hasError) {
                   return buildGreetingText('Selamat datang');
@@ -336,143 +579,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
     );
   }
-  // Text(R
-  //   'ID: ${_userModel?.id ?? 'Tidak tersedia'}',
-  //   style: const TextStyle(
-  //     fontSize: 10,
-  //     color: Colors.black87,
-  //   ),
-  // ),
-
-  // Widget _buildBalanceCard(BuildContext context) {
-  //   return GestureDetector(
-  //     onTap: () {
-  //       AwesomeDialog(
-  //         context: context,
-  //         dialogType: DialogType.info,
-  //         animType: AnimType.scale,
-  //         title: 'Fitur dalam Pengembangan',
-  //         desc:
-  //             'Fitur ini masih dalam pengembangan. Nantikan update berikutnya!',
-  //         btnOkOnPress: () {},
-  //       ).show();
-  //     },
-  //     child: Stack(
-  //       children: [
-  //         Container(
-  //           width: double.infinity,
-  //           padding: EdgeInsets.all(16), // Berikan batasan padding
-  //           decoration: BoxDecoration(
-  //             borderRadius: BorderRadius.circular(12),
-  //             color: Colors.white.withOpacity(0.5),
-  //             boxShadow: [
-  //               BoxShadow(
-  //                 color: Colors.black.withOpacity(0.1),
-  //                 blurRadius: 1,
-  //                 offset: Offset(0, 5),
-  //               ),
-  //             ],
-  //           ),
-  //           child: Column(
-  //             crossAxisAlignment: CrossAxisAlignment.start,
-  //             children: [
-  //               Row(
-  //                 children: [
-  //                   const Icon(Icons.account_balance_wallet_outlined,
-  //                       color: Colors.black),
-  //                   const SizedBox(width: 8),
-  //                   const Text(
-  //                     'Dompet Anda',
-  //                     style: TextStyle(
-  //                       fontSize: 14,
-  //                       fontWeight: FontWeight.bold,
-  //                       color: Colors.black,
-  //                     ),
-  //                   ),
-  //                   const Spacer(),
-  //                   const Text(
-  //                     'Rp 0',
-  //                     style: TextStyle(
-  //                       fontSize: 12,
-  //                       fontWeight: FontWeight.bold,
-  //                       color: Colors.black87,
-  //                     ),
-  //                   ),
-  //                 ],
-  //               ),
-  //               const SizedBox(height: 8),
-  //               ElevatedButton(
-  //                 onPressed: () {
-  //                   AwesomeDialog(
-  //                     context: context,
-  //                     dialogType: DialogType.info,
-  //                     animType: AnimType.scale,
-  //                     title: 'Fitur dalam Pengembangan',
-  //                     desc:
-  //                         'Fitur ini masih dalam pengembangan. Nantikan update berikutnya!',
-  //                     btnOkOnPress: () {},
-  //                   ).show();
-  //                 },
-  //                 style: ElevatedButton.styleFrom(
-  //                   backgroundColor: const Color(0xFFFFC950),
-  //                   minimumSize: const Size(double.infinity, 22),
-  //                   shape: RoundedRectangleBorder(
-  //                     borderRadius: BorderRadius.circular(20),
-  //                   ),
-  //                   shadowColor: Colors.grey
-  //                       .withOpacity(0.5), // Tambahkan shadowColor di sini
-  //                   elevation: 5, // Atur elevation untuk menampilkan shadow
-  //                 ),
-  //                 child: RichText(
-  //                   text: TextSpan(
-  //                     text: 'Aktifkan',
-  //                     style: TextStyle(
-  //                       fontSize: 14,
-  //                       fontWeight: FontWeight.normal,
-  //                       color: Colors.black,
-  //                     ),
-  //                     children: [
-  //                       TextSpan(
-  //                         text: ' Pensiunku+',
-  //                         style: TextStyle(
-  //                           fontWeight: FontWeight
-  //                               .bold, // Bold hanya untuk "Pensiunku+"
-  //                         ),
-  //                       ),
-  //                       TextSpan(
-  //                         text: ' Sekarang!',
-  //                         style: TextStyle(
-  //                           fontWeight: FontWeight
-  //                               .normal, // Normal untuk bagian lainnya
-  //                         ),
-  //                       ),
-  //                     ],
-  //                   ),
-  //                 ),
-  //               ),
-  //             ],
-  //           ),
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  // }
 
   Widget _buildBalanceCard() {
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(16), // Berikan batasan padding
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              color: Colors.white.withOpacity(0.5),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 1,
-                  offset: Offset(0, 5),
-                ),
-              ],
-            ),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        color: Colors.white.withOpacity(0.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 1,
+            offset: Offset(0, 5),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -500,16 +622,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ],
           ),
           const SizedBox(height: 8),
-          ElevatedButton(
-            onPressed: () {
-              // Arahkan ke halaman AktifkanPensiunkuPlusScreen
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) => AktifkanPensiunkuPlusScreen()),
-              );
-            },
-            style: ElevatedButton.styleFrom(
+          _isLoadingCheckMemberBalanceCard
+              ? Center(
+                  child: CircularProgressIndicator()) // Menampilkan loading
+              : ElevatedButton(
+                  onPressed: () {
+                    _handleCheckMemberAndNavigateFromBalanceCard(context);
+                  },
+                  style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFFFC950),
                     minimumSize: const Size(double.infinity, 22),
                     shape: RoundedRectangleBorder(
@@ -519,60 +639,147 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         .withOpacity(0.5), // Tambahkan shadowColor di sini
                     elevation: 5, // Atur elevation untuk menampilkan shadow
                   ),
-            child: RichText(
-              text: TextSpan(
-                text: 'Aktifkan ',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.normal,
-                  color: Colors.green[900],
+                  child: RichText(
+                    text: TextSpan(
+                      text: 'Aktifkan ',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.normal,
+                        color: Colors.green[900],
+                      ),
+                      children: [
+                        TextSpan(
+                          text: 'Pensiunku+',
+                          style: TextStyle(
+                            fontWeight: FontWeight
+                                .bold, // Bold hanya untuk "Pensiunku+"
+                          ),
+                        ),
+                        TextSpan(
+                          text: ' Sekarang',
+                          style: TextStyle(
+                            fontWeight: FontWeight
+                                .normal, // Normal untuk bagian lainnya
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-                children: [
-                  TextSpan(
-                    text: 'Pensiunku+',
-                    style: TextStyle(
-                      fontWeight:
-                          FontWeight.bold, // Bold hanya untuk "Pensiunku+"
-                    ),
-                  ),
-                  TextSpan(
-                    text: ' Sekarang',
-                    style: TextStyle(
-                      fontWeight:
-                          FontWeight.normal, // Normal untuk bagian lainnya
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
         ],
       ),
     );
   }
 
-  Widget _buildBottomSectionTitle() {
-    return Container(
-      width: double.infinity, // Menyamakan lebar dengan _buildBalanceCard
-      decoration: BoxDecoration(
-        color: const Color(0xFF017964), // Latar hijau tua
-        borderRadius: BorderRadius.circular(24), // Radius sudut kontainer
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          vertical: 8, // Padding atas-bawah
-          horizontal: 16, // Padding kiri-kanan
+  // Widget _buildDialogHelper(BuildContext context) {
+  //   return GestureDetector(
+  //     onTap: () {
+  //       // Navigasi ke EWalletScreen
+  //       Navigator.push(
+  //         context,
+  //         MaterialPageRoute(builder: (context) => DialoghelperContoh()),
+  //       );
+  //     },
+  //     child: Container(
+  //       width: double.infinity, // Menyamakan lebar dengan _buildBalanceCard
+  //       decoration: BoxDecoration(
+  //         color: const Color(0xFF017964), // Latar hijau tua
+  //         borderRadius: BorderRadius.circular(24), // Radius sudut kontainer
+  //       ),
+  //       child: Padding(
+  //         padding: const EdgeInsets.symmetric(
+  //           vertical: 8, // Padding atas-bawah
+  //           horizontal: 16, // Padding kiri-kanan
+  //         ),
+  //         child: const Center(
+  //           // Menengahkan teks secara horizontal dan vertikal
+  //           child: Text(
+  //             'Dialog Helper Contoh',
+  //             style: TextStyle(
+  //               fontSize: 11,
+  //               fontWeight: FontWeight.bold,
+  //               color: Colors.white, // Warna teks putih
+  //             ),
+  //             textAlign: TextAlign.center, // Teks rata tengah horizontal
+  //           ),
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  // }
+
+  Widget _buildSimulasiPensiunku(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        // Navigasi ke SimulasiCepatScreen
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => SimulasiCepatScreen()),
+        );
+      },
+      child: Container(
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color:
+              const Color(0xFFFFC950), // Warna default bila gambar gagal load
+          borderRadius: BorderRadius.circular(10),
+          image: const DecorationImage(
+            image: AssetImage('assets/dashboard_screen/simulasi-cepat.png'),
+            fit: BoxFit.cover, // Menyesuaikan gambar agar menutupi container
+          ),
         ),
-        child: const Center(
-          // Menengahkan teks secara horizontal dan vertikal
-          child: Text(
-            'BUTUH UANG UNTUK MASA PENSIUNMU?',
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              color: Colors.white, // Warna teks putih
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            vertical: 24,
+            horizontal: 16,
+          ),
+          child: const Center(
+            child: Text(
+              'Simulasi Cepat',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
+              textAlign: TextAlign.center,
             ),
-            textAlign: TextAlign.center, // Teks rata tengah horizontal
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWallet(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        // Navigasi ke EWalletScreen
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => EWalletScreen()),
+        );
+      },
+      child: Container(
+        width: double.infinity, // Menyamakan lebar dengan _buildBalanceCard
+        decoration: BoxDecoration(
+          color: const Color(0xFF017964), // Latar hijau tua
+          borderRadius: BorderRadius.circular(24), // Radius sudut kontainer
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            vertical: 8, // Padding atas-bawah
+            horizontal: 16, // Padding kiri-kanan
+          ),
+          child: const Center(
+            // Menengahkan teks secara horizontal dan vertikal
+            child: Text(
+              'Cek Progress E-Wallet Pensiunku+',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: Colors.white, // Warna teks putih
+              ),
+              textAlign: TextAlign.center, // Teks rata tengah horizontal
+            ),
           ),
         ),
       ),
@@ -583,32 +790,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
   //   return Container(
   //     width: double.infinity, // Menyamakan lebar dengan _buildBalanceCard
   //     decoration: BoxDecoration(
-  //       color: const Color(0xFF017964), // Latar hijau tua
+  //       color: Color.fromARGB(255, 0, 0, 0), // Latar hijau tua
   //       borderRadius: BorderRadius.circular(24), // Radius sudut kontainer
   //     ),
-  //     child: DottedBorder(
-  //       borderType: BorderType.RRect, // Bentuk border melengkung
-  //       radius: const Radius.circular(24), // Radius sudut yang sama
-  //       dashPattern: [3, 3], // Pola putus-putus (6px garis, 3px jarak)
-  //       color: Colors.white, // Warna putih untuk garis
-  //       strokeWidth: 2, // Ketebalan garis
-  //       padding: const EdgeInsets.all(0), // Padding dalam border
-  //       child: Padding(
-  //         padding: const EdgeInsets.symmetric(
-  //           vertical: 4, // Padding atas-bawah
-  //           horizontal: 16, // Padding kiri-kanan
-  //         ),
-  //         child: const Center(
-  //           // Menengahkan teks secara horizontal dan vertikal
-  //           child: Text(
-  //             'BUTUH UANG UNTUK MASA PENSIUNMU?',
-  //             style: TextStyle(
-  //               fontSize: 14,
-  //               fontWeight: FontWeight.bold,
-  //               color: Colors.white, // Warna teks putih
-  //             ),
-  //             textAlign: TextAlign.center, // Teks rata tengah horizontal
+  //     child: Padding(
+  //       padding: const EdgeInsets.symmetric(
+  //         vertical: 8, // Padding atas-bawah
+  //         horizontal: 16, // Padding kiri-kanan
+  //       ),
+  //       child: const Center(
+  //         // Menengahkan teks secara horizontal dan vertikal
+  //         child: Text(
+  //           'BUTUH UANG UNTUK MASA PENSIUNMU?',
+  //           style: TextStyle(
+  //             fontSize: 11,
+  //             fontWeight: FontWeight.bold,
+  //             color: Colors.white, // Warna teks putih
   //           ),
+  //           textAlign: TextAlign.center, // Teks rata tengah horizontal
   //         ),
   //       ),
   //     ),
@@ -621,11 +820,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
         {Color backgroundColor = Colors.white,
         Color shadowColor = Colors.transparent}) {
       final mediaQuery = MediaQuery.of(context);
-      final double imageSize = mediaQuery.size.width *
-          0.14; // Ukuran gambar fleksibel berdasarkan lebar layar
+      final double imageSize = mediaQuery.size.width * 0.14;
       final double paddingHorizontal = mediaQuery.size.width * 0.03;
       final double paddingVertical = mediaQuery.size.height * 0.01;
-
       return ElevatedButton(
         style: ElevatedButton.styleFrom(
           backgroundColor: backgroundColor,
@@ -633,8 +830,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             borderRadius: BorderRadius.circular(20),
           ),
           padding: EdgeInsets.symmetric(
-              horizontal: paddingHorizontal,
-              vertical: paddingVertical), // Padding fleksibel
+              horizontal: paddingHorizontal, vertical: paddingVertical),
           shadowColor: shadowColor,
           elevation: shadowColor == Colors.transparent ? 0 : 5,
         ),
@@ -642,15 +838,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
-            Image.asset(
-              iconPath,
-              width: imageSize, // Ukuran gambar fleksibel
-              height: imageSize,
-            ),
-            SizedBox(width: mediaQuery.size.width * 0.02), // Jarak fleksibel
-            Flexible(
-              child: textWidget,
-            ),
+            Image.asset(iconPath, width: imageSize, height: imageSize),
+            SizedBox(width: mediaQuery.size.width * 0.02),
+            Flexible(child: textWidget),
           ],
         ),
       );
@@ -659,12 +849,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
+        // Tombol Ajukan Pinjaman Sekarang (tanpa cek status)
         Expanded(
           child: _buildButton(
             'assets/dashboard_screen/pengajuanAnda.png',
             RichText(
               textAlign: TextAlign.start,
-              text: TextSpan(
+              text: const TextSpan(
                 children: [
                   TextSpan(
                     text: 'Ajukan\n',
@@ -674,7 +865,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   ),
                   TextSpan(
-                    text: 'Kredit Pensiun',
+                    text: 'Pinjaman Sekarang',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       color: Colors.black,
@@ -683,87 +874,51 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ],
               ),
             ),
-            () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => PengajuanAndaScreen(),
-              ),
-            ),
+            () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (context) => PengajuanAndaScreen()),
+              );
+            },
             shadowColor: Colors.grey.withOpacity(0.5),
           ),
         ),
         const SizedBox(width: 10),
+        // Tombol Ajukan Mitra Pensiunku+ (dengan cek status)
         Expanded(
-          child: _buildButton(
-            'assets/dashboard_screen/mitra.png',
-            RichText(
-              textAlign: TextAlign.start,
-              text: TextSpan(
-                children: [
-                  TextSpan(
-                    text: 'Ajukan Mitra\n',
-                    style: TextStyle(
-                      fontWeight: FontWeight.normal,
-                      color: Colors.black,
+          child: _isLoadingCheckMemberActionButton
+              ? Center(child: CircularProgressIndicator())
+              : _buildButton(
+                  'assets/dashboard_screen/mitra.png',
+                  RichText(
+                    textAlign: TextAlign.start,
+                    text: const TextSpan(
+                      children: [
+                        TextSpan(
+                          text: 'Ajukan Mitra\n',
+                          style: TextStyle(
+                            fontWeight: FontWeight.normal,
+                            color: Colors.black,
+                          ),
+                        ),
+                        TextSpan(
+                          text: 'Pensiunku+',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  TextSpan(
-                    text: 'Pensiunku+',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            _isActivated
-                ? () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => PengajuanOrangLainScreen(),
-                      ),
-                    )
-                : () => _showUnderDevelopmentDialog(context),
-            shadowColor: Colors.grey.withOpacity(0.5),
-          ),
+                  () {
+                    _handleCheckMemberAndNavigateFromActionButton(context);
+                  },
+                  shadowColor: Colors.grey.withOpacity(0.5),
+                ),
         ),
       ],
     );
   }
-
-  // Widget _buildActionButtons(BuildContext context) {
-  //   return Row(
-  //     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-  //     children: [
-  //       Expanded(
-  //         child: _buildActionButton(
-  //           context,
-  //           'assets/dashboard_screen/pengajuanAnda.png',
-  //           'AJUKAN\nKREDIT\nPENSIUN',
-  //           () => Navigator.of(context).push(
-  //             MaterialPageRoute(
-  //               builder: (context) => PengajuanAndaScreen(),
-  //             ),
-  //           ),
-  //         ),
-  //       ),
-  //       const SizedBox(width: 10),
-  //       Expanded(
-  //         child: _buildActionButton(
-  //           context,
-  //           'assets/dashboard_screen/mitra.png',
-  //           'AJUKAN\nMITRA\nPENSIUNKU+',
-  //           _isActivated // Periksa apakah sudah diaktifkan
-  //               ? () => Navigator.of(context).push(
-  //                     MaterialPageRoute(
-  //                       builder: (context) => PengajuanOrangLainScreen(),
-  //                     ),
-  //                   )
-  //               : () => _showActivationAlert(context), // Gunakan fungsi alert
-  //         ),
-  //       ),
-  //     ],
-  //   );
-  // }
 
   Widget _buildHeaderImage() {
     final List<String> images = [
@@ -821,63 +976,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ],
     );
   }
-
-  // Widget _buildHeaderImage() {
-  //   final List<String> images = [
-  //     'assets/dashboard_screen/image_1.png',
-  //     'assets/dashboard_screen/image_2.png',
-  //     'assets/dashboard_screen/image_3.png'
-  //   ];
-
-  //   return Column(
-  //     crossAxisAlignment: CrossAxisAlignment.start,
-  //     children: [
-  //       const Padding(
-  //         padding: EdgeInsets.only(left: 30.0, bottom: 8.0),
-  //         child: Text(
-  //           'Ada yang baru nih!',
-  //           style: TextStyle(
-  //             fontSize: 12,
-  //             fontWeight: FontWeight.w600,
-  //             color: Colors.black,
-  //           ),
-  //         ),
-  //       ),
-  //       Padding(
-  //         padding: const EdgeInsets.symmetric(
-  //             horizontal: 0.0), // Padding di sisi kiri dan kanan
-  //         child: CarouselSlider(
-  //           options: CarouselOptions(
-  //             height: 165,
-  //             enlargeCenterPage: true,
-  //             autoPlay: true,
-  //             autoPlayInterval: const Duration(seconds: 3),
-  //             autoPlayAnimationDuration: const Duration(milliseconds: 800),
-  //             viewportFraction: 0.96,
-  //             aspectRatio: 16 / 9,
-  //             reverse: true, // otomatis geser ke kanan
-  //           ),
-  //           items: images.map((imagePath) {
-  //             return Builder(
-  //               builder: (BuildContext context) {
-  //                 return Container(
-  //                   margin: const EdgeInsets.symmetric(horizontal: 8.0),
-  //                   decoration: BoxDecoration(
-  //                     borderRadius: BorderRadius.circular(16),
-  //                     image: DecorationImage(
-  //                       image: AssetImage(imagePath),
-  //                       fit: BoxFit.cover,
-  //                     ),
-  //                   ),
-  //                 );
-  //               },
-  //             );
-  //           }).toList(),
-  //         ),
-  //       ),
-  //     ],
-  //   );
-  // }
 
   Widget _buildMenuFeatures() {
     return Column(
@@ -1116,40 +1214,64 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   void _showUnderDevelopmentDialog(BuildContext context) {
-    AwesomeDialog(
+    showDialog(
       context: context,
-      dialogType: DialogType.info,
-      animType: AnimType.scale,
-      title: 'Fitur dalam Pengembangan',
-      desc: 'Fitur ini masih dalam pengembangan. Nantikan update berikutnya!',
-      btnOkOnPress: () {},
-    ).show();
-  }
-
-  void _showActivationAlert(BuildContext context) {
-    AwesomeDialog(
-      context: context,
-      dialogType: DialogType.warning, // Ikon peringatan
-      animType: AnimType.bottomSlide, // Animasi pop-up
-      title: 'Akses Ditolak',
-      desc:
-          'Silakan aktifkan Pensiunku+ terlebih dahulu untuk mengakses fitur ini.',
-      btnCancelText: 'Batal',
-      btnOkText: 'Aktifkan',
-      btnCancelOnPress: () {
-        // Tutup dialog
+      barrierDismissible: true,
+      builder: (BuildContext context) {
+        return BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+          child: AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(15),
+            ),
+            backgroundColor: Colors
+                .transparent, // Make the AlertDialog background transparent
+            insetPadding: EdgeInsets.symmetric(horizontal: 15),
+            content: Container(
+              decoration: BoxDecoration(
+                color: Color(0XFFF017964), // Set the background color to green
+                borderRadius: BorderRadius.circular(15),
+              ),
+              padding: EdgeInsets.all(16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Untuk mengakses Fitur ini Anda diwajibkan untuk Bergabung menjadi mitra pensiunku+ !',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors
+                          .white, // Set the text color to white for better contrast
+                    ),
+                  ),
+                  SizedBox(height: 20),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      foregroundColor: Color(0xFF017964),
+                      backgroundColor:
+                          Colors.white, // Set the text color to green
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    onPressed: () {
+                      Navigator.of(context).pop(); // Close the dialog
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => AktifkanPensiunkuPlusScreen(),
+                        ),
+                      );
+                    },
+                    child: Text('Aktifkan Pensiunku+'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
       },
-      btnOkOnPress: () {
-        // Arahkan ke halaman aktivasi
-        Navigator.pushNamed(context, '/AktifkanPensiunkuPlusScreen');
-      },
-    ).show(); // Tampilkan dialog
-  }
-
-  void _onShowButton(showButton, onPageChanged) {
-    if (onPageChanged == Center) {
-      showButton == true;
-    }
+    );
   }
 }
 

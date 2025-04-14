@@ -18,10 +18,7 @@ class ReferralModel extends CameraResultModel {
     this.jobKtp,
     this.birthDateKtp,
     this.referal,
-  }) : super(
-          imagePath: fotoKtp ?? '',
-          textBoxes: [],
-        );
+  });
 
   ReferralModel copyWith({
     String? fotoKtp,

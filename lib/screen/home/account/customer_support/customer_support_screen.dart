@@ -130,7 +130,7 @@ class _CustomerSupportScreenState extends State<CustomerSupportScreen> {
                     subtitle: '+6287785833344',
                     onTap: () {
                       UrlUtil.launchURL(
-                          'https://wa.me/+6287785833344?text=Hallo%20admin%20kredit%20pensiunku,%20saya%20memiliki%20kendala%20dalam%20menggunakan%20aplikasi%20Pensiunku,%20bisa%20tolong%20dijelaskan%20cara%20penggunaannya%20?');
+                          'https://wa.me/+6287785833344?text=Hallo%20admin%20pensiunku,%20saya%20memiliki%20kendala%20dalam%20menggunakan%20aplikasi%20Pensiunku,%20bisa%20tolong%20dijelaskan%20cara%20penggunaannya%20?');
                     },
                   ),
                   SizedBox(height: 12.0),

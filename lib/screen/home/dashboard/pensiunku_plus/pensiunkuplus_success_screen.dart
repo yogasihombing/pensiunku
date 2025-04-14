@@ -60,7 +60,7 @@ class PensiunkuPlusSuccessScreen extends StatelessWidget {
                     // Logo
                     Image.asset(
                       'assets/pensiunkuplus/pensiunku.png',
-                      height: 100,
+                      height: 50,
                     ),
                     SizedBox(height: 30),
                     // Illustration

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:pensiunku/data/db/pengajuan_orang_lain_dao.dart';
@@ -7,7 +8,6 @@ import 'package:pensiunku/repository/result_model.dart';
 import 'package:pensiunku/repository/user_repository.dart';
 import 'package:pensiunku/screen/home/submission/riwayat_pengajuan_orang_lain.dart';
 import 'package:pensiunku/util/shared_preferences_util.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class PengajuanOrangLainScreen extends StatefulWidget {
   static const String ROUTE_NAME = '/pengajuan_orang_lain';
@@ -20,7 +20,7 @@ class _PengajuanOrangLainScreenState extends State<PengajuanOrangLainScreen> {
   // GlobalKey untuk form, digunakan untuk validasi
   final _formKey = GlobalKey<FormState>();
   final ImagePicker _picker = ImagePicker();
-  bool _isLoading = false;
+  bool _isLoadingOverlay = false;
   bool _isKtpUploading = false; // Tambahan untuk KTP
   bool _isNpwpUploading = false; // Tambahan untuk NPWP
   bool _isKaripUploading = false; // Tambahan Untuk SK Pensiun
@@ -157,53 +157,91 @@ class _PengajuanOrangLainScreenState extends State<PengajuanOrangLainScreen> {
 
       // Set loading state to false
       setState(() {
-        _isLoading = false;
+        _isLoadingOverlay = false;
       });
 
       if (success) {
-        _showCustomDialog('Sukses', 'Pengajuan Orang Lain berhasil dikirim',
-            Icons.check_circle, Colors.green);
+        _showCustomDialog('Sukses', 'Pengajuan Orang Lain berhasil dikirim');
       } else {
-        _showCustomDialog(
-            'Gagal', 'Gagal mengirim pengajuan', Icons.error, Colors.red);
+        _showCustomDialog('Gagal', 'Gagal mengirim pengajuan');
       }
     }
   }
 
-  void _showCustomDialog(
-      String title, String message, IconData icon, Color iconColor) {
+  void _showCustomDialog(String title, String message) {
     showDialog(
       context: context,
+      barrierDismissible: true,
       builder: (BuildContext context) {
-        return AlertDialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          contentPadding: EdgeInsets.all(20),
-          title: Row(
-            children: [
-              Icon(icon, color: iconColor, size: 30),
-              SizedBox(width: 10),
-              Text(title),
-            ],
-          ),
-          content: Text(message, textAlign: TextAlign.center),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(); // Close the dialog
-                // Navigate to RiwayatPengajuanOrangLainScreen after the dialog is closed
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => RiwayatPengajuanOrangLainScreen(
-                      onChangeBottomNavIndex: (index) => 1,
+        return BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+          child: AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(15),
+            ),
+            backgroundColor: Colors.transparent,
+            insetPadding: const EdgeInsets.symmetric(horizontal: 15),
+            content: Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFF017964),
+                borderRadius: BorderRadius.circular(15),
+              ),
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    message,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Colors.white70,
+                      height: 1.4,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: const Color(0xFF017964),
+                      minimumSize: const Size(120, 45),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => RiwayatPengajuanOrangLainScreen(
+                            onChangeBottomNavIndex: (index) => 1,
+                          ),
+                        ),
+                      );
+                    },
+                    child: const Text(
+                      'Mengerti',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
                     ),
                   ),
-                );
-              },
-              child: Text('OK', style: TextStyle(color: Colors.blue)),
+                ],
+              ),
             ),
-          ],
+          ),
         );
       },
     );
@@ -213,212 +251,257 @@ class _PengajuanOrangLainScreenState extends State<PengajuanOrangLainScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Form Pengajuan Orang lain'),
+        title: Text('Form Mitra'),
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                if (id != null) // ###
-                  Text('ID Pengguna: $id'), // Tampilkan ID User
-                TextFormField(
-                  controller: namaController,
-                  decoration: InputDecoration(
-                      labelText: 'Nama', border: OutlineInputBorder()),
-                  validator: (value) => (value == null || value.isEmpty)
-                      ? 'Harap masukkan nama'
-                      : null,
-                ),
-                SizedBox(height: 16.0),
+      body: Stack(
+        children: [
+          SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    if (id != null) // ###
+                      Text('ID Pengguna: $id'), // Tampilkan ID User
+                    TextFormField(
+                      controller: namaController,
+                      decoration: InputDecoration(
+                          labelText: 'Nama', border: OutlineInputBorder()),
+                      validator: (value) => (value == null || value.isEmpty)
+                          ? 'Harap masukkan nama'
+                          : null,
+                    ),
+                    SizedBox(height: 16.0),
 
-                TextFormField(
-                  controller: teleponController,
-                  keyboardType: TextInputType.phone,
-                  decoration: InputDecoration(
-                      labelText: 'No. Telepon', border: OutlineInputBorder()),
-                  validator: (value) {
-                    if (value == null || value.isEmpty)
-                      return 'Harap masukkan no. telepon';
-                    if (!RegExp(r'^[0-9]+$').hasMatch(value))
-                      return 'No. telepon hanya boleh angka';
-                    return null;
-                  },
-                ),
-                SizedBox(height: 16.0),
+                    TextFormField(
+                      controller: teleponController,
+                      keyboardType: TextInputType.phone,
+                      decoration: InputDecoration(
+                          labelText: 'No. Telepon',
+                          border: OutlineInputBorder()),
+                      validator: (value) {
+                        if (value == null || value.isEmpty)
+                          return 'Harap masukkan no. telepon';
+                        if (!RegExp(r'^[0-9]+$').hasMatch(value))
+                          return 'No. telepon hanya boleh angka';
+                        return null;
+                      },
+                    ),
+                    SizedBox(height: 16.0),
 
-                TextFormField(
-                  controller: domisiliController,
-                  decoration: InputDecoration(
-                      labelText: 'Kota Domisili', border: OutlineInputBorder()),
-                  validator: (value) => (value == null || value.isEmpty)
-                      ? 'Harap masukkan kota domisili'
-                      : null,
-                ),
-                SizedBox(height: 16.0),
+                    TextFormField(
+                      controller: domisiliController,
+                      decoration: InputDecoration(
+                          labelText: 'Kota Domisili',
+                          border: OutlineInputBorder()),
+                      validator: (value) => (value == null || value.isEmpty)
+                          ? 'Harap masukkan kota domisili'
+                          : null,
+                    ),
+                    SizedBox(height: 16.0),
 
-                TextFormField(
-                  controller: nipController,
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(
-                      labelText: 'NOTAS/NIP', border: OutlineInputBorder()),
-                  validator: (value) {
-                    if (value == null || value.isEmpty)
-                      return 'Harap masukkan NOTAS/NIP';
-                    if (value.length != 10) return 'NIP harus 10 digit';
-                    return null;
-                  },
-                ),
-                SizedBox(height: 16.0),
+                    TextFormField(
+                      controller: nipController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                          labelText: 'NOTAS/NIP', border: OutlineInputBorder()),
+                      validator: (value) {
+                        if (value == null || value.isEmpty)
+                          return 'Harap masukkan NOTAS/NIP';
+                        if (value.length != 10) return 'NIP harus 10 digit';
+                        return null;
+                      },
+                    ),
+                    SizedBox(height: 16.0),
 
-                // KTP Upload Field
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: TextEditingController(
-                          text: fileKTP != null ? fileKTP!.split('/').last : '',
+                    // KTP Upload Field
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: TextEditingController(
+                              text: fileKTP != null
+                                  ? fileKTP!.split('/').last
+                                  : '',
+                            ),
+                            decoration: InputDecoration(
+                              labelText: 'KTP',
+                              border: OutlineInputBorder(),
+                            ),
+                            readOnly: true,
+                            validator: (value) {
+                              if (fileKTP == null || fileKTP!.isEmpty) {
+                                return 'Harap upload dokumen KTP';
+                              }
+                              return null;
+                            },
+                          ),
                         ),
-                        decoration: InputDecoration(
-                          labelText: 'KTP',
-                          border: OutlineInputBorder(),
+                        SizedBox(width: 8.0),
+                        _isKtpUploading // Jika sedang upload, tampilkan progres
+                            ? Expanded(
+                                child: LinearProgressIndicator(
+                                  value:
+                                      _ktpUploadProgress, // Menampilkan progres upload KTP
+                                  backgroundColor: Colors.grey[200],
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.blue),
+                                ),
+                              )
+                            : ElevatedButton(
+                                onPressed: () => _pickImage('KTP'),
+                                child: Text('Upload'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Color(0xFF017964),
+                                ),
+                              ),
+                      ],
+                    ),
+
+                    SizedBox(height: 16.0),
+
+                    // NPWP Upload Field
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: TextEditingController(
+                              text: fileNPWP != null
+                                  ? fileNPWP!.split('/').last
+                                  : '',
+                            ),
+                            decoration: InputDecoration(
+                              labelText: 'NPWP',
+                              border: OutlineInputBorder(),
+                            ),
+                            readOnly: true,
+                            validator: (value) {
+                              if (fileNPWP == null || fileNPWP!.isEmpty) {
+                                return 'Harap upload dokumen NPWP';
+                              }
+                              return null;
+                            },
+                          ),
                         ),
-                        readOnly: true,
-                        validator: (value) {
-                          if (fileKTP == null || fileKTP!.isEmpty) {
-                            return 'Harap upload dokumen KTP';
-                          }
-                          return null;
-                        },
+                        SizedBox(width: 8.0),
+                        _isNpwpUploading // Jika sedang upload, tampilkan progres
+                            ? Expanded(
+                                child: LinearProgressIndicator(
+                                  value:
+                                      _npwpUploadProgress, // Menampilkan progres upload NPWP
+                                  backgroundColor: Colors.grey[200],
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.blue),
+                                ),
+                              )
+                            : ElevatedButton(
+                                onPressed: () => _pickImage('NPWP'),
+                                child: Text('Upload'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Color(0xFF017964),
+                                ),
+                              ),
+                      ],
+                    ),
+                    SizedBox(height: 16.0),
+
+                    // Karip Upload Field
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: TextEditingController(
+                              text: fileKarip != null
+                                  ? fileKarip!.split('/').last
+                                  : '',
+                            ),
+                            decoration: InputDecoration(
+                              labelText: 'SK Pensiun/SK Aktif/Karip/Karpeg',
+                              border: OutlineInputBorder(),
+                            ),
+                            readOnly: true,
+                            validator: (value) {
+                              if (fileKarip == null || fileKarip!.isEmpty) {
+                                return 'Harap upload dokumen SK Pensiun';
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                        SizedBox(width: 8.0),
+                        _isKaripUploading // Jika sedang upload, tampilkan progres
+                            ? Expanded(
+                                child: LinearProgressIndicator(
+                                  value:
+                                      _karipUploadProgress, // Menampilkan progres upload SK Pensiun
+                                  backgroundColor: Colors.grey[200],
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.blue),
+                                ),
+                              )
+                            : ElevatedButton(
+                                onPressed: () => _pickImage('Karip'),
+                                child: Text('Upload'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Color(0xFF017964),
+                                ),
+                              ),
+                      ],
+                    ),
+
+                    SizedBox(height: 24.0),
+
+                    ElevatedButton(
+                      onPressed: _submitPengajuanOrangLain,
+                      child: Text('Ajukan Orang Lain Sekarang'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Color(0xFF017964),
                       ),
                     ),
-                    SizedBox(width: 8.0),
-                    _isKtpUploading // Jika sedang upload, tampilkan progres
-                        ? Expanded(
-                            child: LinearProgressIndicator(
-                              value:
-                                  _ktpUploadProgress, // Menampilkan progres upload KTP
-                              backgroundColor: Colors.grey[200],
-                              valueColor:
-                                  AlwaysStoppedAnimation<Color>(Colors.blue),
-                            ),
-                          )
-                        : ElevatedButton(
-                            onPressed: () => _pickImage('KTP'),
-                            child: Text('Upload'),
-                            style: ElevatedButton.styleFrom(
-                              primary: Color(0xFF017964),
-                            ),
-                          ),
                   ],
                 ),
-
-                SizedBox(height: 16.0),
-
-                // NPWP Upload Field
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: TextEditingController(
-                          text:
-                              fileNPWP != null ? fileNPWP!.split('/').last : '',
-                        ),
-                        decoration: InputDecoration(
-                          labelText: 'NPWP',
-                          border: OutlineInputBorder(),
-                        ),
-                        readOnly: true,
-                        validator: (value) {
-                          if (fileNPWP == null || fileNPWP!.isEmpty) {
-                            return 'Harap upload dokumen NPWP';
-                          }
-                          return null;
-                        },
-                      ),
-                    ),
-                    SizedBox(width: 8.0),
-                    _isNpwpUploading // Jika sedang upload, tampilkan progres
-                        ? Expanded(
-                            child: LinearProgressIndicator(
-                              value:
-                                  _npwpUploadProgress, // Menampilkan progres upload NPWP
-                              backgroundColor: Colors.grey[200],
-                              valueColor:
-                                  AlwaysStoppedAnimation<Color>(Colors.blue),
-                            ),
-                          )
-                        : ElevatedButton(
-                            onPressed: () => _pickImage('NPWP'),
-                            child: Text('Upload'),
-                            style: ElevatedButton.styleFrom(
-                              primary: Color(0xFF017964),
-                            ),
-                          ),
-                  ],
-                ),
-                SizedBox(height: 16.0),
-
-                // Karip Upload Field
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: TextEditingController(
-                          text: fileKarip != null
-                              ? fileKarip!.split('/').last
-                              : '',
-                        ),
-                        decoration: InputDecoration(
-                          labelText: 'SK Pensiun/SK Aktif/Karip/Karpeg',
-                          border: OutlineInputBorder(),
-                        ),
-                        readOnly: true,
-                        validator: (value) {
-                          if (fileKarip == null || fileKarip!.isEmpty) {
-                            return 'Harap upload dokumen SK Pensiun';
-                          }
-                          return null;
-                        },
-                      ),
-                    ),
-                    SizedBox(width: 8.0),
-                    _isKaripUploading // Jika sedang upload, tampilkan progres
-                        ? Expanded(
-                            child: LinearProgressIndicator(
-                              value:
-                                  _karipUploadProgress, // Menampilkan progres upload SK Pensiun
-                              backgroundColor: Colors.grey[200],
-                              valueColor:
-                                  AlwaysStoppedAnimation<Color>(Colors.blue),
-                            ),
-                          )
-                        : ElevatedButton(
-                            onPressed: () => _pickImage('Karip'),
-                            child: Text('Upload'),
-                            style: ElevatedButton.styleFrom(
-                              primary: Color(0xFF017964),
-                            ),
-                          ),
-                  ],
-                ),
-
-                SizedBox(height: 24.0),
-
-                ElevatedButton(
-                  onPressed: _submitPengajuanOrangLain,
-                  child: Text('Ajukan Orang Lain Sekarang'),
-                  style: ElevatedButton.styleFrom(
-                    primary: Color(0xFF017964),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
-        ),
+          // Tampilkan overlay loading bila _isLoadingOverlay true
+          if (_isLoadingOverlay)
+            Positioned.fill(
+              child: ModalBarrier(
+                color: Colors.black.withOpacity(0.5),
+                dismissible: false,
+              ),
+            ),
+          if (_isLoadingOverlay)
+            Center(
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: const [
+                    CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        Color(0xFF017964),
+                      ),
+                    ),
+                    SizedBox(height: 16),
+                    Text(
+                      'Mohon tunggu...',
+                      style: TextStyle(
+                        color: Color(0xFF017964),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

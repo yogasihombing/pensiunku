@@ -24,35 +24,15 @@ class PengajuanAndaApi {
     required String nama,
     required String telepon,
     required String domisili,
-    required String nip,
-    required String fotoKTPPath,
-    required String namaFotoKTP,
-    required String fotoNPWPPath,
-    required String namaFotoNPWP,
-    required String fotoKaripPath,
-    required String namaFotoKarip,
   }) async {
     try {
       print('Memulai proses kirim pengajuan...');
-
-      // Membaca file dan mengubah ke base64
-      String base64KTP = base64Encode(await File(fotoKTPPath).readAsBytes());
-      String base64NPWP = base64Encode(await File(fotoNPWPPath).readAsBytes());
-      String base64Karip =
-          base64Encode(await File(fotoKaripPath).readAsBytes());
 
       // Membuat payload JSON
       Map<String, dynamic> formData = {
         "nama": nama,
         "telepon": telepon,
         "domisili": domisili,
-        "nip": nip,
-        "foto_ktp": base64KTP,
-        "nama_foto_ktp": namaFotoKTP,
-        "foto_npwp": base64NPWP,
-        "nama_foto_npwp": namaFotoNPWP,
-        "foto_karip": base64Karip,
-        "nama_foto_karip": namaFotoKarip,
       };
 
       print('Mengirim request ke API...');

@@ -1,18 +1,11 @@
-import 'dart:ffi';
-
 import 'package:flutter/material.dart';
-import 'package:flutter/src/widgets/container.dart';
-import 'package:flutter/src/widgets/framework.dart';
 import 'package:pensiunku/model/riwayat_pengajuan_anda_model.dart';
 import 'package:pensiunku/repository/riwayat_pengajuan_anda_repository.dart';
 import 'package:pensiunku/repository/user_repository.dart';
-import 'package:pensiunku/screen/home/submission/status_pengajuan_orang_lain.dart';
+import 'package:pensiunku/screen/home/dashboard/ajukan/pengajuan_anda_screen.dart';
 import 'package:pensiunku/screen/home/submission/status_pengajuan_anda.dart';
 import 'package:pensiunku/util/shared_preferences_util.dart';
-import 'package:pensiunku/util/widget_util.dart';
-
-import 'package:flutter/material.dart';
-import 'package:awesome_dialog/awesome_dialog.dart';
+import 'package:pensiunku/widget/dialog_helper.dart';
 
 class RiwayatPengajuanAndaScreen extends StatefulWidget {
   static const String ROUTE_NAME = '/riwayat_pengajuan_anda';
@@ -66,15 +59,19 @@ class _RiwayatPengajuanAndaScreenState
       });
 
       if (pengajuanAndaData.isEmpty) {
-        _showNoPengajuanDialog(
-          title: 'Informasi',
-          description:
-              'Tidak ada riwayat pengajuan Anda. Ajukan permohonan sekarang.',
-          buttonText: 'Ajukan Sekarang',
-          onButtonPress: () {
-            Navigator.pushNamed(context, '/pengajuan_anda');
-          },
-          dialogType: DialogType.info,
+        showDialog(
+          context: context,
+          builder: (context) => DialogHelper(
+            title: "Gagal Memuat Data",
+            description:
+                "Tidak ada riwayat pengajuan Anda. Ajukan permohonan sekarang.",
+            buttonText: "Ajukan Sekarang",
+            onButtonPress: () {
+              print("Ajukan Sekarang");
+            },
+            dialogType: DialogType.error,
+            nextPage: PengajuanAndaScreen(),
+          ),
         );
       }
     } catch (e, stackTrace) {
@@ -82,35 +79,21 @@ class _RiwayatPengajuanAndaScreenState
       print('UI: StackTrace - $stackTrace');
 
       setState(() => isLoading = false);
-      _showNoPengajuanDialog(
-        title: 'Gagal Memuat Data',
-        description:
-            'Tidak ada riwayat pengajuan Anda. Ajukan permohonan sekarang.',
-        buttonText: 'Ajukan Sekarang',
-        onButtonPress: () {
-          Navigator.pushNamed(context, '/pengajuan_anda');
-        },
-        dialogType: DialogType.info,
+      showDialog(
+        context: context,
+        builder: (context) => DialogHelper(
+          title: "Informasi",
+          description:
+              "Tidak ada riwayat pengajuan Anda. Ajukan permohonan sekarang.",
+          buttonText: "Ajukan Sekarang",
+          onButtonPress: () {
+            print("Ajukan Sekarang");
+          },
+          dialogType: DialogType.error,
+          nextPage: PengajuanAndaScreen(),
+        ),
       );
     }
-  }
-
-  void _showNoPengajuanDialog({
-    required String title,
-    required String description,
-    required String buttonText,
-    required VoidCallback onButtonPress,
-    DialogType dialogType = DialogType.info,
-  }) {
-    AwesomeDialog(
-      context: context,
-      dialogType: dialogType,
-      animType: AnimType.bottomSlide,
-      title: title,
-      desc: description,
-      btnOkText: buttonText,
-      btnOkOnPress: onButtonPress,
-    ).show();
   }
 
   @override

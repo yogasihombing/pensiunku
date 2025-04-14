@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:ui';
 
 import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:flutter/material.dart';
@@ -8,14 +9,10 @@ import 'package:pensiunku/screen/otp/otp_code_screen.dart';
 import 'package:http/http.dart' as http;
 
 /// OTP Screen
-///
+
 /// In this screen, user inputs their phone number that will receive OTP SMS.
-///
 class OtpScreen extends StatefulWidget {
   static const String ROUTE_NAME = '/otp';
-  final String phone;
-
-  OtpScreen({required this.phone});
 
   @override
   _OtpScreenState createState() => _OtpScreenState();
@@ -51,71 +48,219 @@ class _OtpScreenState extends State<OtpScreen> {
     final body = json.encode({'phone': _inputPhone});
 
     try {
-      print(
-          'Mengirim permintaan ke server: $url dengan data: $body'); // Debug log
+      print('Mengirim permintaan ke server: $url dengan data: $body');
 
-      final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: body,
-      );
+      final response = await http
+          .post(
+            url,
+            headers: {'Content-Type': 'application/json'},
+            body: body,
+          )
+          .timeout(Duration(seconds: 10)); // Tambahkan timeout
 
       print('Status kode respons: ${response.statusCode}');
-      print('Isi respons: ${response.body}'); // Debug log
+      print('Isi respons: ${response.body}');
 
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        print('Data yang diterima: $data'); // Debug log
+        Map<String, dynamic> data;
+        try {
+          data = json.decode(response.body);
+        } catch (e) {
+          print('Error parsing JSON: $e');
+          throw Exception('Format respons tidak valid');
+        }
 
-        final message = data['text']?['message'];
+        // Mengakses pesan dari respons
+        String? message;
+        try {
+          message = data['text']?['message'];
+        } catch (e) {
+          print('Error accessing message: $e');
+          message = null;
+        }
+
         print('Message dari respons: $message');
 
         if (message == 'success') {
           print('Nomor terdaftar di sistem.');
 
           if (_isLoginMode) {
-            // Jika mode LOGIN, langsung kirim OTP
-            return true; // Nomor terdaftar
+            return true; // Nomor terdaftar, langsung lanjut proses OTP
           } else {
-            // Jika mode DAFTAR, tampilkan dialog bahwa nomor sudah terdaftar
-            AwesomeDialog(
-              context: context,
-              dialogType: DialogType.info,
-              animType: AnimType.scale,
-              title: 'Nomor Sudah Terdaftar',
-              desc:
-                  'Nomor telepon ini sudah terdaftar. Silakan pilih menu LOGIN untuk masuk.',
-              btnOkOnPress: () {
-                setState(() => _isLoginMode = true); // Alihkan ke mode LOGIN
-              },
-              btnOkText: 'Pilih Login',
-              btnCancelOnPress: () {},
-              btnCancelText: 'Kembali',
-            ).show();
-            return false; // Jangan lanjut ke _sendOtp
+            if (mounted) {
+              // Menampilkan dialog "Nomor Sudah Terdaftar" dengan dua tombol
+              showDialog(
+                context: context,
+                barrierDismissible: true,
+                builder: (BuildContext context) {
+                  return BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                    child: AlertDialog(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                      backgroundColor: Colors
+                          .transparent, // membuat background AlertDialog transparan
+                      insetPadding: EdgeInsets.symmetric(horizontal: 15),
+                      content: Container(
+                        decoration: BoxDecoration(
+                          color: Color(0xFF017964),
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                        padding: EdgeInsets.all(16),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'Nomor Sudah Terdaftar',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            SizedBox(height: 10),
+                            Text(
+                              'Nomor telepon ini sudah terdaftar. Silakan pilih menu LOGIN untuk masuk.',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.white,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            SizedBox(height: 20),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    foregroundColor: Color(0xFF017964),
+                                    backgroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                  ),
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                    setState(() => _isLoginMode = true);
+                                  },
+                                  child: Text('Pilih Login'),
+                                ),
+                                ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    foregroundColor: Color(0xFF017964),
+                                    backgroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                  ),
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                  },
+                                  child: Text('Kembali'),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              );
+            }
+            return false;
           }
         } else {
           print('Nomor tidak terdaftar di sistem.');
 
           if (_isLoginMode) {
-            // Jika mode LOGIN, tampilkan dialog bahwa nomor belum terdaftar
-            AwesomeDialog(
-              context: context,
-              dialogType: DialogType.info,
-              animType: AnimType.scale,
-              title: 'Nomor Belum Terdaftar',
-              desc:
-                  'Nomor telepon ini belum terdaftar. Silakan pilih menu DAFTAR untuk membuat akun baru.',
-              btnOkOnPress: () {
-                setState(() => _isLoginMode = false); // Alihkan ke mode DAFTAR
-              },
-              btnOkText: 'Daftar Sekarang',
-              btnCancelOnPress: () {},
-              btnCancelText: 'Kembali',
-            ).show();
-            return false; // Jangan lanjut ke _sendOtp
+            if (mounted) {
+              // Menampilkan dialog "Nomor Belum Terdaftar" dengan dua tombol
+              showDialog(
+                context: context,
+                barrierDismissible: true,
+                builder: (BuildContext context) {
+                  return BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                    child: AlertDialog(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                      backgroundColor: Colors.transparent,
+                      insetPadding: EdgeInsets.symmetric(horizontal: 15),
+                      content: Container(
+                        decoration: BoxDecoration(
+                          color: Color(0xFF017964),
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                        padding: EdgeInsets.all(16),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'Nomor Belum Terdaftar',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            SizedBox(height: 10),
+                            Text(
+                              'Nomor telepon ini belum terdaftar. Silakan pilih menu DAFTAR untuk membuat akun baru.',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.white,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            SizedBox(height: 20),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    foregroundColor: Color(0xFF017964),
+                                    backgroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                  ),
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                    setState(() => _isLoginMode = false);
+                                  },
+                                  child: Text('Daftar Sekarang'),
+                                ),
+                                SizedBox(width: 12),
+                                ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    foregroundColor: Color(0xFF017964),
+                                    backgroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                  ),
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                  },
+                                  child: Text('Kembali'),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              );
+            }
+            return false;
           } else {
-            // Jika mode DAFTAR, lanjut ke _sendOtp
             return true;
           }
         }
@@ -124,73 +269,149 @@ class _OtpScreenState extends State<OtpScreen> {
         throw Exception('Kesalahan Server');
       }
     } catch (e) {
-      print('Terjadi kesalahan: $e'); // Debug log
-      AwesomeDialog(
-        context: context,
-        dialogType: DialogType.error,
-        animType: AnimType.scale,
-        title: 'Kesalahan',
-        desc: 'Tidak dapat terhubung ke server. Coba lagi nanti.',
-        btnOkOnPress: () {},
-      ).show();
-      return null; // Kesalahan jaringan
+      print('Terjadi kesalahan: $e');
+      if (mounted) {
+        // Menampilkan dialog error dengan design yang sama
+        showDialog(
+          context: context,
+          barrierDismissible: true,
+          builder: (BuildContext context) {
+            return BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+              child: AlertDialog(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                backgroundColor: Colors.transparent,
+                insetPadding: EdgeInsets.symmetric(horizontal: 15),
+                content: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.red,
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  padding: EdgeInsets.all(16),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Kesalahan',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      SizedBox(height: 10),
+                      Text(
+                        'Tidak dapat terhubung ke server. Coba lagi nanti.\nDetail: ${e.toString()}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.white,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      SizedBox(height: 20),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          foregroundColor: Colors.red,
+                          backgroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        onPressed: () {
+                          Navigator.pop(context);
+                        },
+                        child: Text('OK'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      }
+      return null;
     }
   }
 
-  void _sendOtp() async {
-    setState(() {
-      _inputPhoneTouched = true;
-    });
-
-    if (_getInputPhoneError() != null) {
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    final isRegistered = await _checkPhoneNumber();
-
-    if (isRegistered == null) {
+  Future<void> _sendOtp() async {
+    try {
       setState(() {
-        _isLoading = false;
+        _inputPhoneTouched = true;
       });
-      return;
-    }
 
-    if (!isRegistered) {
-      // Dialog atau logika tambahan sudah diatur di `_checkPhoneNumber`
-      setState(() {
-        _isLoading = false;
-      });
-      return;
-    }
-
-    // Jika nomor valid sesuai logika, lanjut kirim OTP
-    UserRepository().sendOtp(_inputPhone).then((result) {
-      setState(() {
-        _isLoading = false;
-      });
-      if (result.isSuccess) {
-        Navigator.of(context).pushNamed(
-          OtpCodeScreen.ROUTE_NAME,
-          arguments: OtpCodeScreenArgs(phone: _inputPhone),
-        );
-      } else {
-        showDialog(
-          context: context,
-          builder: (_) => AlertDialog(
-            content: Text(
-              result.error ?? 'Gagal mengirimkan OTP',
-              style: TextStyle(color: Colors.white),
-            ),
-            backgroundColor: Colors.red,
-            elevation: 24.0,
-          ),
-        );
+      if (_getInputPhoneError() != null) {
+        return;
       }
-    });
+
+      setState(() {
+        _isLoading = true;
+      });
+
+      final isRegistered = await _checkPhoneNumber();
+
+      if (!mounted) return; // Cek apakah widget masih terpasang
+
+      setState(() {
+        _isLoading = false;
+      });
+
+      if (isRegistered == null || !isRegistered) {
+        // Dialog atau logika tambahan sudah diatur di `_checkPhoneNumber`
+        return;
+      }
+
+      // Jika nomor valid sesuai logika, lanjut kirim OTP
+      try {
+        final result = await UserRepository().sendOtp(_inputPhone);
+
+        if (!mounted) return; // Cek lagi setelah operasi asinkron
+
+        if (result.isSuccess) {
+          Navigator.of(context).pushNamed(
+            OtpCodeScreen.ROUTE_NAME,
+            arguments: OtpCodeScreenArgs(phone: _inputPhone),
+          );
+        } else {
+          _showErrorDialog(result.error ?? 'Gagal mengirimkan OTP');
+        }
+      } catch (e) {
+        print("Error sending OTP: $e");
+        if (mounted) {
+          _showErrorDialog(
+              'Terjadi kesalahan saat mengirim OTP: ${e.toString()}');
+        }
+      }
+    } catch (e) {
+      print("Uncaught error in _sendOtp: $e");
+      if (mounted) {
+        _showErrorDialog('Terjadi kesalahan tidak terduga: ${e.toString()}');
+      }
+    }
+  }
+
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text('Error'),
+        content: Text(
+          message,
+          style: TextStyle(color: Colors.white),
+        ),
+        backgroundColor: Colors.red,
+        elevation: 24.0,
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text('OK', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
   }
 
   String? _getInputPhoneError() {
@@ -294,7 +515,14 @@ class _OtpScreenState extends State<OtpScreen> {
                           ),
                         ),
                         child: _isLoading
-                            ? CircularProgressIndicator(color: Colors.white)
+                            ? SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2.0,
+                                ),
+                              )
                             : Text(
                                 _isLoginMode ? 'MASUK' : 'DAFTAR',
                                 style: TextStyle(
@@ -327,13 +555,18 @@ class _OtpScreenState extends State<OtpScreen> {
                       if (_isLoginMode)
                         TextButton(
                           onPressed: () {
-                            // Pemulihan akun handler
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => AccountRecoveryScreen(),
-                              ),
-                            );
+                            try {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => AccountRecoveryScreen(),
+                                ),
+                              );
+                            } catch (e) {
+                              print("Error navigating to recovery: $e");
+                              _showErrorDialog(
+                                  'Tidak dapat membuka halaman pemulihan akun: ${e.toString()}');
+                            }
                           },
                           child: Text(
                             'PEMULIHAN AKUN',
@@ -382,7 +615,6 @@ class _OtpScreenState extends State<OtpScreen> {
     );
   }
 }
-
 
 // /// OTP Screen
 // ///

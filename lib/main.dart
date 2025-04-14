@@ -3,9 +3,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pensiunku/data/api/pengajuan_anda_api.dart';
-import 'package:pensiunku/model/ktp_model.dart';
-import 'package:pensiunku/model/ktp_model.dart';
-import 'package:pensiunku/model/ktp_model.dart';
+
 import 'package:pensiunku/screen/article/article_detail_screen.dart';
 import 'package:pensiunku/screen/article/article_screen.dart';
 import 'package:pensiunku/screen/common/galery_fullscreen.dart';
@@ -241,7 +239,7 @@ class MyApp extends StatelessWidget {
             page = WelcomeScreen();
             break;
           case OtpScreen.ROUTE_NAME:
-            page = OtpScreen(phone: 'phone');
+            page = OtpScreen();
             break;
           case OtpCodeScreen.ROUTE_NAME:
             var args = settings.arguments as OtpCodeScreenArgs;

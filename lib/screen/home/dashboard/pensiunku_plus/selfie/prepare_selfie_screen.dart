@@ -32,12 +32,13 @@ class PrepareSelfieScreen extends StatefulWidget {
 
 class _PrepareSelfieScreenState extends State<PrepareSelfieScreen> {
   // Konstanta untuk ukuran dan padding
-  static const double _logoHeight = 100.0;
+  static const double _logoHeight = 50.0;
   static const double _instructionImageHeight = 257.0;
   static const double _horizontalPadding = 24.0;
 
   // Status visibility bottom navigation bar
   bool _isBottomNavBarVisible = false;
+  bool _isLoadingOverlay = false;
 
   @override
   void initState() {
@@ -189,6 +190,10 @@ class _PrepareSelfieScreenState extends State<PrepareSelfieScreen> {
   // Method untuk menangani navigasi ke kamera
   Future<void> _handleCameraNavigation() async {
     try {
+      // Tampilkan overlay loading sebelum proses dimulai
+      setState(() {
+        _isLoadingOverlay = true;
+      });
       // Cek izin kamera
       var status = await Permission.camera.status;
       if (status.isDenied) {
@@ -202,16 +207,16 @@ class _PrepareSelfieScreenState extends State<PrepareSelfieScreen> {
           CameraKtpScreen.ROUTE_NAME,
           arguments: CameraKtpScreenArgs(
             cameraFilter: 'assets/selfie_filter.png',
-            buildFilter:
-                (BuildContext context, CameraResultModel? detectionResult) {
+            buildFilter: (context) {
               return Container(
                 constraints: const BoxConstraints.expand(),
                 child: CustomPaint(
                   painter: SelfieFramePainter(
                     screenSize: MediaQuery.of(context).size,
-                    outerFrameColor: const Color(0x73442C2E),
+                    outerFrameColor: Color(0x73442C2E),
                     closeWindow: false,
                     innerFrameColor: Colors.transparent,
+                    // offset: Offset(faceBoxOffsetX, 0),
                   ),
                 ),
               );
@@ -233,11 +238,18 @@ class _PrepareSelfieScreenState extends State<PrepareSelfieScreen> {
             },
           ),
         );
+        // Setelah proses selesai, sembunyikan overlay loading
+        setState(() {
+          _isLoadingOverlay = false;
+        });
         // Panggil callback onSuccess jika berhasil
         if (result != null && mounted) {
           widget.onSuccess(context);
         }
       } else {
+        setState(() {
+          _isLoadingOverlay = false;
+        });
         // Tampilkan opsi settings jika izin ditolak
         if (mounted) {
           WidgetUtil.showSnackbar(
@@ -253,6 +265,9 @@ class _PrepareSelfieScreenState extends State<PrepareSelfieScreen> {
         }
       }
     } catch (e) {
+      setState(() {
+        _isLoadingOverlay = false;
+      });
       print('Error saat mengakses kamera: $e');
       if (mounted) {
         WidgetUtil.showSnackbar(
@@ -291,6 +306,44 @@ class _PrepareSelfieScreenState extends State<PrepareSelfieScreen> {
               ),
             ),
           ),
+          // Loading Overlay (ditampilkan bila _isLoadingOverlay true)
+          if (_isLoadingOverlay)
+            Stack(
+              children: [
+                Positioned.fill(
+                  child: ModalBarrier(
+                    color: Colors.black.withOpacity(0.5),
+                    dismissible: false,
+                  ),
+                ),
+                Center(
+                  child: Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        CircularProgressIndicator(
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(Color(0xFF017964)),
+                        ),
+                        SizedBox(height: 16),
+                        Text(
+                          'Mohon tunggu...',
+                          style: TextStyle(
+                            color: Color(0xFF017964),
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
         ],
       ),
     );

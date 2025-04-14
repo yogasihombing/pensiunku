@@ -45,6 +45,8 @@ dependencies:
   dio: ^4.0.0
   sqflite: ^2.0.0+4
   image: ^3.0.2
+  image_gallery_saver: ^2.0.1
+  screenshot: ^1.3.0
   exif: ^2.0.1
   intl: ^0.17.0
   permission_handler: ^10.0.0 # Updated to a compatible version
@@ -143,6 +145,7 @@ flutter:
     - assets/dashboard_screen/button_wa.png
     - assets/dashboard_screen/mitra.png
     - assets/dashboard_screen/pengajuanAnda.png
+    - assets/dashboard_screen/simulasi-cepat.png
     - assets/application_screen/image_1.png
     - assets/application_screen/image_2.png
     - assets/application_screen/image_3.png
@@ -213,6 +216,16 @@ flutter:
     - assets/pensiunkuplus/daftarkan_pin.png
     - assets/pensiunkuplus/pensiunkuplus_success.png
     - assets/pensiunkuplus/icon_upload_dokumen.png
+    - assets/pensiunkuplus/reject-pensiunkuplus.png
+    - assets/pensiunkuplus/waiting-pensiunkuplus.png
+    - assets/pensiunkuplus/e_wallet/pencairan.png
+    - assets/pensiunkuplus/e_wallet/histori.png
+    - assets/pensiunkuplus/e_wallet/bank_tujuan.png
+    - assets/pensiunkuplus/e_wallet/info_akun_wallet.png
+    - assets/pensiunkuplus/e_wallet/wallet-01.png
+    - assets/pensiunkuplus/e_wallet/wallet-02.png
+    - assets/pensiunkuplus/e_wallet/wallet-03.png
+    - assets/pensiunkuplus/e_wallet/wallet-04.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware.
@@ -267,7 +280,6 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/custom-fonts/#from-packages
-
 # flutter_native_splash:
 #   # To update splash screen run:
 #   # - flutter pub run flutter_native_splash:create

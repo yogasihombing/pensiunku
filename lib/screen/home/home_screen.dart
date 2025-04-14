@@ -294,61 +294,7 @@ class _HomeScreenState extends State<HomeScreen> {
               });
             },
           ),
-          // live chat dinonaktifkan
-          // Positioned(
-          //   bottom: 100,
-          //   right: 20,
-          //   child: GestureDetector(
-          //     onTap: () {
-          //       Navigator.push(context,
-          //           MaterialPageRoute(builder: (context) => LiveChat()));
-          //     },
-          //     child: Image.asset(
-          //       'assets/icon/live_chat.png',
-          //       width: 60,
-          //       height: 60,
-          //     ),
-          //   ),
-          // ),
-          // live chat dinonaktifkan
-          // if (_walkthroughIndex != null)
-          //   GestureDetector(
-          //     onTap: () {
-          //       if (_walkthroughIndex == 0) {
-          //         _dashboardScrollController.animateTo(
-          //           (67 + 12) * 6, // the average height of the simulation form
-          //           duration: Duration(seconds: 1),
-          //           curve: Curves.easeIn,
-          //         );
-          //         Future.delayed(Duration(seconds: 1), () {
-          //           setState(() {
-          //             _walkthroughIndex = _walkthroughIndex! + 1;
-          //           });
-          //         });
-          //       } else if (_walkthroughIndex == 3) {
-          //         SharedPreferencesUtil().sharedPreferences.setBool(
-          //               SharedPreferencesUtil.SP_KEY_IS_FINISHED_WALKTHROUGH,
-          //               true,
-          //             );
-          //         setState(() {
-          //           _walkthroughIndex = null;
-          //         });
-          //         _dashboardScrollController.animateTo(
-          //           0,
-          //           duration: Duration(seconds: 1),
-          //           curve: Curves.easeIn,
-          //         );
-          //         // Restart.restartApp(webOrigin: '[your main route]');
-          //       } else {
-          //         setState(() {
-          //           _walkthroughIndex = _walkthroughIndex! + 1;
-          //         });
-          //       }
-          //     },
-          //     child: Container(
-          //       color: Colors.transparent,
-          //     ),
-          //   ),
+          
         ],
       ),
     );
@@ -412,3 +358,59 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 }
+
+// live chat dinonaktifkan
+          // Positioned(
+          //   bottom: 100,
+          //   right: 20,
+          //   child: GestureDetector(
+          //     onTap: () {
+          //       Navigator.push(context,
+          //           MaterialPageRoute(builder: (context) => LiveChat()));
+          //     },
+          //     child: Image.asset(
+          //       'assets/icon/live_chat.png',
+          //       width: 60,
+          //       height: 60,
+          //     ),
+          //   ),
+          // ),
+          // live chat dinonaktifkan
+          // if (_walkthroughIndex != null)
+          //   GestureDetector(
+          //     onTap: () {
+          //       if (_walkthroughIndex == 0) {
+          //         _dashboardScrollController.animateTo(
+          //           (67 + 12) * 6, // the average height of the simulation form
+          //           duration: Duration(seconds: 1),
+          //           curve: Curves.easeIn,
+          //         );
+          //         Future.delayed(Duration(seconds: 1), () {
+          //           setState(() {
+          //             _walkthroughIndex = _walkthroughIndex! + 1;
+          //           });
+          //         });
+          //       } else if (_walkthroughIndex == 3) {
+          //         SharedPreferencesUtil().sharedPreferences.setBool(
+          //               SharedPreferencesUtil.SP_KEY_IS_FINISHED_WALKTHROUGH,
+          //               true,
+          //             );
+          //         setState(() {
+          //           _walkthroughIndex = null;
+          //         });
+          //         _dashboardScrollController.animateTo(
+          //           0,
+          //           duration: Duration(seconds: 1),
+          //           curve: Curves.easeIn,
+          //         );
+          //         // Restart.restartApp(webOrigin: '[your main route]');
+          //       } else {
+          //         setState(() {
+          //           _walkthroughIndex = _walkthroughIndex! + 1;
+          //         });
+          //       }
+          //     },
+          //     child: Container(
+          //       color: Colors.transparent,
+          //     ),
+          //   ),

@@ -27,6 +27,8 @@ class PreviewSelfieScreen extends StatefulWidget {
   final SubmissionModel submissionModel;
   final SelfieModel selfieModel;
 
+  
+
   const PreviewSelfieScreen({
     Key? key,
     required this.submissionModel,
@@ -39,7 +41,8 @@ class PreviewSelfieScreen extends StatefulWidget {
 
 class _PreviewSelfieScreenState extends State<PreviewSelfieScreen> {
   UserModel? _userModel; // Deklarasi variable UserModel
-  bool _isLoading = false;
+  
+  bool _isLoadingOverlay = false;
   bool _isImageLoaded = false;
   bool _isActivated = false; // Menambahkan variabel aktifasi
   late Future<ResultModel<UserModel>> _future;
@@ -126,7 +129,7 @@ class _PreviewSelfieScreenState extends State<PreviewSelfieScreen> {
     }
 
     setState(() {
-      _isLoading = true;
+      _isLoadingOverlay = true;
       print('2. Set loading state ke true');
     });
 
@@ -176,7 +179,7 @@ class _PreviewSelfieScreenState extends State<PreviewSelfieScreen> {
     } finally {
       if (mounted) {
         setState(() {
-          _isLoading = false;
+          _isLoadingOverlay = false;
         });
       }
     }
@@ -287,7 +290,7 @@ class _PreviewSelfieScreenState extends State<PreviewSelfieScreen> {
                     Expanded(
                       child: ElevatedButton(
                         onPressed:
-                            _isLoading ? null : () => _retakePhoto(context),
+                            _isLoadingOverlay ? null : () => _retakePhoto(context),
                         style: ElevatedButton.styleFrom(
                           foregroundColor: theme.colorScheme.secondary,
                           backgroundColor: Colors.white,
@@ -299,7 +302,7 @@ class _PreviewSelfieScreenState extends State<PreviewSelfieScreen> {
                     SizedBox(width: 16.0),
                     Expanded(
                       child: ElevatedButton(
-                        onPressed: _isLoading
+                        onPressed: _isLoadingOverlay
                             ? null
                             : () {
                                 print('=== Tombol Lanjutkan ditekan ===');
@@ -310,7 +313,7 @@ class _PreviewSelfieScreenState extends State<PreviewSelfieScreen> {
                           backgroundColor: theme.primaryColor,
                           padding: EdgeInsets.symmetric(vertical: 12),
                         ),
-                        child: _isLoading
+                        child: _isLoadingOverlay
                             ? SizedBox(
                                 width: 20,
                                 height: 20,
@@ -326,6 +329,44 @@ class _PreviewSelfieScreenState extends State<PreviewSelfieScreen> {
                   ],
                 ),
               ),
+            ),
+            // Loading Overlay (ditampilkan bila _isLoadingOverlay true)
+          if (_isLoadingOverlay)
+            Stack(
+              children: [
+                Positioned.fill(
+                  child: ModalBarrier(
+                    color: Colors.black.withOpacity(0.5),
+                    dismissible: false,
+                  ),
+                ),
+                Center(
+                  child: Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        CircularProgressIndicator(
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(Color(0xFF017964)),
+                        ),
+                        SizedBox(height: 16),
+                        Text(
+                          'Mohon tunggu...',
+                          style: TextStyle(
+                            color: Color(0xFF017964),
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
