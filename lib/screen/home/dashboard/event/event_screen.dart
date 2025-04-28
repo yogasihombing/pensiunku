@@ -75,13 +75,15 @@ class _EventScreenState extends State<EventScreen> {
               Navigator.of(context).pop(true);
             },
             icon: Icon(Icons.arrow_back),
-            color: Colors.black,
+            color: const Color(0xFF017964),
           ),
           title: Text(
             "Event",
             style: theme.textTheme.headline6?.copyWith(
               fontWeight: FontWeight.w600,
-              color: Colors.black,
+
+              color: const Color(0xFF017964),
+              // color: const Color(0xFFFFC950),
             ),
           )),
       body: RefreshIndicator(
@@ -203,7 +205,7 @@ class _EventScreenState extends State<EventScreen> {
                           );
                         }
                       }),
-                      filter(context),
+                  filter(context),
                   FutureBuilder(
                       future: _futureData,
                       builder: (BuildContext context,

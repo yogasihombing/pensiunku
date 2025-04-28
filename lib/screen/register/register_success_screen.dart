@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:pensiunku/screen/home/home_screen.dart';
 
 class RegisterSuccessScreen extends StatelessWidget {
-  static const String ROUTE_NAME =
-      '/register-success'; // Rute statis untuk navigasi.
+  static const String ROUTE_NAME = '/register-success';
 
   @override
   Widget build(BuildContext context) {
+    // Ambil tinggi layar
+    final screenHeight = MediaQuery.of(context).size.height;
+
     return Scaffold(
       body: Container(
         width: double.infinity,
@@ -25,48 +27,49 @@ class RegisterSuccessScreen extends StatelessWidget {
         ),
         child: Center(
           child: SingleChildScrollView(
-            padding: EdgeInsets.symmetric(horizontal: 24.0, vertical: 48.0),
+            padding: EdgeInsets.symmetric(
+              horizontal: 24.0,
+              vertical: screenHeight * 0.02, // padding vertikal relatif
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Image.asset(
-                  'assets/register_screen/pensiunku.png', // Ikon keberhasilan.
-                  height: 40,
+                  'assets/register_screen/pensiunku.png',
+                  height: screenHeight * 0.08, // 5% tinggi layar
                 ),
-                SizedBox(height: 120.0),
+                SizedBox(height: screenHeight * 0.10), // 15% tinggi layar
+                AspectRatio(
+                  aspectRatio: 1.5,
+                  child: Image.asset(
+                    'assets/otp_screen/recovery_success.png',
+                    fit: BoxFit.contain,
+                  ),
+                ),
+                SizedBox(height: screenHeight * 0.10),
 
-                // Teks Judul
                 Text(
                   'Akun anda berhasil dibuat',
                   style: TextStyle(
-                    fontSize: 24.0,
+                    fontSize: screenHeight * 0.03, // font size relatif
                     fontWeight: FontWeight.bold,
                     color: Colors.black,
                   ),
                   textAlign: TextAlign.center,
                 ),
-                SizedBox(height: 12.0),
+                SizedBox(height: screenHeight * 0.03),
 
-                // Subjudul
-                Text(
-                  'Sekarang Anda dapat menggunakan aplikasi.',
-                  style: TextStyle(
-                    fontSize: 16.0,
-                    color: Colors.black54,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                SizedBox(height: 40.0),
-
-                // Tombol ke Dashboard/HomePage
                 ElevatedButton(
                   onPressed: () {
-                    Navigator.of(context).pushReplacementNamed(
-                        HomeScreen.ROUTE_NAME); // Mengarah ke Home Page
+                    Navigator.of(context)
+                        .pushReplacementNamed(HomeScreen.ROUTE_NAME);
                   },
                   style: ElevatedButton.styleFrom(
-                    padding:
-                        EdgeInsets.symmetric(horizontal: 48.0, vertical: 16.0),
+                    padding: EdgeInsets.symmetric(
+                      horizontal:
+                          screenHeight * 0.04, // relatif terhadap tinggi
+                      vertical: screenHeight * 0.02,
+                    ),
                     backgroundColor: Color(0xFFFFC950),
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
@@ -74,10 +77,10 @@ class RegisterSuccessScreen extends StatelessWidget {
                     ),
                   ),
                   child: Text(
-                    'MASUK KE APLIKASI',
+                    'Masuk Ke Aplikasi',
                     style: TextStyle(
-                      fontSize: 16.0,
-                      color: Colors.white,
+                      fontSize: screenHeight * 0.02,
+                      color: Colors.black,
                     ),
                   ),
                 ),

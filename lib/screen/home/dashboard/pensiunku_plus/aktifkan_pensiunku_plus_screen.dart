@@ -39,6 +39,7 @@ class _AktifkanPensiunkuPlusScreenState
 
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
     return WillPopScope(
       onWillPop: () async {
         // Navigasi ke DashboardScreen ketika tombol kembali ditekan
@@ -83,38 +84,41 @@ class _AktifkanPensiunkuPlusScreenState
                     Expanded(
                       child: SingleChildScrollView(
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: screenHeight * 0.015,
+                          ),
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
-                              const SizedBox(height: 30.0),
+                              SizedBox(height: screenHeight * 0.05),
                               SizedBox(
-                                height: 40,
+                                height: screenHeight * 0.06,
                                 child: Image.asset(
                                     'assets/pensiunkuplus/pensiunku.png'),
                               ),
+                              SizedBox(height: screenHeight * 0.03),
                               SizedBox(
                                 height: 220,
                                 child: Image.asset(
                                     'assets/pensiunkuplus/pensiunkuplus_1.png'),
                               ),
-                              const SizedBox(height: 30.0),
-                              const Text(
+                              SizedBox(height: screenHeight * 0.03),
+                              Text(
                                 'Bergabunglah menjadi \nmitra Pensiunku+',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
-                                  fontSize: 24.0,
-                                  fontWeight: FontWeight.w600,
+                                  fontSize: screenHeight * 0.03,
+                                  fontWeight: FontWeight.w700,
                                 ),
                               ),
-                              const SizedBox(height: 15.0),
-                              const Text(
+                              SizedBox(height: screenHeight * 0.02),
+                              Text(
                                 '• Potensi insentif s/d lebih dari Rp 5 Juta \n • Insentif langsung ke wallet akun \n • Tentukan sendiri target dan jam kerja',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(fontSize: 13.0),
                               ),
-                              const SizedBox(height: 15.0),
+                              SizedBox(height: screenHeight * 0.02),
                               ElevatedButton(
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: const Color(0xFFFFC950),
@@ -122,8 +126,10 @@ class _AktifkanPensiunkuPlusScreenState
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(24.0),
                                   ),
-                                  padding: const EdgeInsets.symmetric(
-                                      vertical: 12.0, horizontal: 32.0),
+                                  padding: EdgeInsets.symmetric(
+                                    vertical: screenHeight * 0.015,
+                                    horizontal: screenHeight * 0.04,
+                                  ),
                                 ),
                                 onPressed: () {
                                   // Navigasi ke halaman PrepareSelfieScreen
@@ -147,15 +153,13 @@ class _AktifkanPensiunkuPlusScreenState
                                     ),
                                   );
                                 },
-                                child:Text(
-                                        'Bergabung Sekarang',
-                                        style: TextStyle(
-                                            fontSize: 16.0,
-                                            fontWeight: FontWeight.bold),
-                                      ),
+                                child: Text(
+                                  'Bergabung Sekarang',
+                                  style: TextStyle(
+                                      fontSize: screenHeight * 0.02,
+                                      fontWeight: FontWeight.bold),
+                                ),
                               ),
-                            
-                              
                             ],
                           ),
                         ),
@@ -176,7 +180,7 @@ class _AktifkanPensiunkuPlusScreenState
                   ),
                   Center(
                     child: Container(
-                      padding: EdgeInsets.all(20),
+                      padding: EdgeInsets.all(screenHeight * 0.025),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(10),
@@ -185,10 +189,10 @@ class _AktifkanPensiunkuPlusScreenState
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           CircularProgressIndicator(
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(Color(0xFF017964)),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                                Color(0xFF017964)),
                           ),
-                          SizedBox(height: 16),
+                          SizedBox(height: screenHeight * 0.02),
                           Text(
                             'Mohon tunggu...',
                             style: TextStyle(

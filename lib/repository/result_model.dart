@@ -3,6 +3,7 @@ class ResultModel<T> {
   final String? message;
   final String? error;
   final T? data;
+   final bool isFromCache; 
 
   ResultModel({
     required this.isSuccess,
@@ -10,6 +11,7 @@ class ResultModel<T> {
     this.error,
     this.data,
     errorMessage,
+     this.isFromCache = false, // Nilai default false
   });
 
   @override

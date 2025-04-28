@@ -1,4 +1,5 @@
-import 'package:pensiunku/model/toko_model.dart';
+
+import 'package:pensiunku/model/toko/toko_model.dart';
 import 'package:sqflite/sqflite.dart';
 
 class ShippingDao {

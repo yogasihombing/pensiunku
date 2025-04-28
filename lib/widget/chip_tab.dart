@@ -24,7 +24,7 @@ class ChipTab extends StatelessWidget {
         (isActive
             ? custom
                 ? Color.fromRGBO(0, 170, 158, 1.0)
-                : Color(0xffb90d49)
+                : Color(0xFF017964)
             : Color.fromRGBO(247, 247, 247, 1.0));
     Color borderColor = isActive
         ? Color.fromRGBO(168, 168, 168, 1.0)

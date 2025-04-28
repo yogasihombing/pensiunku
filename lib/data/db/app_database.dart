@@ -1,7 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:pensiunku/data/db/article_dao.dart';
 import 'package:pensiunku/data/db/notification_dao.dart';
-import 'package:pensiunku/data/db/promo_dao.dart';
+import 'package:pensiunku/data/db/toko/promo_dao.dart';
 import 'package:pensiunku/data/db/faq_dao.dart';
 import 'package:pensiunku/data/db/live_update_dao.dart';
 import 'package:pensiunku/data/db/referral_dao.dart';
@@ -11,11 +11,10 @@ import 'package:pensiunku/data/db/submission_dao.dart';
 import 'package:pensiunku/data/db/theme_dao.dart';
 import 'package:pensiunku/data/db/user_dao.dart';
 import 'package:pensiunku/model/notification_model.dart';
-import 'package:pensiunku/model/promo_model.dart';
+import 'package:pensiunku/model/toko/promo_model.dart';
 import 'package:pensiunku/model/salary_place_model.dart';
 import 'package:pensiunku/model/submission_model.dart';
 import 'package:pensiunku/model/theme_model.dart';
-import 'package:pensiunku/model/toko_model.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 

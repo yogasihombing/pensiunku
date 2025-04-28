@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -5,10 +7,14 @@ import 'dart:convert';
 import 'package:pensiunku/screen/otp/recovery_account_success_screen.dart';
 
 class RecoveryUpdatePhoneScreen extends StatefulWidget {
-  final String email; // Email yang diterima dari layar sebelumnya
-  final String phone; // Nomor telepon lama yang diterima
+  final String email;
+  final String phone;
 
-  RecoveryUpdatePhoneScreen({required this.email, required this.phone});
+  const RecoveryUpdatePhoneScreen({
+    Key? key,
+    required this.email,
+    required this.phone,
+  }) : super(key: key);
 
   @override
   _RecoveryUpdatePhoneScreenState createState() =>
@@ -19,132 +25,173 @@ class _RecoveryUpdatePhoneScreenState extends State<RecoveryUpdatePhoneScreen> {
   final TextEditingController _phoneController = TextEditingController();
   bool _isLoading = false;
 
+  @override
+  void initState() {
+    super.initState();
+    _phoneController.text = '';
+  }
+
   Future<void> _submitPhone() async {
     final phone = _phoneController.text.trim();
 
-    print("=== START: Submit Phone ===");
-    print("Email pengguna: ${widget.email}");
-    print("Nomor telepon lama: ${widget.phone}");
-    print("Nomor telepon baru yang dimasukkan: $phone");
-
     // Validasi input
     if (phone.isEmpty) {
-      print("[VALIDASI]: Nomor telepon kosong.");
-      _showAwesomeDialog(
-          "Nomor telepon tidak boleh kosong.", DialogType.warning);
+      _showDialog('Peringatan', 'Nomor telepon tidak boleh kosong.', false);
       return;
     } else if (!RegExp(r'^\d{10,15}$').hasMatch(phone)) {
-      print("[VALIDASI]: Nomor telepon tidak sesuai format.");
-      _showAwesomeDialog(
-          "Nomor telepon harus berupa angka dan memiliki panjang 10-15 karakter.",
-          DialogType.warning);
+      _showDialog(
+        'Peringatan',
+        'Nomor telepon harus berupa angka dan memiliki panjang 10-15 karakter.',
+        false,
+      );
       return;
     }
 
-    // Deteksi apakah nomor baru sama dengan nomor lama
     if (phone == widget.phone) {
-      print("[VALIDASI]: Nomor telepon baru sama dengan nomor lama.");
-      _showAwesomeDialog(
-          "Silahkan masukkan nomor terbaru Anda.", DialogType.warning);
+      _showDialog('Peringatan', 'Silakan masukkan nomor terbaru Anda.', false);
       return;
     }
 
-    print("[STATUS]: Nomor telepon valid. Melanjutkan permintaan ke server...");
-
-    // Mulai loading
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
 
     try {
-      // Kirim data ke server
-      print("[REQUEST]: Mengirim permintaan ke server...");
+      // Print before sending request
+      print(
+          'Submitting updateNomorTelepon request for email=${widget.email}, newPhone=$phone');
+
       final response = await http.post(
         Uri.parse('https://api.pensiunku.id/new.php/updateNomorTelepon'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'email': widget.email, 'phone': phone}),
       );
 
-      print("[RESPONSE]: Status kode: ${response.statusCode}");
-      print("[RESPONSE]: Respons body: ${response.body}");
+      // Print after receiving response
+      print('Response status code: ${response.statusCode}');
+      print('Response body: ${response.body}');
+
+      final data = jsonDecode(response.body);
+      final message = data['text']?['message'];
+      print('Parsed message: $message');
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        print("[RESPONSE PARSED]: $data");
-
-        if (data['text']?['message'] == 'success') {
-          print("[SUCCESS]: Nomor telepon berhasil diperbarui.");
-          _showAwesomeDialog(
-            "Nomor telepon berhasil diperbarui.",
-            DialogType.success,
-            onOk: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (context) =>
-                      RecoveryAccountSuccessScreen(phone: 'phone'),
-                ),
-              );
-            },
-          );
-        } else if (data['text'] != null &&
-            data['text']['message'] == 'Nomor telepon anda tidak berubah!') {
-          print(
-              '[VALIDASI]: Nomor telepon yang dimasukkan sama dengan yang lama.');
-          _showAwesomeDialog(
-            'Silakan masukkan nomor telepon baru Anda.',
-            DialogType.warning,
-          );
-        } else if (data['text'] != null &&
-            data['text']['message'] ==
-                'Nomor telepon sudah terdaftar disistem!') {
-          print('[VALIDASI]: Nomor telepon sudah terdaftar di sistem.');
-          _showAwesomeDialog(
-            'Nomor telepon ini sudah terdaftar. Silakan gunakan nomor telepon lain.',
-            DialogType.error,
-          );
+        switch (message) {
+          case 'success':
+            _showDialog(
+              'Berhasil',
+              'Nomor telepon berhasil diperbarui.',
+              false,
+              onConfirm: () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => RecoveryAccountSuccessScreen(phone: phone),
+                  ),
+                );
+              },
+            );
+            break;
+          case 'Nomor telepon anda tidak berubah!':
+            _showDialog(
+              'Peringatan',
+              'Silakan masukkan nomor telepon baru Anda.',
+              false,
+            );
+            break;
+          case 'Nomor telepon sudah terdaftar disistem!':
+            _showDialog(
+              'Error',
+              'Nomor telepon ini sudah terdaftar. Silakan gunakan nomor lain.',
+              true,
+            );
+            break;
+          default:
+            _showDialog('Error', 'Terjadi kesalahan. Silakan coba lagi.', true);
         }
       } else {
-        print("[SERVER ERROR]: Status kode bukan 200.");
-        _showAwesomeDialog(
-            "Terjadi kesalahan server. Silakan coba lagi.", DialogType.error);
+        _showDialog(
+            'Error', 'Terjadi kesalahan server. Silakan coba lagi.', true);
       }
     } catch (e) {
-      print("[EXCEPTION]: Terjadi kesalahan: $e");
-      _showAwesomeDialog(
-          "Gagal terhubung ke server. Silakan coba lagi.", DialogType.error);
+      // Print on exception
+      print('Exception occurred: $e');
+      _showDialog(
+          'Error', 'Gagal terhubung ke server. Silakan coba lagi.', true);
     } finally {
-      print("[STATUS]: Permintaan selesai. Menghentikan loading...");
-      setState(() {
-        _isLoading = false;
-      });
+      setState(() => _isLoading = false);
     }
-    print("=== END: Submit Phone ===");
   }
 
-  void _showAwesomeDialog(String message, DialogType dialogType,
-      {void Function()? onOk}) {
-    if (context == null || !mounted) {
-      print(
-          "[DIALOG ERROR]: Context tidak valid atau widget sudah di-dispose.");
-      return;
-    }
-    print("[DIALOG]: Menampilkan dialog dengan pesan: $message");
-    AwesomeDialog(
+  void _showDialog(String title, String message, bool isError,
+      {VoidCallback? onConfirm}) {
+    final maxH = MediaQuery.of(context).size.height * 0.5;
+    showDialog(
       context: context,
-      dialogType: dialogType,
-      animType: AnimType.scale,
-      title: dialogType == DialogType.success ? 'Berhasil' : 'Peringatan',
-      desc: message,
-      btnOkOnPress: onOk ?? () {},
-    ).show();
+      barrierDismissible: true,
+      builder: (_) => BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+        child: AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
+          backgroundColor: Colors.transparent,
+          insetPadding: EdgeInsets.symmetric(horizontal: 15),
+          content: Container(
+            constraints: BoxConstraints(maxHeight: maxH),
+            decoration: BoxDecoration(
+              color: isError ? Colors.red : Color(0xFF017964),
+              borderRadius: BorderRadius.circular(15),
+            ),
+            padding: EdgeInsets.all(16),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: 10),
+                  Text(
+                    message,
+                    style: TextStyle(fontSize: 14, color: Colors.white),
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: 20),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      foregroundColor: isError ? Colors.red : Color(0xFF017964),
+                      backgroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    onPressed: () {
+                      Navigator.pop(context);
+                      if (onConfirm != null) onConfirm();
+                    },
+                    child: Text('OK'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    print("[BUILD]: RecoveryUpdatePhoneScreen dibangun.");
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       body: Container(
+        width: double.infinity,
+        height: double.infinity,
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
@@ -152,64 +199,100 @@ class _RecoveryUpdatePhoneScreenState extends State<RecoveryUpdatePhoneScreen> {
             colors: [
               Colors.white,
               Colors.white,
-              Color.fromARGB(255, 219, 218, 145),
+              Color.fromARGB(255, 170, 231, 170),
             ],
           ),
         ),
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: EdgeInsets.symmetric(horizontal: 24, vertical: 24),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Image.asset(
-                  'assets/register_screen/pensiunku.png',
-                  height: 45.0,
-                ),
-                SizedBox(height: 70.0),
-                Text(
-                  'Pemulihan Akun',
-                  style: TextStyle(
-                    fontSize: 24.0,
-                    fontWeight: FontWeight.bold,
+                Center(
+                  child: Image.asset(
+                    'assets/register_screen/pensiunku.png',
+                    height: 50,
+                    fit: BoxFit.contain,
                   ),
                 ),
-                SizedBox(height: 16.0),
+                SizedBox(height: 150),
+                Text(
+                  'Pemulihan Akun',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+                SizedBox(height: 16),
                 Text(
                   'Masukkan nomor telepon baru anda',
-                  style: TextStyle(fontSize: 16.0),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 12, color: Colors.grey[700]),
                 ),
-                SizedBox(height: 16.0),
+                SizedBox(height: 12),
                 TextField(
                   controller: _phoneController,
                   keyboardType: TextInputType.phone,
                   decoration: InputDecoration(
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8.0),
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(color: Colors.grey[400]!),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: (BorderRadius.circular(12)),
+                      borderSide: BorderSide(color: Colors.grey[400]!),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(24),
+                      borderSide:
+                          BorderSide(color: Color(0xFFFFC950), width: 2),
                     ),
                     labelText: 'Nomor Telepon Baru',
+                    labelStyle: TextStyle(color: Colors.grey[600]),
+                    filled: true,
+                    fillColor: Colors.white,
+                    contentPadding:
+                        EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    hintText: 'Contoh: 081234567890',
                   ),
                 ),
-                SizedBox(height: 16.0),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xFFFFC950),
-                    foregroundColor: Colors.black,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(24.0),
-                    ),
-                    padding:
-                        EdgeInsets.symmetric(vertical: 12.0, horizontal: 32.0),
-                  ),
-                  onPressed: _isLoading ? null : _submitPhone,
-                  child: _isLoading
-                      ? CircularProgressIndicator(color: Colors.white)
-                      : Text(
-                          'Submit',
-                          style: TextStyle(
-                              fontSize: 16.0, fontWeight: FontWeight.bold),
+                SizedBox(height: 32),
+                Center(
+                  child: SizedBox(
+                    width: 160,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Color(0xFFFFC950),
+                        foregroundColor: Colors.black,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(24),
                         ),
+                        padding: EdgeInsets.symmetric(vertical: 12),
+                        elevation: 3,
+                      ),
+                      onPressed: _isLoading ? null : _submitPhone,
+                      child: _isLoading
+                          ? SizedBox(
+                              height: 24,
+                              width: 24,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : Text(
+                              'SUBMIT',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.1,
+                              ),
+                            ),
+                    ),
+                  ),
                 ),
               ],
             ),

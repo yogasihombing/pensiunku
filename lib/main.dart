@@ -20,13 +20,29 @@ import 'package:pensiunku/screen/home/dashboard/ajukan/pengajuan_anda_screen.dar
 import 'package:pensiunku/screen/home/dashboard/dashboard_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/event/event_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/forum/forum_screen.dart';
+import 'package:pensiunku/screen/home/dashboard/franchise/franchise_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/halopensiun/halopensiun_screen.dart';
+import 'package:pensiunku/screen/home/dashboard/karir/karir_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/daftarkan_pin_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/ktp/camera_ktp_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/ktp/prepare_ktp_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/ktp/preview_ktp_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/pensiunkuplus_success_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/selfie/preview_selfie_screen.dart';
+import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/wallet/e_wallet_bank_tujuan.dart';
+import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/wallet/e_wallet_histori.dart';
+import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/wallet/e_wallet_info_akun.dart';
+import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/wallet/e_wallet_pencairan.dart';
+import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/wallet/e_wallet_screen.dart';
+import 'package:pensiunku/screen/home/dashboard/toko/barang_screen.dart';
+import 'package:pensiunku/screen/home/dashboard/toko/checkout_screen.dart';
+import 'package:pensiunku/screen/home/dashboard/toko/expedition_screen.dart';
+import 'package:pensiunku/screen/home/dashboard/toko/history_screen.dart';
+import 'package:pensiunku/screen/home/dashboard/toko/kategori_screen.dart';
+import 'package:pensiunku/screen/home/dashboard/toko/keranjang_screen.dart';
+import 'package:pensiunku/screen/home/dashboard/toko/shipping_address_screen.dart';
+import 'package:pensiunku/screen/home/dashboard/toko/toko_screen.dart';
+import 'package:pensiunku/screen/home/dashboard/usaha/usaha_detail_screen.dart';
 import 'package:pensiunku/screen/home/home_screen.dart';
 import 'package:pensiunku/screen/home/submission/riwayat_pengajuan_orang_lain.dart';
 import 'package:pensiunku/screen/home/submission/riwayat_pengajuan_anda.dart';
@@ -43,8 +59,7 @@ import 'package:pensiunku/screen/welcome/welcome_screen.dart';
 import 'screen/common/gallery_youtube_fullscreen.dart';
 import 'screen/home/dashboard/event/event_detail_screen.dart';
 import 'screen/home/dashboard/pensiunku_plus/aktifkan_pensiunku_plus_screen.dart';
-import 'screen/home/dashboard/usaha_detail_screen.dart';
-import 'screen/home/dashboard/usaha_screen.dart';
+import 'screen/home/dashboard/usaha/usaha_screen.dart';
 
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   print("Handling a background message: ${message.messageId}");
@@ -191,6 +206,45 @@ class MyApp extends StatelessWidget {
             break;
           case CustomerSupportScreen.ROUTE_NAME:
             page = CustomerSupportScreen();
+            break;
+          case TokoScreen.ROUTE_NAME:
+            final args = settings.arguments as TokoScreenArguments;
+            page = TokoScreen(
+              categoryId: args.categoryId,
+            );
+            break;
+          case BarangScreen.ROUTE_NAME:
+            final args = settings.arguments as BarangScreenArguments;
+            page = BarangScreen(
+              barangId: args.barangId,
+              barang: args.barang,
+            );
+            break;
+          case FranchiseScreen.ROUTE_NAME:
+            page = FranchiseScreen();
+            break;
+          case KeranjangScreen.ROUTE_NAME:
+            page = KeranjangScreen();
+            break;
+          case CheckoutScreen.ROUTE_NAME:
+            page = CheckoutScreen();
+            break;
+          case ShippingAddressScreen.ROUTE_NAME:
+            page = ShippingAddressScreen();
+            break;
+          case CategoryScreen.ROUTE_NAME:
+            page = CategoryScreen();
+            break;
+          case HistoryScreen.ROUTE_NAME:
+            page = HistoryScreen();
+            break;
+          case ExpeditionScreen.ROUTE_NAME:
+            final args = settings.arguments as ExpeditionScreenArguments;
+            page = ExpeditionScreen(
+              destination: args.destination,
+              origin: args.origin,
+              weight: args.weight,
+            );
             break;
           // case ReferralScreen.ROUTE_NAME:
           //   // page = ReferralScreen();
@@ -393,6 +447,24 @@ class MyApp extends StatelessWidget {
                 scrollController: ScrollController(),
               );
             }
+            break;
+          case EWalletScreen.ROUTE_NAME:
+            page = EWalletScreen();
+            break;
+          case EWalletPencairan.ROUTE_NAME:
+            page = EWalletPencairan();
+            break;
+          case EWalletHistori.ROUTE_NAME:
+            page = EWalletHistori();
+            break;
+          case EWalletBankTujuan.ROUTE_NAME:
+            page = EWalletBankTujuan();
+            break;
+          case EWalletInfoAkun.ROUTE_NAME:
+            page = EWalletInfoAkun();
+            break;
+          case KarirScreen.ROUTE_NAME:
+            page = KarirScreen();
             break;
           default:
             page = Container();

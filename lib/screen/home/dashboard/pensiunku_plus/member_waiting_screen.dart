@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:pensiunku/screen/home/dashboard/dashboard_screen.dart';
-import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/aktifkan_pensiunku_plus_screen.dart';
 
 class MemberWaitingScreen extends StatelessWidget {
   const MemberWaitingScreen({Key? key}) : super(key: key);
@@ -62,29 +61,27 @@ class MemberWaitingScreen extends StatelessWidget {
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
-                            
-                            // const Text(
-                            //   '•••••••••••',
-                            //   textAlign: TextAlign.center,
-                            //   style: TextStyle(fontSize: 13.0),
-                            // ),
                             const SizedBox(height: 30.0),
                             ElevatedButton(
                                 onPressed: () {
-                                  // Navigasi ke halaman PrepareSelfieScreen
-                                  Navigator.push(
+                                  // Gunakan pushReplacement bukan push
+                                  Navigator.pushReplacement(
                                     context,
                                     MaterialPageRoute(
-                                        builder: (context) => DashboardScreen(
-                                              onApplySubmission: (context) {},
-                                              onChangeBottomNavIndex:
-                                                  (index) {},
-                                              scrollController:
-                                                  ScrollController(),
-                                            )),
+                                      builder: (context) => DashboardScreen(
+                                        onApplySubmission: (context) {
+                                          // Implementasikan apa yang harus terjadi saat pengajuan
+                                        },
+                                        onChangeBottomNavIndex: (index) {
+                                          // Ini harus menangani perubahan indeks bar navigasi
+                                          // Kemungkinan perlu terhubung ke state management
+                                        },
+                                        scrollController: ScrollController(),
+                                      ),
+                                    ),
                                   );
                                 },
-                                child: Text('Kembali ke Halaman Utama'))
+                                child: Text('Kembali ke Halaman Utama')),
                           ],
                         ),
                       ),

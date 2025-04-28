@@ -12,7 +12,7 @@ import 'package:pensiunku/repository/monitoring_repository.dart';
 import 'package:pensiunku/repository/user_repository.dart';
 import 'package:pensiunku/screen/home/account/account_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/dashboard_screen.dart';
-import 'package:pensiunku/screen/home/dashboard/usaha_screen.dart';
+import 'package:pensiunku/screen/home/dashboard/usaha/usaha_screen.dart';
 import 'package:pensiunku/screen/home/submission/riwayat_pengajuan_orang_lain.dart';
 import 'package:pensiunku/screen/home/test.dart';
 import 'package:pensiunku/screen/home/update_dialog.dart';

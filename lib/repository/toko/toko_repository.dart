@@ -1,9 +1,10 @@
 import 'dart:developer';
 
 import 'package:dio/dio.dart';
-import 'package:pensiunku/data/api/toko_api.dart';
+import 'package:pensiunku/data/api/toko/toko_api.dart';
 import 'package:pensiunku/data/db/app_database.dart';
-import 'package:pensiunku/model/toko_model.dart';
+
+import 'package:pensiunku/model/toko/toko_model.dart';
 import 'package:pensiunku/repository/base_repository.dart';
 import 'package:pensiunku/repository/result_model.dart';
 

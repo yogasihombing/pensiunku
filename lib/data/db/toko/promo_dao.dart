@@ -1,4 +1,5 @@
-import 'package:pensiunku/model/promo_model.dart';
+
+import 'package:pensiunku/model/toko/promo_model.dart';
 import 'package:sqflite/sqflite.dart';
 
 class PromoDao {

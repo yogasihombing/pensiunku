@@ -8,6 +8,9 @@ class IconMenu extends StatelessWidget {
   final String routeNamed;
   Object? arguments;
   final bool useBox;
+  final double? imageWidth; // Parameter baru
+  final double? imageHeight; // Parameter baru
+  final FilterQuality filterQuality; // Parameter baru
 
   IconMenu(
       {Key? key,
@@ -16,6 +19,9 @@ class IconMenu extends StatelessWidget {
       this.size = 70,
       required this.routeNamed,
       this.useBox = true,
+      this.imageWidth,
+      this.imageHeight,
+      this.filterQuality = FilterQuality.low,
       this.arguments})
       : super(key: key);
 

@@ -184,8 +184,12 @@ class _UsahaDetailScreenState extends State<UsahaDetailScreen> {
                                         children: [
                                           ...usahaDetailModel.photo_gallery
                                               .map((franchise) {
-                                            int indexFoto = usahaDetailModel.photo_gallery.indexOf(franchise);
-                                            List<String> fotos = usahaDetailModel.photo_gallery.map((photo){
+                                            int indexFoto = usahaDetailModel
+                                                .photo_gallery
+                                                .indexOf(franchise);
+                                            List<String> fotos =
+                                                usahaDetailModel.photo_gallery
+                                                    .map((photo) {
                                               return photo.path.toString();
                                             }).toList();
                                             return Builder(
@@ -267,7 +271,7 @@ class _UsahaDetailScreenState extends State<UsahaDetailScreen> {
                                   onTap: () {
                                     {
                                       UrlUtil.launchURL(
-                                          'https://wa.me/+6281181106000?text=Hallo%20Kreditpensiun.com%0ASaya%20adalah%20Pensiun%20Hebat%20yang%20tetap%20ingin%20produktif%20di%20masa%20pensiun%0ASaya%20ingin%20konsultasi%20mengenai%20Franchise%20${usahaDetailModel.nama}');
+                                          'https://wa.me/+6281220357098?text=Hallo%20Pensiunku%0ASaya%20adalah%20Pensiun%20Hebat%20yang%20tetap%20ingin%20produktif%20di%20masa%20pensiun%0ASaya%20ingin%20konsultasi%20mengenai%20Franchise%20${usahaDetailModel.nama}');
                                     }
                                   },
                                   child: Container(

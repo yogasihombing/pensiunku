@@ -140,7 +140,6 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
   TextEditingController domisiliController = TextEditingController();
 
   late Future<ResultModel<UserModel>> _futureData;
-  OptionModel _selectedProvince = OptionModel(id: 0, text: '');
 
   @override
   void initState() {
@@ -150,26 +149,31 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
   }
 
   // Dialog untuk memilih provinsi
+  // Ubah variabel selectedProvince menjadi selectedCity
+  late OptionModel _selectedCity = OptionModel(id: 0, text: '');
+
+// Ubah dialog pemilihan provinsi menjadi kota/kabupaten
   Future<void> _showCitySelectionDialog() async {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Pilih Provinsi'),
+          title: Text('Pilih Kota/Kabupaten'),
           content: Container(
             width: double.maxFinite,
             child: ListView.builder(
               shrinkWrap: true,
-              itemCount: LocationRepository.getProvinces().length,
+              itemCount: LocationRepository
+                  .cities.length, // Gunakan list kota langsung
               itemBuilder: (context, index) {
-                final province = LocationRepository.getProvinces()[index];
+                final city = LocationRepository.cities[index];
                 return ListTile(
-                  title: Text(province.text),
+                  title: Text(city.text),
                   onTap: () {
                     Navigator.of(context).pop();
                     setState(() {
-                      _selectedProvince = province;
-                      domisiliController.text = province.text;
+                      _selectedCity = city;
+                      domisiliController.text = city.text;
                     });
                   },
                 );
@@ -193,10 +197,11 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
     }
 
     // Validasi pilihan provinsi
-    if (_selectedProvince.id == 0 || _selectedProvince.text.isEmpty) {
+    // Ubah validasi provinsi ke kota
+    if (_selectedCity.id == 0 || _selectedCity.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Harap pilih provinsi Anda'),
+          content: Text('Harap pilih kota/kabupaten Anda'),
           backgroundColor: Colors.red,
         ),
       );
@@ -428,7 +433,7 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'Provinsi',
+                                      'Kota/Kabupaten',
                                       style: TextStyle(
                                         fontSize: 12,
                                         color: Colors.grey[600],
@@ -436,12 +441,12 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
                                     ),
                                     SizedBox(height: 4),
                                     Text(
-                                      _selectedProvince.id != 0
-                                          ? _selectedProvince.text
-                                          : 'Pilih Provinsi',
+                                      _selectedCity.id != 0
+                                          ? _selectedCity.text
+                                          : 'Pilih Kota/Kabupaten',
                                       style: TextStyle(
                                         fontSize: 16,
-                                        color: _selectedProvince.id != 0
+                                        color: _selectedCity.id != 0
                                             ? Colors.black87
                                             : Colors.grey,
                                       ),

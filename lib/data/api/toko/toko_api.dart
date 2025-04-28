@@ -1,7 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:pensiunku/data/api/base_api.dart';
-import 'package:pensiunku/model/toko_model.dart';
+import 'package:pensiunku/model/toko/toko_model.dart';
 import 'package:pensiunku/util/api_util.dart';
+
 
 class TokoApi extends BaseApi {
   Future<Response> getAllProduct(int page, String token) {

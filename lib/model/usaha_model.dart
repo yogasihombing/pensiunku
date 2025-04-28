@@ -39,12 +39,12 @@ class ListFranchise {
 }
 
 class UsahaModel {
-  final String description;
+  // final String description;
   final List<Categories> categories;
   final List<ListFranchise> list;
 
   UsahaModel({
-    required this.description,
+    // required this.description,
     required this.categories,
     required this.list,
   });
@@ -54,7 +54,7 @@ class UsahaModel {
     List<dynamic> franchiseJson = json['list'];
 
     return UsahaModel(
-      description: json['description'],
+      // description: json['description'],
       categories: categoriesJson.map((json) => Categories.fromJson(json)).toList(),
       list: franchiseJson.map((json) => ListFranchise.fromJson(json)).toList(),
     );

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:pensiunku/model/promo_model.dart';
+import 'package:pensiunku/model/toko/promo_model.dart';
 import 'package:pensiunku/screen/web_view/web_view_screen.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 

@@ -47,7 +47,8 @@ class _RiwayatPengajuanOrangLainScreenState
       await fetchPengajuanOrangLainData(telepon); // 4️⃣ Tunggu hingga selesai
     } catch (e) {
       print('Error mengambil profil: $e');
-      setState(() => _isLoadingOverlay = false); // 5️⃣ Matikan overlay jika gagal
+      setState(
+          () => _isLoadingOverlay = false); // 5️⃣ Matikan overlay jika gagal
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Gagal memuat profil')),
       );
@@ -157,6 +158,7 @@ class _RiwayatPengajuanOrangLainScreenState
   @override
   Widget build(BuildContext context) {
     return Stack(
+      fit: StackFit.expand, // memastikan full-screen
       children: [
         Scaffold(
           appBar: WidgetUtil.getNewAppBar(context, 'Riwayat Pengajuan', 1,
@@ -176,15 +178,29 @@ class _RiwayatPengajuanOrangLainScreenState
 
             child: pengajuanOrangLainData.isEmpty
                 // Tambahkan ListView agar RefreshIndicator bekerja meskipun data kosong
-                ? ListView(children: const [
-                    SizedBox(
-                      height: 400,
-                      child: const Center(
-                        child: Text(
-                            'AJUKAN PINJAMAN SEKARANG!'), // Pesan jika data kosong
-                      ),
-                    ),
-                  ])
+                ? LayoutBuilder(
+                    builder: (context, constraints) {
+                      return SingleChildScrollView(
+                        physics: AlwaysScrollableScrollPhysics(),
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(
+                            minHeight: constraints.maxHeight,
+                          ),
+                          child: Center(
+                            child: Text(
+                              'AJUKAN PINJAMAN SEKARANG!',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black54,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  )
                 : ListView.builder(
                     itemCount: pengajuanOrangLainData.length, // Jumlah data
                     itemBuilder: (context, index) {
@@ -247,41 +263,41 @@ class _RiwayatPengajuanOrangLainScreenState
           ),
         ),
         // Tampilkan overlay loading bila _isLoadingOverlay true
-        if (_isLoadingOverlay)
-          Positioned.fill(
-            child: ModalBarrier(
-              color: Colors.black.withOpacity(0.5),
-              dismissible: false,
-            ),
-          ),
-        if (_isLoadingOverlay)
-          Center(
-            child: Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: const [
-                  CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      Color(0xFF017964),
-                    ),
-                  ),
-                  SizedBox(height: 16),
-                  Text(
-                    'Mohon tunggu...',
-                    style: TextStyle(
-                      color: Color(0xFF017964),
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
+        // Overlay loading jika _isLoadingOverlay true
+          if (_isLoadingOverlay)
+            Positioned.fill(
+              child: ModalBarrier(
+                color: Colors.black.withOpacity(0.5),
+                dismissible: false,
               ),
             ),
-          ),
+          if (_isLoadingOverlay)
+            Center(
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: const [
+                    CircularProgressIndicator(
+                      valueColor:
+                          AlwaysStoppedAnimation<Color>(Color(0xFF017964)),
+                    ),
+                    SizedBox(height: 16),
+                    Text(
+                      'Mohon tunggu...',
+                      style: TextStyle(
+                        color: Color(0xFF017964),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
       ],
     );
   }

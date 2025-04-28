@@ -55,7 +55,7 @@ class _OtpCodeScreenState extends State<OtpCodeScreen> {
 
   /// Input OTP code controller
   late TextEditingController _inputOtpController;
-  
+
   /// Flag to track if initialization has completed
   bool _isInitialized = false;
 
@@ -73,7 +73,8 @@ class _OtpCodeScreenState extends State<OtpCodeScreen> {
       // Tampilkan pesan error jika terjadi masalah saat inisialisasi
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
-          _showErrorDialog('Terjadi kesalahan saat memuat layar OTP: ${e.toString()}');
+          _showErrorDialog(
+              'Terjadi kesalahan saat memuat layar OTP: ${e.toString()}');
         }
       });
     }
@@ -81,11 +82,12 @@ class _OtpCodeScreenState extends State<OtpCodeScreen> {
 
   @override
   void dispose() {
-    // Pastikan controller dibersihkan
-    _inputOtpController.dispose();
-    
-    // Pastikan timer dibatalkan untuk menghindari memory leak
     _resendTimer?.cancel();
+
+    // Hentikan listener dan clear teks agar tidak error
+    _inputOtpController.clear();
+
+    _inputOtpController.dispose();
     super.dispose();
   }
 
@@ -96,7 +98,7 @@ class _OtpCodeScreenState extends State<OtpCodeScreen> {
         _resendCounter = RESEND_COUNTDOWN_SECOND;
         _canResendOtp = false;
       });
-      
+
       _resendTimer?.cancel(); // Cancel any existing timer
       _resendTimer = Timer.periodic(
         Duration(seconds: 1),
@@ -130,35 +132,34 @@ class _OtpCodeScreenState extends State<OtpCodeScreen> {
         _showErrorDialog('Kode OTP harus 5 digit');
         return;
       }
-      
+
       if (!mounted) return;
-      
+
       setState(() {
         _isLoadingVerify = true;
       });
-      
+
       try {
-        final result = await UserRepository().verifyOtp(
-          widget.phone, 
-          _inputOtpController.text
-        );
-        
+        final result = await UserRepository()
+            .verifyOtp(widget.phone, _inputOtpController.text);
+
         if (!mounted) return;
-        
+
         setState(() {
           _isLoadingVerify = false;
         });
-        
+
         if (result.isSuccess && result.data != null) {
           // Save token
           try {
             final prefs = await SharedPreferencesUtil().sharedPreferences;
-            await prefs.setString(SharedPreferencesUtil.SP_KEY_TOKEN, result.data!);
-            
+            await prefs.setString(
+                SharedPreferencesUtil.SP_KEY_TOKEN, result.data!);
+
             if (!mounted) return;
-            
+
             _resendTimer?.cancel();
-            
+
             // Navigasi dengan safe call
             try {
               Navigator.of(context).pushNamedAndRemoveUntil(
@@ -168,7 +169,8 @@ class _OtpCodeScreenState extends State<OtpCodeScreen> {
             } catch (e) {
               print('Navigation error: $e');
               if (mounted) {
-                _showErrorDialog('Terjadi kesalahan saat membuka halaman selanjutnya. Silakan coba lagi.');
+                _showErrorDialog(
+                    'Terjadi kesalahan saat membuka halaman selanjutnya. Silakan coba lagi.');
               }
             }
           } catch (e) {
@@ -179,7 +181,8 @@ class _OtpCodeScreenState extends State<OtpCodeScreen> {
           }
         } else {
           if (mounted) {
-            _showErrorDialog(result.error ?? 'Gagal memverifikasi OTP. Pastikan kode yang dimasukkan benar.');
+            _showErrorDialog(result.error ??
+                'Gagal memverifikasi OTP. Pastikan kode yang dimasukkan benar.');
           }
         }
       } catch (e) {
@@ -188,7 +191,8 @@ class _OtpCodeScreenState extends State<OtpCodeScreen> {
           setState(() {
             _isLoadingVerify = false;
           });
-          _showErrorDialog('Terjadi kesalahan saat verifikasi OTP: ${e.toString()}');
+          _showErrorDialog(
+              'Terjadi kesalahan saat verifikasi OTP: ${e.toString()}');
         }
       }
     } catch (e) {
@@ -220,20 +224,20 @@ class _OtpCodeScreenState extends State<OtpCodeScreen> {
   Future<void> _resendOtp() async {
     try {
       if (!mounted) return;
-      
+
       setState(() {
         _isLoadingResend = true;
       });
-      
+
       try {
         final result = await UserRepository().sendOtp(widget.phone);
-        
+
         if (!mounted) return;
-        
+
         setState(() {
           _isLoadingResend = false;
         });
-        
+
         if (result.isSuccess) {
           if (mounted) {
             _showSuccessDialog('OTP sudah berhasil dikirim ulang!');
@@ -250,7 +254,8 @@ class _OtpCodeScreenState extends State<OtpCodeScreen> {
           setState(() {
             _isLoadingResend = false;
           });
-          _showErrorDialog('Terjadi kesalahan saat mengirim ulang OTP: ${e.toString()}');
+          _showErrorDialog(
+              'Terjadi kesalahan saat mengirim ulang OTP: ${e.toString()}');
         }
       }
     } catch (e) {
@@ -267,7 +272,7 @@ class _OtpCodeScreenState extends State<OtpCodeScreen> {
   /// Show error dialog with improved UI
   void _showErrorDialog(String message) {
     if (!mounted) return;
-    
+
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
@@ -291,7 +296,7 @@ class _OtpCodeScreenState extends State<OtpCodeScreen> {
   /// Show success dialog
   void _showSuccessDialog(String message) {
     if (!mounted) return;
-    
+
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
@@ -313,142 +318,171 @@ class _OtpCodeScreenState extends State<OtpCodeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    ThemeData theme = Theme.of(context);
-    bool _isLoading = _isLoadingVerify || _isLoadingResend;
+    final theme = Theme.of(context);
+    final media = MediaQuery.of(context);
+    final screenWidth = media.size.width;
+    final screenHeight = media.size.height;
+    // lebar konten = 80% layar
+    final contentWidth = screenWidth * 0.8;
+    final isLoading = _isLoadingVerify || _isLoadingResend;
 
-    // Jika belum diinisialisasi, tampilkan loading
     if (!_isInitialized) {
       return Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
+        body: Center(child: CircularProgressIndicator()),
       );
     }
 
     return Scaffold(
       body: WillPopScope(
-        // Tangani tombol back untuk menghindari crash
         onWillPop: () async {
-          // Batalkan timer jika ada
           _resendTimer?.cancel();
-          // Izinkan navigasi kembali
           return true;
         },
         child: Stack(
           children: [
-            // Background Gradient - full layar
+            // Background gradient - full layar
             Positioned.fill(
               child: Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
+                    begin: Alignment.topCenter, // Gradient mulai dari kiri
+                    end: Alignment.bottomCenter, // Gradient berakhir di kanan
                     colors: [
-                      Colors.white,
-                      Colors.white,
-                      Color.fromARGB(225, 138, 217, 165), // Hijau Muda
+                      Color.fromARGB(255, 255, 255, 255),
+                      Color.fromARGB(255, 255, 255, 255),
+                      Color.fromARGB(255, 255, 255, 255),
+                      Color.fromARGB(255, 170, 231, 170), // Hijau muda (pinggir kanan)
                     ],
-                    stops: [0.0, 0.5, 1.0],
+                    stops: [
+                      0.0,
+                      0.25,
+                      0.5,
+                      1.0
+                    ], // Titik berhenti warna di gradient
                   ),
                 ),
               ),
             ),
 
-            // Konten Utama
             SafeArea(
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
+                  // Spasi atas 10% tinggi layar
+                  SizedBox(height: screenHeight * 0.1),
+
+                  // Logo sebagai item pertama
+                  Image.asset(
+                    'assets/register_screen/pensiunku.png',
+                    height: screenHeight * 0.06, // 5% tinggi layar
+                  ),
+
+                  // Spasi di bawah logo
+                  SizedBox(height: screenHeight * 0.05),
+
                   Expanded(
                     child: SingleChildScrollView(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 36.0,
-                          vertical: 40.0,
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            SizedBox(height: 60.0),
-                            SizedBox(
-                              height: 220,
-                              child: Image.asset('assets/otp_screen/otpcode.png'),
-                            ),
-                            SizedBox(height: 24.0),
-                            Text(
-                              'VERIFIKASI',
-                              textAlign: TextAlign.center,
-                              style: theme.textTheme.headline6?.copyWith(
-                                fontWeight: FontWeight.w600,
+                      child: Center(
+                        child: Container(
+                          width: contentWidth,
+                          child: Column(
+                            children: [
+                              // Ilustrasi OTP
+                              SizedBox(
+                                height: screenHeight * 0.30,
+                                child: Image.asset(
+                                  'assets/otp_screen/otpcode.png',
+                                  fit: BoxFit.contain,
+                                ),
                               ),
-                            ),
-                            SizedBox(height: 8.0),
-                            Text(
-                              'Masukkan 5 digit kode OTP yang telah dikirim ke nomor ${widget.phone}',
-                              textAlign: TextAlign.center,
-                              style: theme.textTheme.bodyText2,
-                            ),
-                            SizedBox(height: 24.0),
-                            PinCodeTextField(
-                              enabled: !_isLoading,
-                              length: 5,
-                              animationType: AnimationType.fade,
-                              keyboardType: TextInputType.number,
-                              cursorColor: theme.primaryColor,
-                              pinTheme: PinTheme(
-                                shape: PinCodeFieldShape.box,
-                                borderRadius: BorderRadius.circular(5),
-                                fieldHeight: 50,
-                                fieldWidth: 50,
-                                selectedColor:
-                                    theme.primaryColor.withOpacity(0.6),
-                                selectedFillColor:
-                                    theme.primaryColor.withOpacity(0.6),
-                                inactiveColor: Colors.grey[300],
-                                inactiveFillColor: Colors.white,
-                                activeFillColor:
-                                    theme.primaryColor.withOpacity(0.4),
-                                activeColor: theme.primaryColor.withOpacity(0.4),
+
+                              SizedBox(height: screenHeight * 0.03),
+                              Text(
+                                'Verifikasi',
+                                textAlign: TextAlign.center,
+                                style: theme.textTheme.headline6
+                                    ?.copyWith(fontWeight: FontWeight.w600),
                               ),
-                              animationDuration: Duration(milliseconds: 300),
-                              enableActiveFill: true,
-                              controller: _inputOtpController,
-                              appContext: context,
-                              onChanged: (value) {},
-                              beforeTextPaste: (text) {
-                                // Validasi teks yang akan di-paste
-                                if (text != null && RegExp(r'^\d+$').hasMatch(text)) {
-                                  return true;
-                                }
-                                return false;
-                              },
-                            ),
-                            SizedBox(height: 16.0),
-                            ElevatedButtonLoading(
-                              text: 'VERIFIKASI OTP',
-                              onTap: _verify,
-                              isLoading: _isLoadingVerify,
-                              disabled: _isLoading,
-                            ),
-                            SizedBox(height: 16.0),
-                            _canResendOtp
-                                ? TextButtonLoading(
+                              SizedBox(height: screenHeight * 0.015),
+                              Text(
+                                'Masukkan 5 digit kode OTP yang telah dikirim ke nomor ${widget.phone}',
+                                textAlign: TextAlign.center,
+                                style: theme.textTheme.bodyText2,
+                              ),
+                              SizedBox(height: screenHeight * 0.03),
+
+                              // PIN Code field
+                              PinCodeTextField(
+                                enabled: !isLoading,
+                                length: 5,
+                                animationType: AnimationType.fade,
+                                keyboardType: TextInputType.number,
+                                cursorColor: theme.primaryColor,
+                                pinTheme: PinTheme(
+                                  shape: PinCodeFieldShape.box,
+                                  borderRadius: BorderRadius.circular(5),
+                                  fieldHeight: screenWidth * 0.12,
+                                  fieldWidth: screenWidth * 0.12,
+                                  selectedColor:
+                                      theme.primaryColor.withOpacity(0.6),
+                                  selectedFillColor:
+                                      theme.primaryColor.withOpacity(0.6),
+                                  inactiveColor: Colors.grey[300],
+                                  inactiveFillColor: Colors.white,
+                                  activeFillColor:
+                                      theme.primaryColor.withOpacity(0.4),
+                                  activeColor:
+                                      theme.primaryColor.withOpacity(0.4),
+                                ),
+                                animationDuration: Duration(milliseconds: 300),
+                                enableActiveFill: true,
+                                controller: _inputOtpController,
+                                appContext: context,
+                                onChanged: (_) {},
+                                beforeTextPaste: (text) =>
+                                    text != null &&
+                                    RegExp(r'^\d+$').hasMatch(text),
+                              ),
+
+                              SizedBox(height: screenHeight * 0.01),
+
+                              // Tombol Verifikasi
+                              IntrinsicWidth(
+                                stepWidth:
+                                    0, // optional, default sudah wrap content
+                                child: ElevatedButtonLoading(
+                                  text: 'Verifikasi OTP',
+                                  onTap: _verify,
+                                  isLoading: _isLoadingVerify,
+                                  disabled: isLoading,
+                                  textStyle: const TextStyle(
+                                    color: Colors.black,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16.0,
+                                  ),
+                                ),
+                              ),
+
+                              SizedBox(height: screenHeight * 0.01),
+
+                              // Tombol Kirim Ulang / Counter
+                              if (_canResendOtp)
+                                SizedBox(
+                                  width: contentWidth,
+                                  child: TextButtonLoading(
                                     text: 'Kirim Ulang OTP',
                                     onTap: _resendOtp,
                                     isLoading: _isLoadingResend,
-                                    disabled: _isLoading,
-                                  )
-                                : Column(
-                                    children: [
-                                      SizedBox(height: 16.0),
-                                      Align(
-                                        alignment: Alignment.center,
-                                        child: Text(
-                                          'Kirim ulang OTP dalam $_resendCounter detik',
-                                        ),
-                                      ),
-                                    ],
+                                    disabled: isLoading,
                                   ),
-                          ],
+                                )
+                              else
+                                Text(
+                                  'Kirim ulang OTP dalam $_resendCounter detik',
+                                  textAlign: TextAlign.center,
+                                ),
+                            ],
+                          ),
                         ),
                       ),
                     ),

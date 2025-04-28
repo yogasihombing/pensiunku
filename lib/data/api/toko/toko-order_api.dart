@@ -1,7 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:pensiunku/data/api/base_api.dart';
+import 'package:pensiunku/util/api_util.dart';
 
-import '../../util/api_util.dart';
+
 
 class TokoOrderApi extends BaseApi {
   Future<Response> getAllOrderHistory(String token) {

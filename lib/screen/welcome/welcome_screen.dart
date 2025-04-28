@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:pensiunku/screen/otp/otp_screen.dart';
 import 'package:pensiunku/screen/welcome/welcome_text.dart';
-import 'package:pensiunku/widget/carousel_indicator.dart';
 import 'package:pensiunku/widget/fade_up_image.dart';
-import 'package:pensiunku/widget/oval_gradient_painter.dart';
+
 
 /// Welcome Screen
 ///
@@ -35,19 +34,19 @@ class _WelcomeScreenState extends State<WelcomeScreen>
       'title': 'Proses Mudah',
       'subtitle': 'Semua Dari Rumah',
       'text':
-          'Gak perlu jauh-jauh! semua bisa kamu buat mudah dan lakukan dari rumah. #Ajukandarirumah',
+          'Gak perlu jauh-jauh! \n semua bisa kamu buat mudah dan \n lakukan dari rumah. #Ajukandarirumah',
     },
     {
       'title': 'Kredit Sampai Dengan',
       'subtitle': '500 Juta',
       'text':
-          'Limit Kredit besar dengan segudang keuntungan lain yang bisa kamu dapatkan!',
+          'Limit Kredit besar dengan segudang\n keuntungan lain yang bisa kamu\n dapatkan!',
     },
     {
       'title': 'Tenor Hingga',
       'subtitle': '15 Tahun',
       'text':
-          'Tak perlu khawatir, atur jangka waktu pinjamanmu sesuai dengan keinginanmu.',
+          'Tak perlu khawatir, atur jangka waktu\n pinjamanmu sesuai dengan\n keinginanmu.',
     },
   ];
 
@@ -119,7 +118,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
 
     // Menghitung ukuran tampilan berdasarkan tinggi layar
     double screenHeight = screenSize.height;
-    double backdropHeight = screenHeight * 0.60;
+    double backdropHeight = screenHeight * 0.50;
     // double gradientHeight = screenHeight * 0.50;
     double imageSize = 240;
 
@@ -157,11 +156,9 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                   begin: Alignment.topCenter, // Gradient mulai dari kiri
                   end: Alignment.bottomCenter, // Gradient berakhir di kanan
                   colors: [
-                    Color.fromARGB(
-                        255, 172, 232, 212), // Hijau muda (pinggir kiri)
+                    Color.fromARGB(255, 170, 231, 170), // Hijau muda (pinggir kiri)
                     Color(0xFFFFF8DD), // Kuning pucat (tengah)
-                    Color.fromARGB(
-                        255, 138, 217, 165), // Hijau muda (pinggir kanan)
+                    Color.fromARGB(255, 170, 231, 170), // Hijau muda (pinggir kanan)
                   ],
                   stops: [0.0, 0.5, 1.0], // Titik berhenti warna di gradient
                 ),
@@ -178,6 +175,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                   children: [
                     // Gambar slider di sini
                     Positioned(
+                      top: 150,
                       bottom: 0.0,
                       left: 0.0,
                       right: 0.0,
@@ -250,9 +248,10 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                   width: _currentIndex == index ? 24.0 : 8.0,
                   decoration: BoxDecoration(
                     color: _currentIndex == index
-                        ? Colors.orange
+                        ? Color(0xFF017964)
                         : Colors.grey[300],
                     borderRadius: BorderRadius.circular(12.0),
+                    
                   ),
                 ),
               ),
@@ -281,6 +280,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
             ),
         ],
       ),
+      
 
       // Tombol Lanjutkan atau Daftar
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
@@ -298,17 +298,19 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                   ),
                 ),
                 child: Text(
-                  _currentIndex < 3 ? 'LANJUTKAN' : 'DAFTAR',
+                  _currentIndex < 3 ? 'Lanjutkan' : 'DAFTAR',
                   style: TextStyle(
                     fontSize: 16.0,
-                    color: Colors.white,
+                    color: Colors.black,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
               
+              
             )
           : null,
+         
     );
   }
 
