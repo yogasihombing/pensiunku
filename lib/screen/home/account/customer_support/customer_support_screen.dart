@@ -62,17 +62,50 @@ class _CustomerSupportScreenState extends State<CustomerSupportScreen> {
     );
 
     return Scaffold(
-      appBar:
-          WidgetUtil.getNewAppBar(context, 'Customer Support', 2, (newIndex) {
-        Navigator.of(context).pop(newIndex);
-      }, () {
-        Navigator.of(context).pop();
-      }, useNotificationIcon: false),
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back, color: Color(0xFF017964)),
+          onPressed: () {
+            Navigator.of(context).pop();
+          },
+        ),
+        title: Text(
+          'Customer Support',
+          style: TextStyle(
+            color: Color(0xFF017964),
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        centerTitle: true,
+      ),
       body: Stack(
         children: [
+          // Background gradient
+          Container(
+            // width: double.infinity,
+            // height: double.infinity,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.white,
+                  Colors.white,
+                  Colors.white,
+                  Color.fromARGB(255, 220, 226, 147),
+                ],
+                stops: [0.25, 0.5, 0.75, 1.0],
+              ),
+            ),
+          ),
+          // 💬 Content scrollable
           SingleChildScrollView(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32.0),
+              padding: const EdgeInsets.fromLTRB(
+                  32.0, kToolbarHeight + 32, 32.0, 32.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [

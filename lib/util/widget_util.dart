@@ -47,7 +47,7 @@ class WidgetUtil {
       elevation: 0.0,
       leading: IconButton(
         onPressed: onPressedBack,
-        icon: Icon(Icons.arrow_back_ios),
+        icon: Icon(Icons.arrow_back),
       ),
       title: Text(
         titleText,

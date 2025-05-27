@@ -1,47 +1,58 @@
 import 'package:flutter/material.dart';
-import 'package:pensiunku/model/event_model.dart';
-import 'package:pensiunku/repository/event_repository.dart';
+import 'package:pensiunku/model/article_model.dart';
+import 'package:pensiunku/repository/article_repository.dart';
 import 'package:pensiunku/repository/result_model.dart';
-import 'package:pensiunku/screen/home/dashboard/event/event_item_screen.dart';
-import 'package:pensiunku/screen/home/dashboard/event/latest_event_screen.dart';
-import 'package:pensiunku/screen/home/dashboard/event/no_event_screen.dart';
-import 'package:pensiunku/util/shared_preferences_util.dart';
+import 'package:pensiunku/screen/home/dashboard/article/article_item_screen.dart';
+import 'package:pensiunku/screen/home/dashboard/article/latest_articles_screen.dart';
+import 'package:pensiunku/screen/home/dashboard/article/no_article_screen.dart';
+import 'package:pensiunku/widget/chip_tab.dart';
 
-class EventScreen extends StatefulWidget {
-  static const String ROUTE_NAME = '/event';
-  const EventScreen({Key? key}) : super(key: key);
+class ArticleScreenArguments {
+  final List<ArticleCategoryModel> articleCategories;
 
-  @override
-  State<EventScreen> createState() => _EventScreenState();
+  ArticleScreenArguments({
+    required this.articleCategories,
+  });
 }
 
-class _EventScreenState extends State<EventScreen> {
-  late Future<ResultModel<List<EventModel>>> _futureData;
-  late Future<ResultModel<List<EventModel>>> _futureDataWithoutSearchString;
-  int _currentCarouselIndex = 0;
+class ArticleScreen extends StatefulWidget {
+  static const String ROUTE_NAME = '/article';
+  final List<ArticleCategoryModel> articleCategories;
+
+  const ArticleScreen({Key? key, required this.articleCategories})
+      : super(key: key);
+
+  @override
+  State<ArticleScreen> createState() => _ArticleScreenState();
+}
+
+class _ArticleScreenState extends State<ArticleScreen> {
+  late Future<ResultModel<List<MobileArticleModel>>> _futureData;
+  late Future<ResultModel<List<MobileArticleModel>>>
+      _futureDataWithoutSearchString;
+  late List<ArticleCategoryModel> _articleCategories = widget.articleCategories;
+  // late List<MobileArticleModel> _articlesWithSearch = [];
+  // int _currentCarouselIndex = 0;
   int _filterIndex = 0;
-  String? _searchText;
+  String _searchText = '';
   final TextEditingController editingController = TextEditingController();
   List<String> images = [];
-  List<int> idArticles = [];
+  List<MobileArticleModel> latestArticles = [];
 
   @override
   void initState() {
     super.initState();
 
-    _currentCarouselIndex = 0;
+    // _currentCarouselIndex = 0;
     _filterIndex = 0;
-    _searchText = null;
+    _searchText = '';
+    // _articlesWithSearch = [];
     _refreshData();
   }
 
   _refreshData() {
-    String? token = SharedPreferencesUtil()
-        .sharedPreferences
-        .getString(SharedPreferencesUtil.SP_KEY_TOKEN);
-
-    return _futureData = EventRepository()
-        .getEvents(token!, _filterIndex, _searchText)
+    return _futureData = ArticleRepository()
+        .getMobileAll(_articleCategories[_filterIndex])
         .then((value) {
       if (value.error != null) {
         // showDialog(
@@ -52,9 +63,16 @@ class _EventScreenState extends State<EventScreen> {
         //           backgroundColor: Colors.red,
         //           elevation: 24.0,
         //         ));
+        // } else {
+        //   _articlesWithSearch = [];
+        //   value.data!.asMap().forEach((key, value) {
+        //     if(value.title.toLowerCase().contains(_searchText!)){
+        //       _articlesWithSearch.add(value);
+        //     }
+        //    });
       }
       _futureDataWithoutSearchString =
-          EventRepository().getEvents(token, _filterIndex, '');
+          ArticleRepository().getMobileAll(_articleCategories[_filterIndex]);
       setState(() {});
       return value;
     });
@@ -76,15 +94,13 @@ class _EventScreenState extends State<EventScreen> {
             Navigator.of(context).pop(true);
           },
           icon: Icon(Icons.arrow_back),
-          color: const Color(0xFF017964),
+          color: Color(0xFF017964),
         ),
         title: Text(
-          "Event",
+          "Artikel",
           style: theme.textTheme.headline6?.copyWith(
             fontWeight: FontWeight.w600,
-
-            color: const Color(0xFF017964),
-            // color: const Color(0xFFFFC950),
+            color: Color(0xFF017964),
           ),
         ),
       ),
@@ -130,124 +146,77 @@ class _EventScreenState extends State<EventScreen> {
                               filled: true,
                               fillColor: Color.fromRGBO(228, 228, 228, 1.0),
                               suffixIcon: Icon(Icons.search),
+                              contentPadding: EdgeInsets.fromLTRB(10, 0, 0, 0),
                               border: OutlineInputBorder(
+                                  borderSide: BorderSide.none,
                                   borderRadius:
-                                      BorderRadius.all(Radius.circular(36.0)))),
+                                      BorderRadius.all(Radius.circular(18.0)))),
                         ),
                       ),
                     ),
                     FutureBuilder(
                         future: _futureData,
                         builder: (BuildContext context,
-                            AsyncSnapshot<ResultModel<List<EventModel>>>
+                            AsyncSnapshot<ResultModel<List<MobileArticleModel>>>
                                 snapshot) {
                           if (snapshot.hasData) {
                             if (snapshot.data?.data != null) {
-                              List<EventModel> data = snapshot.data!.data!;
+                              List<MobileArticleModel> data =
+                                  snapshot.data!.data!;
                               if (data.isEmpty) {
-                                return Container();
+                                return NoArticle();
                               } else {
-                                images = [];
-                                idArticles = [];
+                                latestArticles = [];
                                 data.asMap().forEach((index, value) {
                                   if (index < 3) {
-                                    images.add(value.foto);
-                                    idArticles.add(value.id);
+                                    latestArticles.add(value);
                                   }
                                 });
                                 return Column(
                                   children: [
-                                    LatestEvent(
-                                        images: images, idArticles: idArticles),
-                                  ],
-                                );
-                              }
-                            } else {
-                              //check without search
-                              return FutureBuilder(
-                                  future: _futureDataWithoutSearchString,
-                                  builder: ((context,
-                                      AsyncSnapshot<
-                                              ResultModel<List<EventModel>>>
-                                          snapshot) {
-                                    if (snapshot.hasData) {
-                                      if (snapshot.data?.data != null) {
-                                        List<EventModel> data =
-                                            snapshot.data!.data!;
-                                        if (data.isEmpty) {
-                                          return Container();
-                                        } else {
-                                          images = [];
-                                          idArticles = [];
-                                          data.asMap().forEach((index, value) {
-                                            if (index < 3) {
-                                              images.add(value.foto);
-                                              idArticles.add(value.id);
-                                            }
-                                          });
-                                          return Column(
-                                            children: [
-                                              LatestEvent(
-                                                  images: images,
-                                                  idArticles: idArticles),
-                                            ],
-                                          );
-                                        }
-                                      } else {
-                                        return Container();
-                                      }
-                                    } else {
-                                      return Container(
-                                        height: (screenSize.height) * 0.5 +
-                                            36 +
-                                            16.0,
-                                        child: Center(
-                                          child: CircularProgressIndicator(
-                                            color: theme.primaryColor,
-                                          ),
-                                        ),
-                                      );
-                                    }
-                                  }));
-                            }
-                          } else {
-                            return Column(
-                              children: [
-                                SizedBox(height: 16),
-                                Center(
-                                  child: CircularProgressIndicator(
-                                    color: theme.primaryColor,
-                                  ),
-                                ),
-                              ],
-                            );
-                          }
-                        }),
-                    filter(context),
-                    FutureBuilder(
-                        future: _futureData,
-                        builder: (BuildContext context,
-                            AsyncSnapshot<ResultModel<List<EventModel>>>
-                                snapshot) {
-                          if (snapshot.hasData) {
-                            if (snapshot.data?.data != null) {
-                              List<EventModel> data = snapshot.data!.data!;
-                              if (data.isEmpty) {
-                                return NoEvent();
-                              } else {
-                                images = [];
-                                idArticles = [];
-                                data.asMap().forEach((index, value) {
-                                  if (index < 3) {
-                                    images.add(value.foto);
-                                    idArticles.add(value.id);
-                                  }
-                                });
-                                return Column(
-                                  children: [
-                                    ...data.map((event) {
-                                      return EventItemScreen(
-                                        event: event,
+                                    LatestArticles(
+                                        latestArticles: latestArticles),
+                                    SizedBox(
+                                      height: 12.0,
+                                    ),
+                                    Container(
+                                      height: 28.0,
+                                      child: ListView(
+                                        scrollDirection: Axis.horizontal,
+                                        children: [
+                                          SizedBox(width: 12.0),
+                                          ..._articleCategories
+                                              .asMap()
+                                              .map((index, articleCategory) {
+                                                return MapEntry(
+                                                  index,
+                                                  ChipTab(
+                                                    text: articleCategory.name,
+                                                    isActive:
+                                                        _filterIndex == index,
+                                                    onTap: () {
+                                                      setState(() {
+                                                        _filterIndex = index;
+                                                      });
+                                                      _refreshData();
+                                                    },
+                                                    custom: true,
+                                                  ),
+                                                );
+                                              })
+                                              .values
+                                              .toList(),
+                                          SizedBox(width: 24.0),
+                                        ],
+                                      ),
+                                    ),
+                                    ...data
+                                        .where((element) => element.title
+                                            .toLowerCase()
+                                            .contains(_searchText))
+                                        .map((article) {
+                                      return ArticleItemScreen(
+                                        article: article,
                                         status: _filterIndex,
                                       );
                                     })
@@ -260,25 +229,28 @@ class _EventScreenState extends State<EventScreen> {
                                   future: _futureDataWithoutSearchString,
                                   builder: ((context,
                                       AsyncSnapshot<
-                                              ResultModel<List<EventModel>>>
+                                              ResultModel<
+                                                  List<MobileArticleModel>>>
                                           snapshot) {
                                     if (snapshot.hasData) {
                                       if (snapshot.data?.data != null) {
-                                        List<EventModel> data =
+                                        List<MobileArticleModel> data =
                                             snapshot.data!.data!;
                                         if (data.isEmpty) {
-                                          return NoEvent();
+                                          return NoArticle();
                                         } else {
-                                          images = [];
-                                          idArticles = [];
+                                          latestArticles = [];
                                           data.asMap().forEach((index, value) {
                                             if (index < 3) {
-                                              images.add(value.foto);
-                                              idArticles.add(value.id);
+                                              latestArticles.add(value);
                                             }
                                           });
                                           return Column(
                                             children: [
+                                              LatestArticles(
+                                                  latestArticles:
+                                                      latestArticles),
+                                              filter(context),
                                               Container(
                                                 width: screenSize.width - 16.0,
                                                 margin: EdgeInsets.symmetric(
@@ -296,7 +268,7 @@ class _EventScreenState extends State<EventScreen> {
                                                               .center,
                                                       children: [
                                                         Text(
-                                                            'Hasil pencarian : 0 event'),
+                                                            'Hasil pencarian : 0 artikel'),
                                                       ],
                                                     ),
                                                   ),
@@ -306,7 +278,7 @@ class _EventScreenState extends State<EventScreen> {
                                           );
                                         }
                                       } else {
-                                        return NoEvent();
+                                        return NoArticle();
                                       }
                                     } else {
                                       return Container(
@@ -325,7 +297,7 @@ class _EventScreenState extends State<EventScreen> {
                           } else {
                             return Column(
                               children: [
-                                SizedBox(height: 16),
+                                SizedBox(height: screenSize.height * 0.4),
                                 Center(
                                   child: CircularProgressIndicator(
                                     color: theme.primaryColor,
@@ -373,9 +345,8 @@ class _EventScreenState extends State<EventScreen> {
                       borderRadius: BorderRadius.only(
                           topLeft: Radius.circular(36),
                           bottomLeft: Radius.circular(36)),
-                      color: _filterIndex == 0
-                          ? Color.fromRGBO(1, 169, 159, 1.0)
-                          : Colors.white,
+                      color:
+                          _filterIndex == 0 ? Color(0xFFF017964) : Colors.white,
                     ),
                     child: Text(
                       "Akan Berlangsung",

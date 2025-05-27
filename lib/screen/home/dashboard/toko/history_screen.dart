@@ -142,13 +142,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
     TextStyle blackTextStyle = TextStyle(color: Colors.black);
     TextStyle whiteTextStyle = TextStyle(color: Colors.white);
     TextStyle greenTextTyle =
-        TextStyle(color: Color.fromRGBO(1, 169, 159, 1.0));
+        TextStyle(color: Color(0xFF017964));
     TextStyle greyTextStyle = TextStyle(
       color: Color.fromRGBO(149, 149, 149, 1.0),
     );
 
     // color style
-    Color greenColor = Color.fromRGBO(1, 169, 159, 1.0);
+    Color greenColor = Color(0xFF017964);
     Color greyColor = Color.fromRGBO(149, 149, 149, 1.0);
 
     Future<void> _showMyDialog({
@@ -331,7 +331,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         height: 40.0,
         width: double.infinity,
         decoration: BoxDecoration(
-            border: Border.all(color: Color.fromRGBO(76, 169, 156, 1.0))),
+            border: Border.all(color: Color(0xFF017964))),
         child: Row(
           children: [
             Expanded(
@@ -358,7 +358,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 child: Container(
                   alignment: Alignment.center,
                   decoration:
-                      BoxDecoration(color: Color.fromRGBO(76, 169, 156, 1.0)),
+                      BoxDecoration(color: Color(0xFF017964)),
                   child: Text(
                     'Riwayat',
                     style: theme.textTheme.subtitle1
@@ -502,7 +502,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                               child: ElevatedButton(
                                 onPressed: () {
                                   UrlUtil.launchURL(
-                                      'https://wa.me/+6281181106000?text=Hallo%20admin%20kredit%20pensiun,%20saya%20mau%20membatalkan%20pesanan%20dengan%20kode%20transaksi%20${item.id_transaksi}');
+                                      'https://wa.me/+6287785833344?text=Hallo%20admin%20pensiunku,%20saya%20mau%20membatalkan%20pesanan%20dengan%20kode%20transaksi%20${item.id_transaksi}');
                                 },
                                 style: ElevatedButton.styleFrom(
                                   primary: greyColor,
@@ -641,20 +641,21 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
     return Scaffold(
         appBar: AppBar(
+          centerTitle: true,
           elevation: 0.0,
           backgroundColor: Colors.white,
           leading: IconButton(
             onPressed: () {
               Navigator.pop(context);
             },
-            icon: Icon(Icons.arrow_back_ios),
-            color: Colors.black,
+            icon: Icon(Icons.arrow_back),
+            color: Color(0xFF017964),
           ),
           title: Text(
             "Riwayat Belanja",
             style: theme.textTheme.headline6?.copyWith(
               fontWeight: FontWeight.w600,
-              color: Colors.black,
+              color: Color(0xFF017964),
             ),
           ),
         ),

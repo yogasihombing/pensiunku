@@ -5,7 +5,6 @@ import 'package:pensiunku/repository/result_model.dart';
 import 'package:pensiunku/repository/toko/ongkir_repository.dart';
 import 'package:pensiunku/widget/error_card.dart';
 
-
 class ExpeditionScreenArguments {
   final String destination;
   final String origin;
@@ -78,6 +77,7 @@ class _ExpeditionScreenState extends State<ExpeditionScreen> {
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
+          centerTitle: true,
           elevation: 0.0,
           backgroundColor: Colors.transparent,
           leading: IconButton(
@@ -85,13 +85,13 @@ class _ExpeditionScreenState extends State<ExpeditionScreen> {
               Navigator.of(context).pop(true);
             },
             icon: Icon(Icons.arrow_back),
-            color: Colors.black,
+            color: Color(0xFF017964),
           ),
           title: Text(
             "Opsi Pengiriman",
             style: theme.textTheme.headline6?.copyWith(
               fontWeight: FontWeight.w600,
-              color: Colors.black,
+              color: Color(0xFF017964),
             ),
           )),
       bottomNavigationBar: Container(
@@ -105,7 +105,7 @@ class _ExpeditionScreenState extends State<ExpeditionScreen> {
                 child: Container(
                   width: screenSize.width,
                   alignment: Alignment.center,
-                  decoration: BoxDecoration(color: Colors.red),
+                  decoration: BoxDecoration(color: Color(0xFF017964)),
                   child: Text(
                     'Pilih Pengiriman',
                     style: theme.textTheme.subtitle1
@@ -115,57 +115,75 @@ class _ExpeditionScreenState extends State<ExpeditionScreen> {
           ],
         ),
       ),
-      body: RefreshIndicator(
-        onRefresh: () {
-          return _refreshData();
-        },
-        child: ListView(
-          children: [
-            ListTile(
-              title: Text("Pilih salah satu"),
-            ),
-            Divider(
-              height: 1,
-            ),
-            FutureBuilder(
-              future: _futureExpedisiData,
-              builder: (BuildContext context,
-                  AsyncSnapshot<ResultModel<List<ExpedisiModel>>> snapshot) {
-                if (snapshot.hasData) {
-                  if (snapshot.data?.data?.isNotEmpty == true) {
-                    List<ExpedisiModel> expeditionModel = snapshot.data!.data!;
-                    return Column(
-                      children: [
-                        ...expeditionModel.map((e) => singleDeliveryItem(e)),
-                        SizedBox(
-                          height: 50,
-                        )
-                      ],
-                    );
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.white,
+              Colors.white,
+              Colors.white,
+              Color(0xFFDCE293),
+            ],
+            stops: [0.25, 0.5, 0.75, 1.0],
+          ),
+        ),
+        child: RefreshIndicator(
+          onRefresh: () {
+            return _refreshData();
+          },
+          child: ListView(
+            children: [
+              ListTile(
+                title: Text("Pilih salah satu"),
+              ),
+              Divider(
+                height: 1,
+              ),
+              FutureBuilder(
+                future: _futureExpedisiData,
+                builder: (BuildContext context,
+                    AsyncSnapshot<ResultModel<List<ExpedisiModel>>> snapshot) {
+                  if (snapshot.hasData) {
+                    if (snapshot.data?.data?.isNotEmpty == true) {
+                      List<ExpedisiModel> expeditionModel =
+                          snapshot.data!.data!;
+                      return Column(
+                        children: [
+                          ...expeditionModel.map((e) => singleDeliveryItem(e)),
+                          SizedBox(
+                            height: 50,
+                          )
+                        ],
+                      );
+                    } else {
+                      String errorTitle = 'Tidak ada pilihan expedisi';
+                      String? errorSubtitle = snapshot.data?.error;
+                      return Container(
+                        child: ErrorCard(
+                          title: errorTitle,
+                          subtitle: errorSubtitle,
+                          iconData: Icons.info_outline,
+                        ),
+                      );
+                    }
                   } else {
-                    String errorTitle = 'Tidak ada pilihan expedisi';
-                    String? errorSubtitle = snapshot.data?.error;
                     return Container(
-                      child: ErrorCard(
-                        title: errorTitle,
-                        subtitle: errorSubtitle,
-                        iconData: Icons.info_outline,
+                      height: promoCarouselHeight + 36 + 16.0,
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          color: theme.primaryColor,
+                        ),
                       ),
                     );
                   }
-                } else {
-                  return Container(
-                    height: promoCarouselHeight + 36 + 16.0,
-                    child: Center(
-                      child: CircularProgressIndicator(
-                        color: theme.primaryColor,
-                      ),
-                    ),
-                  );
-                }
-              },
-            )
-          ],
+                },
+              )
+            ],
+          ),
         ),
       ),
     );

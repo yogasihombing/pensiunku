@@ -98,183 +98,202 @@ class _RiwayatPengajuanAndaScreenState
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(''),
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Color(0xFF017964)),
-          onPressed: () {
-            if (Navigator.canPop(context)) {
-              Navigator.pop(context);
-            } else {
-              widget.onChangeBottomNavIndex(0);
-            }
-          },
-        ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        flexibleSpace: Center(
-          child: Padding(
-            padding:
-                EdgeInsets.only(top: MediaQuery.of(context).padding.top + 5),
-            child: Text(
-              'Riwayat Pengajuan',
-              style: TextStyle(
-                color: Color(0xFF017964),
-                fontWeight: FontWeight.bold,
-                fontSize: 20,
-              ),
+    return Stack(
+      children: [
+        // Gradient background
+        Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Colors.white,
+                Color(0xFFDCE293),
+              ],
+              stops: [0.6, 1.0],
             ),
           ),
         ),
-      ),
-      body: RefreshIndicator(
-        onRefresh: () async {
-          fetchPengajuanAndaData(telepon);
-        },
-        child: isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : pengajuanAndaData.isEmpty
-                ? ListView(children: const [
-                    SizedBox(
-                      height: 300,
-                      child: Center(
-                        child: Text('Tidak ada riwayat pengajuan Anda.'),
-                      ),
-                    ),
-                  ])
-                : ListView.builder(
-                    itemCount: pengajuanAndaData.length,
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    itemBuilder: (context, index) {
-                      final pengajuanAnda = pengajuanAndaData[index];
-                      return InkWell(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => StatusPengajuanAndaScreen(
-                                pengajuanAnda: pengajuanAnda,
+
+        // Main content with transparent scaffold
+        Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: AppBar(
+            title: const Text(''),
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back, color: Color(0xFF017964)),
+              onPressed: () {
+                if (Navigator.canPop(context)) {
+                  Navigator.pop(context);
+                } else {
+                  widget.onChangeBottomNavIndex(0);
+                }
+              },
+            ),
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            flexibleSpace: Center(
+              child: Padding(
+                padding: EdgeInsets.only(
+                    top: MediaQuery.of(context).padding.top + 5),
+                child: const Text(
+                  'Riwayat Pengajuan',
+                  style: TextStyle(
+                    color: Color(0xFF017964),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          body: RefreshIndicator(
+            onRefresh: () async {
+              fetchPengajuanAndaData(telepon);
+            },
+            child: isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : pengajuanAndaData.isEmpty
+                    ? ListView(children: const [
+                        SizedBox(
+                          height: 300,
+                          child: Center(
+                            child: Text('Tidak ada riwayat pengajuan Anda.'),
+                          ),
+                        ),
+                      ])
+                    : ListView.builder(
+                        itemCount: pengajuanAndaData.length,
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        itemBuilder: (context, index) {
+                          final pengajuanAnda = pengajuanAndaData[index];
+                          return InkWell(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      StatusPengajuanAndaScreen(
+                                    pengajuanAnda: pengajuanAnda,
+                                  ),
+                                ),
+                              );
+                            },
+                            child: Container(
+                              margin: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.grey.withOpacity(0.1),
+                                    spreadRadius: 1,
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 3),
+                                  ),
+                                ],
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(16.0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      pengajuanAnda.nama,
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFF017964),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 8,
+                                        horizontal: 12,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey[50],
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              const Icon(
+                                                Icons
+                                                    .confirmation_number_outlined,
+                                                size: 20,
+                                                color: Colors.black,
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Text(
+                                                'Pengajuan ${pengajuanAnda.tiket}',
+                                                style: const TextStyle(
+                                                  color: Colors.black,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          Row(
+                                            children: [
+                                              const Icon(
+                                                Icons.calendar_today_outlined,
+                                                size: 16,
+                                                color: Colors.black,
+                                              ),
+                                              const SizedBox(width: 12),
+                                              Text(
+                                                pengajuanAnda.tanggal,
+                                                style: const TextStyle(
+                                                  color: Colors.black,
+                                                  fontSize: 14,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 12),
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.end,
+                                        children: const [
+                                          Text(
+                                            'Lihat Detail',
+                                            style: TextStyle(
+                                              color: Color(0xFF017964),
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                          SizedBox(width: 4),
+                                          Icon(
+                                            Icons.arrow_forward_ios,
+                                            size: 12,
+                                            color: Color(0xFF017964),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           );
                         },
-                        child: Container(
-                          margin: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.grey.withOpacity(0.1),
-                                spreadRadius: 1,
-                                blurRadius: 6,
-                                offset: const Offset(0, 3),
-                              ),
-                            ],
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Nama dengan style yang lebih menarik
-                                Text(
-                                  pengajuanAnda.nama,
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF017964),
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-                                // Container untuk kode dan tanggal
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 8,
-                                    horizontal: 12,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey[50],
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Column(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      // Kode di sebelah kiri dengan ikon
-                                      Row(
-                                        children: [
-                                          Icon(
-                                            Icons.confirmation_number_outlined,
-                                            size: 20,
-                                            color: Colors.black,
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Text(
-                                            'Pengajuan ${pengajuanAnda.tiket}',
-                                            style: TextStyle(
-                                              color: Colors.black,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      // Tanggal di sebelah kanan dengan ikon
-                                      Row(
-                                        children: [
-                                          Icon(
-                                            Icons.calendar_today_outlined,
-                                            size: 16,
-                                            color: Colors.black,
-                                          ),
-                                          const SizedBox(width: 12),
-                                          Text(
-                                            pengajuanAnda.tanggal,
-                                            style: TextStyle(
-                                              color: Colors.black,
-                                              fontSize: 14,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                // Indikator dapat diklik
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 12),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.end,
-                                    children: const [
-                                      Text(
-                                        'Lihat Detail',
-                                        style: TextStyle(
-                                          color: Color(0xFF017964),
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                      SizedBox(width: 4),
-                                      Icon(
-                                        Icons.arrow_forward_ios,
-                                        size: 12,
-                                        color: Color(0xFF017964),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-      ),
+                      ),
+          ),
+        ),
+      ],
     );
   }
 }

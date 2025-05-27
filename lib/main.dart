@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pensiunku/data/api/pengajuan_anda_api.dart';
 
-import 'package:pensiunku/screen/article/article_detail_screen.dart';
-import 'package:pensiunku/screen/article/article_screen.dart';
+import 'package:pensiunku/screen/home/dashboard/article/article_detail_screen.dart';
+import 'package:pensiunku/screen/home/dashboard/article/article_screen.dart';
 import 'package:pensiunku/screen/common/galery_fullscreen.dart';
 import 'package:pensiunku/screen/home/account/TNC/term_and_condition.dart';
 import 'package:pensiunku/screen/home/account/account_info/account_info_screen.dart';
@@ -34,6 +34,7 @@ import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/wallet/e_wallet_h
 import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/wallet/e_wallet_info_akun.dart';
 import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/wallet/e_wallet_pencairan.dart';
 import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/wallet/e_wallet_screen.dart';
+import 'package:pensiunku/screen/home/dashboard/toko/add_shipping_address_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/toko/barang_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/toko/checkout_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/toko/expedition_screen.dart';
@@ -234,6 +235,12 @@ class MyApp extends StatelessWidget {
             break;
           case CategoryScreen.ROUTE_NAME:
             page = CategoryScreen();
+            break;
+          case AddShippingAddressScreen.ROUTE_NAME:
+            final args = settings.arguments as AddShippingAddressArguments;
+            page = AddShippingAddressScreen(
+              shippingAddressId: args.shippingAddressId,
+            );
             break;
           case HistoryScreen.ROUTE_NAME:
             page = HistoryScreen();

@@ -43,7 +43,23 @@ class StatusPengajuanAndaScreen extends StatelessWidget {
           ),
         ),
       ),
-      body: SingleChildScrollView(
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.white,
+              Colors.white,
+              Colors.white,
+              Color(0xFFDCE293),
+            ],
+            stops: [0.25, 0.5, 0.75, 1.0],
+          ),
+        ),
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -175,7 +191,9 @@ class StatusPengajuanAndaScreen extends StatelessWidget {
                 ),
               )
             ],
-          )),
+          ),
+        ),
+      ),
     );
   }
 }

@@ -21,7 +21,6 @@ class _FaqScreenState extends State<FaqScreen> {
   @override
   void initState() {
     super.initState();
-
     _refreshData();
     Future.delayed(Duration(milliseconds: 0), () {
       setState(() {
@@ -34,94 +33,128 @@ class _FaqScreenState extends State<FaqScreen> {
   Widget build(BuildContext context) {
     ThemeData theme = Theme.of(context);
 
-    return Scaffold(
-      appBar: WidgetUtil.getNewAppBar(context, 'FAQ', 2, (newIndex) {
-        Navigator.of(context).pop(newIndex);
-      }, () {
-        Navigator.of(context).pop();
-      }, useNotificationIcon: false),
-      body: Stack(
-        children: [
-          RefreshIndicator(
-            onRefresh: () {
-              return _refreshData();
-            },
-            child: SingleChildScrollView(
-              physics: AlwaysScrollableScrollPhysics(),
-              child: Stack(
-                children: [
-                  Container(
-                    height: MediaQuery.of(context).size.height -
-                        AppBar().preferredSize.height,
-                  ),
-                  FutureBuilder(
-                    future: _futureData,
-                    builder: (BuildContext context,
-                        AsyncSnapshot<ResultModel<List<FaqCategoryModel>>>
-                            snapshot) {
-                      if (snapshot.hasData) {
-                        if (snapshot.data?.data?.isNotEmpty == true) {
-                          List<FaqCategoryModel> data = snapshot.data!.data!;
-                          return _buildBody(theme, data);
-                        } else {
-                          String errorTitle = 'Tidak dapat menampilkan FAQ';
-                          String? errorSubtitle = snapshot.data?.error;
-                          return Column(
-                            children: [
-                              SizedBox(height: 16),
-                              ErrorCard(
-                                title: errorTitle,
-                                subtitle: errorSubtitle,
-                                iconData: Icons.warning_rounded,
-                              ),
-                            ],
-                          );
-                        }
-                      } else {
-                        return Column(
-                          children: [
-                            SizedBox(height: 16),
-                            Center(
-                              child: CircularProgressIndicator(
-                                color: theme.primaryColor,
-                              ),
-                            ),
-                          ],
-                        );
-                      }
-                    },
-                  ),
-                ],
-              ),
+    return Stack(
+      children: [
+        // Background Gradient
+        Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Colors.white,
+                Color(0xFFDCE293), // gradasi hijau kekuningan
+              ],
+              stops: [0.6, 1.0],
             ),
           ),
-          // FloatingBottomNavigationBar(
-          //   isVisible: _isBottomNavBarVisible,
-          //   currentIndex: 2,
-          //   onTapItem: (newIndex) {
-          //     Navigator.of(context).pop(newIndex);
-          //   },
-          // ),
-        ],
-      ),
+        ),
+
+        // Konten utama dengan Scaffold transparan
+        Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            automaticallyImplyLeading: true,
+            centerTitle: true,
+            iconTheme: IconThemeData(
+              color: Color(0xFF017964), // Warna tombol back
+            ),
+            title: Text(
+              'FAQ',
+              style: TextStyle(
+                color: Color(0xFF017964), // Warna title
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            leading: IconButton(
+              icon: Icon(Icons.arrow_back),
+              onPressed: () {
+                Navigator.of(context).pop(); // atau pop(newIndex) jika perlu
+              },
+            ),
+          ),
+          body: Stack(
+            children: [
+              RefreshIndicator(
+                onRefresh: () => _refreshData(),
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: Stack(
+                    children: [
+                      Container(
+                        height: MediaQuery.of(context).size.height -
+                            AppBar().preferredSize.height,
+                      ),
+                      FutureBuilder<ResultModel<List<FaqCategoryModel>>>(
+                        future: _futureData,
+                        builder: (context, snapshot) {
+                          if (snapshot.hasData) {
+                            if (snapshot.data?.data?.isNotEmpty == true) {
+                              List<FaqCategoryModel> data =
+                                  snapshot.data!.data!;
+                              return _buildBody(theme, data);
+                            } else {
+                              return Column(
+                                children: [
+                                  const SizedBox(height: 16),
+                                  ErrorCard(
+                                    title: 'Tidak dapat menampilkan FAQ',
+                                    subtitle: snapshot.data?.error,
+                                    iconData: Icons.warning_rounded,
+                                  ),
+                                ],
+                              );
+                            }
+                          } else {
+                            return Column(
+                              children: [
+                                const SizedBox(height: 16),
+                                Center(
+                                  child: CircularProgressIndicator(
+                                    color: theme.primaryColor,
+                                  ),
+                                ),
+                              ],
+                            );
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Bottom Navigation Bar jika digunakan
+              // FloatingBottomNavigationBar(
+              //   isVisible: _isBottomNavBarVisible,
+              //   currentIndex: 2,
+              //   onTapItem: (newIndex) {
+              //     Navigator.of(context).pop(newIndex);
+              //   },
+              // ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
-  _refreshData() {
+  Future<ResultModel<List<FaqCategoryModel>>> _refreshData() {
     return _futureData = FaqRepository().getAll().then((value) {
       if (value.error != null) {
         showDialog(
-            context: context,
-            builder: (_) => AlertDialog(
-                  content: Text(value.error.toString(),
-                      style: TextStyle(color: Colors.white)),
-                  backgroundColor: Colors.red,
-                  elevation: 24.0,
-                ));
-        // WidgetUtil.showSnackbar(
-        //   context,
-        //   value.error.toString(),
-        // );
+          context: context,
+          builder: (_) => AlertDialog(
+            content: Text(
+              value.error.toString(),
+              style: const TextStyle(color: Colors.white),
+            ),
+            backgroundColor: Colors.red,
+            elevation: 24.0,
+          ),
+        );
       }
       setState(() {});
       return value;
@@ -132,7 +165,7 @@ class _FaqScreenState extends State<FaqScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(height: 40.0),
+        const SizedBox(height: 40.0),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0),
           child: Column(
@@ -151,7 +184,7 @@ class _FaqScreenState extends State<FaqScreen> {
             ],
           ),
         ),
-        SizedBox(height: 8.0),
+        const SizedBox(height: 8.0),
         ...data.map(
           (faqCategory) => ItemFaqCategoryNew(
             model: faqCategory,
@@ -160,7 +193,7 @@ class _FaqScreenState extends State<FaqScreen> {
             },
           ),
         ),
-        SizedBox(height: 80.0), // BottomNavBar
+        const SizedBox(height: 80.0), // Space for BottomNavBar
       ],
     );
   }

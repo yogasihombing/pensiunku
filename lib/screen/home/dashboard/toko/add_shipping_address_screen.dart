@@ -214,62 +214,80 @@ class _AddShippingAddressScreenState extends State<AddShippingAddressScreen> {
       }, () {
         Navigator.of(context).pop();
       }, useNotificationIcon: false),
-      body: Stack(
-        children: [
-          RefreshIndicator(
-            onRefresh: () {
-              return _refreshData();
-            },
-            child: SingleChildScrollView(
-              physics: AlwaysScrollableScrollPhysics(),
-              child: Stack(
-                children: [
-                  Container(
-                    height: MediaQuery.of(context).size.height -
-                        AppBar().preferredSize.height,
-                  ),
-                  FutureBuilder(
-                    future: _futureData,
-                    builder: (BuildContext context,
-                        AsyncSnapshot<ResultModel<ShippingAddress>> snapshot) {
-                      if (snapshot.hasData) {
-                        if (snapshot.data?.data != null) {
-                          ShippingAddress data = snapshot.data!.data!;
-                          return _buildBody(context, theme, data);
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.white,
+              Colors.white,
+              Colors.white,
+              Color(0xFFDCE293),
+            ],
+            stops: [0.25, 0.5, 0.75, 1.0],
+          ),
+        ),
+        child: Stack(
+          children: [
+            RefreshIndicator(
+              onRefresh: () {
+                return _refreshData();
+              },
+              child: SingleChildScrollView(
+                physics: AlwaysScrollableScrollPhysics(),
+                child: Stack(
+                  children: [
+                    Container(
+                      height: MediaQuery.of(context).size.height -
+                          AppBar().preferredSize.height,
+                    ),
+                    FutureBuilder(
+                      future: _futureData,
+                      builder: (BuildContext context,
+                          AsyncSnapshot<ResultModel<ShippingAddress>>
+                              snapshot) {
+                        if (snapshot.hasData) {
+                          if (snapshot.data?.data != null) {
+                            ShippingAddress data = snapshot.data!.data!;
+                            return _buildBody(context, theme, data);
+                          } else {
+                            String errorTitle =
+                                'Tidak dapat menampilkan informasi alamat pengiriman';
+                            String? errorSubtitle = snapshot.data?.error;
+                            return Column(
+                              children: [
+                                SizedBox(height: 16),
+                                ErrorCard(
+                                  title: errorTitle,
+                                  subtitle: errorSubtitle,
+                                  iconData: Icons.warning_rounded,
+                                ),
+                              ],
+                            );
+                          }
                         } else {
-                          String errorTitle =
-                              'Tidak dapat menampilkan informasi alamat pengiriman';
-                          String? errorSubtitle = snapshot.data?.error;
                           return Column(
                             children: [
                               SizedBox(height: 16),
-                              ErrorCard(
-                                title: errorTitle,
-                                subtitle: errorSubtitle,
-                                iconData: Icons.warning_rounded,
+                              Center(
+                                child: CircularProgressIndicator(
+                                  color: theme.primaryColor,
+                                ),
                               ),
                             ],
                           );
                         }
-                      } else {
-                        return Column(
-                          children: [
-                            SizedBox(height: 16),
-                            Center(
-                              child: CircularProgressIndicator(
-                                color: theme.primaryColor,
-                              ),
-                            ),
-                          ],
-                        );
-                      }
-                    },
-                  ),
-                ],
+                      },
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

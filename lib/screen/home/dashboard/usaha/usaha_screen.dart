@@ -78,175 +78,204 @@ class _UsahaScreenState extends State<UsahaScreen> {
     double articleCardSize = screenSize.width * 0.45;
     double articleCarouselHeight = articleCardSize + 70;
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: CustomScrollView(
-        controller: scrollController,
-        slivers: [
-          SliverAppBar(
-            pinned: true,
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            iconTheme: const IconThemeData(color: Color(0xFF017964)),
-            title: const Text(
-              'Info Franchise',
-              style: TextStyle(
-                color: Color(0xFF017964),
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        // 1. Background gradient
+        Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Colors.white,
+                Colors.white,
+                Colors.white,
+                Color(0xFFDCE293),
+              ],
+              stops: [0.25, 0.5, 0.75, 1.0],
             ),
-            centerTitle: true,
           ),
+        ),
 
-          // Search Bar
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.all(16.0),
-              child: TextField(
-                controller: _searchController,
-                onChanged: (value) => setState(() => _searchQuery = value),
-                decoration: InputDecoration(
-                  hintText: 'Cari Franchise...',
-                  prefixIcon: Icon(Icons.search, color: Color(0xFF017964)),
-                  border: OutlineInputBorder(
+        // 2. Scaffold transparan
+        Scaffold(
+          backgroundColor: Colors.transparent,
+          extendBodyBehindAppBar: true,
+          body: CustomScrollView(
+            controller: scrollController,
+            slivers: [
+              SliverAppBar(
+                pinned: true,
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                iconTheme: const IconThemeData(color: Color(0xFF017964)),
+                title: const Text(
+                  'Info Franchise',
+                  style: TextStyle(
+                    color: Color(0xFF017964),
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                centerTitle: true,
+              ),
+
+              // Search Bar
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: TextField(
+                    controller: _searchController,
+                    onChanged: (value) => setState(() => _searchQuery = value),
+                    decoration: InputDecoration(
+                      hintText: 'Cari Franchise...',
+                      prefixIcon: Icon(Icons.search, color: Color(0xFF017964)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12.0),
+                        borderSide: BorderSide(color: Color(0xFF017964)),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              // Image Banner
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding:
+                      EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                  child: ClipRRect(
                     borderRadius: BorderRadius.circular(12.0),
-                    borderSide: BorderSide(color: Color(0xFF017964)),
+                    child: Image.asset(
+                      'assets/franchise/franchise_banner.png',
+                      fit: BoxFit.cover,
+                    ),
                   ),
                 ),
               ),
-            ),
-          ),
-          // Image Banner
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12.0),
-                child: Image.asset(
-                  'assets/franchise/franchise_banner.png',
-                  fit: BoxFit.cover,
-                ),
-              ),
-            ),
-          ),
-          SliverToBoxAdapter(
-            child: Container(
-              decoration: BoxDecoration(
-                color: Color(0xfff2f2f2),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  FutureBuilder(
-                    future: _futureData,
-                    builder: (BuildContext context,
-                        AsyncSnapshot<ResultModel<UsahaModel>> snapshot) {
-                      if (snapshot.hasData) {
-                        if (snapshot.data?.data?.categories.isNotEmpty ==
-                            true) {
-                          UsahaModel data = snapshot.data!.data!;
-                          return Column(
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 32.0,
-                                  vertical: 16.0,
-                                ),
-                                child: Row(
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        'Pilihan Usaha',
-                                        style:
-                                            theme.textTheme.headline6?.copyWith(
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
+              SliverToBoxAdapter(
+                child: Container(
+                  // decoration: BoxDecoration(
+                  //   color: Color(0xfff2f2f2),
+                  // ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      FutureBuilder(
+                        future: _futureData,
+                        builder: (BuildContext context,
+                            AsyncSnapshot<ResultModel<UsahaModel>> snapshot) {
+                          if (snapshot.hasData) {
+                            if (snapshot.data?.data?.categories.isNotEmpty ==
+                                true) {
+                              UsahaModel data = snapshot.data!.data!;
+                              return Column(
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 32.0,
+                                      vertical: 16.0,
                                     ),
-                                  ],
-                                ),
-                              ),
-                              Container(
-                                height: 32.0,
-                                child: ListView(
-                                  scrollDirection: Axis.horizontal,
-                                  children: [
-                                    SizedBox(width: 24.0),
-                                    ...data.categories
-                                        .asMap()
-                                        .map((index, usahaCategory) {
-                                          return MapEntry(
-                                            index,
-                                            ChipTab(
-                                              text: usahaCategory.nama,
-                                              isActive:
-                                                  _currentArticleIndex == index,
-                                              onTap: () {
-                                                setState(() {
-                                                  _currentArticleIndex = index;
-                                                  _refreshData();
-                                                });
-                                              },
+                                    child: Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            'Pilihan Usaha',
+                                            style: theme.textTheme.headline6
+                                                ?.copyWith(
+                                              fontWeight: FontWeight.bold,
                                             ),
-                                          );
-                                        })
-                                        .values
-                                        .toList(),
-                                    SizedBox(width: 24.0),
-                                  ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Container(
+                                    height: 32.0,
+                                    child: ListView(
+                                      scrollDirection: Axis.horizontal,
+                                      children: [
+                                        SizedBox(width: 24.0),
+                                        ...data.categories
+                                            .asMap()
+                                            .map((index, usahaCategory) {
+                                              return MapEntry(
+                                                index,
+                                                ChipTab(
+                                                  text: usahaCategory.nama,
+                                                  isActive:
+                                                      _currentArticleIndex ==
+                                                          index,
+                                                  onTap: () {
+                                                    setState(() {
+                                                      _currentArticleIndex =
+                                                          index;
+                                                      _refreshData();
+                                                    });
+                                                  },
+                                                ),
+                                              );
+                                            })
+                                            .values
+                                            .toList(),
+                                        SizedBox(width: 24.0),
+                                      ],
+                                    ),
+                                  ),
+                                  SizedBox(height: 16.0),
+                                  ...data.categories
+                                      .asMap()
+                                      .map((index, usahaCategory) {
+                                        return MapEntry(
+                                          index,
+                                          _currentArticleIndex == index
+                                              ? UsahaList(
+                                                  carouselHeight:
+                                                      articleCarouselHeight,
+                                                  usahaModelCategory:
+                                                      usahaCategory,
+                                                  searchQuery: _searchQuery,
+                                                )
+                                              : Container(),
+                                        );
+                                      })
+                                      .values
+                                      .toList(),
+                                ],
+                              );
+                            } else {
+                              String errorTitle =
+                                  'Tidak dapat menampilkan artikel';
+                              String? errorSubtitle = snapshot.data?.error;
+                              return Container(
+                                child: ErrorCard(
+                                  title: errorTitle,
+                                  subtitle: errorSubtitle,
+                                  iconData: Icons.warning_rounded,
+                                ),
+                              );
+                            }
+                          } else {
+                            return Container(
+                              height: articleCarouselHeight + 36 + 16.0,
+                              child: Center(
+                                child: CircularProgressIndicator(
+                                  color: theme.primaryColor,
                                 ),
                               ),
-                              SizedBox(height: 16.0),
-                              ...data.categories
-                                  .asMap()
-                                  .map((index, usahaCategory) {
-                                    return MapEntry(
-                                      index,
-                                      _currentArticleIndex == index
-                                          ? UsahaList(
-                                              carouselHeight:
-                                                  articleCarouselHeight,
-                                              usahaModelCategory: usahaCategory,
-                                              searchQuery: _searchQuery,
-                                            )
-                                          : Container(),
-                                    );
-                                  })
-                                  .values
-                                  .toList(),
-                            ],
-                          );
-                        } else {
-                          String errorTitle = 'Tidak dapat menampilkan artikel';
-                          String? errorSubtitle = snapshot.data?.error;
-                          return Container(
-                            child: ErrorCard(
-                              title: errorTitle,
-                              subtitle: errorSubtitle,
-                              iconData: Icons.warning_rounded,
-                            ),
-                          );
-                        }
-                      } else {
-                        return Container(
-                          height: articleCarouselHeight + 36 + 16.0,
-                          child: Center(
-                            child: CircularProgressIndicator(
-                              color: theme.primaryColor,
-                            ),
-                          ),
-                        );
-                      }
-                    },
+                            );
+                          }
+                        },
+                      ),
+                      SizedBox(height: 100.0),
+                    ],
                   ),
-                  SizedBox(height: 100.0),
-                ],
+                ),
               ),
-            ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

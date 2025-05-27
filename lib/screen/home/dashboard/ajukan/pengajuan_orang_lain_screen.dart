@@ -10,6 +10,7 @@ import 'package:pensiunku/repository/result_model.dart';
 import 'package:pensiunku/repository/user_repository.dart';
 import 'package:pensiunku/screen/home/submission/riwayat_pengajuan_orang_lain.dart';
 import 'package:pensiunku/util/shared_preferences_util.dart';
+import 'package:path/path.dart' as path;
 
 class PengajuanOrangLainScreen extends StatefulWidget {
   static const String ROUTE_NAME = '/pengajuan_orang_lain';
@@ -29,6 +30,9 @@ class _PengajuanOrangLainScreenState extends State<PengajuanOrangLainScreen> {
   UserModel? _userModel;
   late Future<ResultModel<UserModel>> _future;
   late OptionModel _selectedCity = OptionModel(id: 0, text: '');
+
+  final TextEditingController _searchController = TextEditingController();
+  List<OptionModel> _filteredCities = List.from(LocationRepository.cities);
 
   // Variabel untuk melacak progres upload
   double _ktpUploadProgress = 0.0; // Progres upload KTP
@@ -100,17 +104,55 @@ class _PengajuanOrangLainScreenState extends State<PengajuanOrangLainScreen> {
     });
   }
 
+// Tambahkan variabel untuk nama file
+  String? namaFotoKTP;
+  String? namaFotoNPWP;
+  String? namaFotoKarip;
   //Fungsi untuk memilih file dan modifikasi tombol upload untuk simulasi progres upload
   Future<void> _pickImage(String label) async {
-    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+    // Tampilkan pilihan sumber gambar
+    final ImageSource? source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: Icon(Icons.camera_alt),
+              title: Text('Ambil Foto'),
+              onTap: () => Navigator.pop(context, ImageSource.camera),
+            ),
+            ListTile(
+              leading: Icon(Icons.photo_library),
+              title: Text('Pilih dari Galeri'),
+              onTap: () => Navigator.pop(context, ImageSource.gallery),
+            ),
+          ],
+        ),
+      ),
+    );
 
+    if (source == null) return;
+
+    final XFile? image = await _picker.pickImage(source: source);
     if (image == null) return;
+
+    // Dapatkan nama file asli
+    String fileName = path.basename(image.path);
+
     setState(() {
-      if (label == 'KTP') fileKTP = image.path;
-      if (label == 'NPWP') fileNPWP = image.path;
-      if (label == 'Karip') fileKarip = image.path;
+      if (label == 'KTP') {
+        fileKTP = image.path;
+        namaFotoKTP = fileName;
+      } else if (label == 'NPWP') {
+        fileNPWP = image.path;
+        namaFotoNPWP = fileName;
+      } else if (label == 'Karip') {
+        fileKarip = image.path;
+        namaFotoKarip = fileName;
+      }
     });
-    // Simulasi proses upload
+
     await _simulateUpload(label);
   }
 
@@ -130,86 +172,210 @@ class _PengajuanOrangLainScreenState extends State<PengajuanOrangLainScreen> {
         fileKTP != null &&
         fileNPWP != null &&
         fileKarip != null) {
-      setState(() {});
-      // cetak data yang akan dikirim untuk logging
-      debugPrint('Submitting pengajuan with data:');
+      try {
+        setState(() {
+          _isLoadingOverlay = true; // Aktifkan loading
+        });
+        // cetak data yang akan dikirim untuk logging
+        debugPrint('Submitting pengajuan with data:');
 
-      // Cetak data yang akan dikirim untuk logging
-      print('Submitting pengajuan with data:');
-      debugPrint('id_usersssss: ${_userModel?.id}');
-      print('Nama: ${namaController.text}');
-      print('Telepon: ${teleponController.text}');
-      print('Domisili: ${domisiliController.text}');
-      print('NIP: ${nipController.text}');
+        // Cetak data yang akan dikirim untuk logging
+        print('Submitting pengajuan with data:');
+        debugPrint('id_usersssss: ${_userModel?.id}');
+        print('Nama: ${namaController.text}');
+        print('Telepon: ${teleponController.text}');
+        print('Domisili: ${domisiliController.text}');
+        print('NIP: ${nipController.text}');
 
-      // Kirim pengajuan melalui DAO
-      bool success = await PengajuanOrangLainDao.kirimPengajuanOrangLain(
-        id: "${_userModel?.id}",
-        nama: namaController.text,
-        telepon: teleponController.text,
-        domisili: domisiliController.text,
-        nip: nipController.text,
-        fotoKTP: fileKTP!,
-        namaFotoKTP: fileKTP!.split('/').last,
-        fotoNPWP: fileNPWP!,
-        namaFotoNPWP: fileNPWP!.split('/').last,
-        fotoKarip: fileKarip!,
-        namaFotoKarip: fileKarip!.split('/').last,
-      );
-      print('Pengajuan berhasil: $success');
+        // Kirim pengajuan melalui DAO
+        bool success = await PengajuanOrangLainDao.kirimPengajuanOrangLain(
+          id: "${_userModel?.id}",
+          nama: namaController.text,
+          telepon: teleponController.text,
+          domisili: domisiliController.text,
+          nip: nipController.text,
+          fotoKTP: fileKTP!,
+          // namaFotoKTP: fileKTP!.split('/').last,
+          fotoNPWP: fileNPWP!,
+          // namaFotoNPWP: fileNPWP!.split('/').last,
+          fotoKarip: fileKarip!,
+          // namaFotoKarip: fileKarip!.split('/').last,
+          namaFotoKTP: namaFotoKTP!,
+          namaFotoNPWP: namaFotoNPWP!,
+          namaFotoKarip: namaFotoKarip!,
+        );
+        print('Pengajuan berhasil: $success');
 
-      // Set loading state to false
-      setState(() {
-        _isLoadingOverlay = false;
-      });
+        // Set loading state to false
 
-      if (success) {
-        _showCustomDialog('Sukses', 'Pengajuan Orang Lain berhasil dikirim');
-      } else {
-        _showCustomDialog(
-            'Gagal', 'Nomor telepon harus beda dengan nomor telepon anda!');
+        if (success) {
+          _showCustomDialog('Sukses', 'Pengajuan Orang Lain berhasil dikirim');
+        } else {
+          _showCustomDialog(
+              'Gagal', 'Nomor telepon harus beda dengan nomor telepon anda!');
+        }
+      } catch (e) {
+        print('Error during submission: $e');
+        _showCustomDialog('Error', 'Terjadi kesalahan saat mengirim pengajuan');
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLoadingOverlay = false;
+          });
+        }
       }
     }
   }
 
   Future<void> _showCitySelectionDialog() async {
-    final city = await showDialog<OptionModel>(
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    // Create a filtered list that will be updated with search
+    List<OptionModel> filteredCities = List.from(LocationRepository.cities);
+    TextEditingController searchController = TextEditingController();
+
+    showDialog(
       context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Pilih Kota/Kabupaten'),
-          content: Container(
-            width: double.maxFinite,
-            child: ListView.builder(
-              shrinkWrap: true,
-              itemCount: LocationRepository.cities.length,
-              itemBuilder: (context, index) {
-                final city = LocationRepository.cities[index];
-                return ListTile(
-                  title: Text(city.text),
-                  onTap: () {
-                    Navigator.of(context).pop(city);
-                  },
-                );
-              },
-            ),
-          ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            // Handle search function
+            void handleSearch(String query) {
+              setDialogState(() {
+                if (query.isEmpty) {
+                  filteredCities = List.from(LocationRepository.cities);
+                } else {
+                  filteredCities = LocationRepository.cities
+                      .where((city) =>
+                          city.text.toLowerCase().contains(query.toLowerCase()))
+                      .toList();
+                }
+              });
+            }
+
+            return Dialog(
+              insetPadding: EdgeInsets.symmetric(
+                horizontal: screenWidth * 0.05,
+                vertical: screenHeight * 0.05,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(screenWidth * 0.03),
+              ),
+              child: Container(
+                width: screenWidth * 0.9,
+                height: screenHeight * 0.6,
+                padding: EdgeInsets.all(screenWidth * 0.04),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Pilih Kota/Kabupaten',
+                      style: TextStyle(
+                        fontSize: screenWidth * 0.045,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF017964),
+                      ),
+                    ),
+                    SizedBox(height: screenHeight * 0.02),
+                    // Search field
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.grey[100],
+                        borderRadius: BorderRadius.circular(screenWidth * 0.02),
+                        border: Border.all(color: Colors.grey[300]!),
+                      ),
+                      child: TextField(
+                        controller: searchController,
+                        onChanged: handleSearch,
+                        decoration: InputDecoration(
+                          hintText: 'Cari kota/kabupaten...',
+                          prefixIcon: Icon(Icons.search, color: Colors.grey),
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.symmetric(
+                            vertical: screenHeight * 0.015,
+                            horizontal: screenWidth * 0.02,
+                          ),
+                        ),
+                        style: TextStyle(fontSize: screenWidth * 0.04),
+                      ),
+                    ),
+                    SizedBox(height: screenHeight * 0.02),
+                    // List of cities
+                    Expanded(
+                      child: filteredCities.isEmpty
+                          ? Center(
+                              child: Text(
+                                'Tidak ada kota yang ditemukan',
+                                style: TextStyle(
+                                  fontSize: screenWidth * 0.04,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            )
+                          : ListView.builder(
+                              itemCount: filteredCities.length,
+                              itemBuilder: (context, index) {
+                                final city = filteredCities[index];
+                                return Card(
+                                  elevation: 0,
+                                  margin: EdgeInsets.symmetric(
+                                      vertical: screenHeight * 0.004),
+                                  color: Colors.grey[50],
+                                  child: ListTile(
+                                    contentPadding: EdgeInsets.symmetric(
+                                      vertical: screenHeight * 0.005,
+                                      horizontal: screenWidth * 0.02,
+                                    ),
+                                    title: Text(
+                                      city.text,
+                                      style: TextStyle(
+                                          fontSize: screenWidth * 0.04),
+                                    ),
+                                    onTap: () {
+                                      Navigator.of(context).pop();
+                                      setState(() {
+                                        _selectedCity = city;
+                                        domisiliController.text = city.text;
+                                      });
+                                    },
+                                  ),
+                                );
+                              },
+                            ),
+                    ),
+                    SizedBox(height: screenHeight * 0.02),
+                    // Cancel button
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: Text(
+                            'Batal',
+                            style: TextStyle(
+                              color: Color(0xFF017964),
+                              fontSize: screenWidth * 0.04,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
         );
       },
     );
-
-    if (city != null) {
-      setState(() {
-        _selectedCity = city;
-        domisiliController.text = city.text;
-      });
-    }
   }
 
   void _showCustomDialog(String title, String message) {
     showDialog(
       context: context,
-      barrierDismissible: true,
+      barrierDismissible: false,
       builder: (BuildContext context) {
         return BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
@@ -288,10 +454,44 @@ class _PengajuanOrangLainScreenState extends State<PengajuanOrangLainScreen> {
   @override
   Widget build(BuildContext context) {
     return Stack(
-      fit: StackFit.expand,
       children: [
+        // Background gradient
+        Container(
+          // width: double.infinity,
+          // height: double.infinity,
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Colors.white,
+                Colors.white,
+                Colors.white,
+                Color.fromARGB(255, 220, 226, 147),
+              ],
+              stops: [0.25, 0.5, 0.75, 1.0],
+            ),
+          ),
+        ),
         Scaffold(
-          appBar: AppBar(title: Text('Form Mitra')),
+          backgroundColor: Colors.transparent, // Pastikan scaffold transparan
+          appBar: AppBar(
+            backgroundColor: Colors.transparent, // Pastikan scaffold transparan
+            centerTitle: true,
+            iconTheme: const IconThemeData(
+              color: Color(0xFF017964), // Ubah warna ikon back di sini
+            ),
+            title: Text(
+              'Form Mitra',
+              style: TextStyle(
+                color: Color(0xFF017964),
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+              ),
+            ),
+            // backgroundColor: Colors.transparent, // Agar AppBar pun transparan
+            elevation: 0,
+          ),
           body: SingleChildScrollView(
             physics: AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.all(16.0),
@@ -311,7 +511,6 @@ class _PengajuanOrangLainScreenState extends State<PengajuanOrangLainScreen> {
                         : null,
                   ),
                   SizedBox(height: 16.0),
-
                   TextFormField(
                     controller: teleponController,
                     keyboardType: TextInputType.phone,
@@ -391,8 +590,8 @@ class _PengajuanOrangLainScreenState extends State<PengajuanOrangLainScreen> {
                       Expanded(
                         child: TextFormField(
                           controller: TextEditingController(
-                            text:
-                                fileKTP != null ? fileKTP!.split('/').last : '',
+                            text: namaFotoKTP ?? '',
+                            // fileKTP != null ? fileKTP!.split('/').last : '',
                           ),
                           decoration: InputDecoration(
                             labelText: 'KTP',
@@ -435,11 +634,12 @@ class _PengajuanOrangLainScreenState extends State<PengajuanOrangLainScreen> {
                     children: [
                       Expanded(
                         child: TextFormField(
-                          controller: TextEditingController(
-                            text: fileNPWP != null
-                                ? fileNPWP!.split('/').last
-                                : '',
-                          ),
+                          controller:
+                              TextEditingController(text: namaFotoNPWP ?? ''
+                                  // text: fileNPWP != null
+                                  //     ? fileNPWP!.split('/').last
+                                  //     : '',
+                                  ),
                           decoration: InputDecoration(
                             labelText: 'NPWP',
                             border: OutlineInputBorder(),
@@ -480,11 +680,12 @@ class _PengajuanOrangLainScreenState extends State<PengajuanOrangLainScreen> {
                     children: [
                       Expanded(
                         child: TextFormField(
-                          controller: TextEditingController(
-                            text: fileKarip != null
-                                ? fileKarip!.split('/').last
-                                : '',
-                          ),
+                          controller:
+                              TextEditingController(text: namaFotoKarip ?? ''
+                                  // text: fileKarip != null
+                                  //     ? fileKarip!.split('/').last
+                                  //     : '',
+                                  ),
                           decoration: InputDecoration(
                             labelText: 'SK Pensiun/SK Aktif/Karip/Karpeg',
                             border: OutlineInputBorder(),
@@ -536,24 +737,54 @@ class _PengajuanOrangLainScreenState extends State<PengajuanOrangLainScreen> {
           Positioned.fill(
             child: Container(
               color: Colors.black.withOpacity(0.5),
-              alignment: Alignment.center,
-              child: Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(10)),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: const [
-                    CircularProgressIndicator(
-                        valueColor:
-                            AlwaysStoppedAnimation<Color>(Color(0xFF017964))),
-                    SizedBox(height: 16),
-                    Text('Mohon tunggu...',
-                        style: TextStyle(
-                            color: Color(0xFF017964),
-                            fontWeight: FontWeight.bold)),
-                  ],
+              child: Center(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final screenWidth = MediaQuery.of(context).size.width;
+                    final screenHeight = MediaQuery.of(context).size.height;
+
+                    return Container(
+                      padding: EdgeInsets.all(screenWidth * 0.05),
+                      width: screenWidth * 0.7, // 70% dari lebar layar
+                      height: screenHeight * 0.25, // 25% dari tinggi layar
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(screenWidth * 0.03),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black12,
+                            blurRadius: screenWidth * 0.02,
+                          )
+                        ],
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          SizedBox(
+                            width: screenWidth * 0.15,
+                            height: screenWidth * 0.15,
+                            child: CircularProgressIndicator(
+                              strokeWidth: screenWidth * 0.015,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                  Color(0xFF017964)),
+                            ),
+                          ),
+                          SizedBox(height: screenHeight * 0.02),
+                          Text(
+                            'Mohon tunggu...',
+                            style: TextStyle(
+                              fontSize:
+                                  screenWidth * 0.045, // 4.5% dari lebar layar
+                              color: Color(0xFF017964),
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    );
+                  },
                 ),
               ),
             ),

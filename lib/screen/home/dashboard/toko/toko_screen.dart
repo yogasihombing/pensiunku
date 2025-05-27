@@ -568,7 +568,7 @@ class _TokoScreenState extends State<TokoScreen> {
 
   Widget itemCard(Product barang) {
     final Size screenSize = MediaQuery.of(context).size;
-    final double cardPadding = screenSize.width * 0.02;
+    final double cardPadding = screenSize.width * 0.015;
     final double imagePadding = screenSize.width * 0.01;
     final double textSize = screenSize.width * 0.03;
     final double ratingSize = screenSize.width * 0.025;
@@ -591,7 +591,7 @@ class _TokoScreenState extends State<TokoScreen> {
           borderRadius: BorderRadius.circular(10),
         ),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
@@ -608,11 +608,12 @@ class _TokoScreenState extends State<TokoScreen> {
               ),
             ),
             Expanded(
-              flex: 4,
+              flex: 5,
               child: Padding(
                 padding: EdgeInsets.all(cardPadding),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       barang.nama,
@@ -623,7 +624,7 @@ class _TokoScreenState extends State<TokoScreen> {
                         fontWeight: FontWeight.w500,
                       ),
                     ),
-                    SizedBox(height: 5),
+                    SizedBox(height: 2),
                     Text(
                       barang.getTotalPriceFormatted(),
                       style: TextStyle(
@@ -632,7 +633,7 @@ class _TokoScreenState extends State<TokoScreen> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    SizedBox(height: 5),
+                    SizedBox(height: 2),
                     RatingBar.builder(
                       initialRating: barang.averageRating!,
                       minRating: 1,

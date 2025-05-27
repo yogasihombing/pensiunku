@@ -15,7 +15,7 @@ publish_to: "none" # Remove this line if you wish to publish to pub.dev
 # In iOS, build-name is used as CFBundleShortVersionString while build-number used as CFBundleVersion.
 # Read more about iOS versioning at
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
-version: 1.0.0+3
+version: 1.0.0+4
 
 environment:
   sdk: ">=2.12.0 <3.0.0"
@@ -61,6 +61,7 @@ dependencies:
   cached_network_image: ^3.1.0
   dotted_border: ^2.0.0
   connectivity_plus: ^5.0.2 #untuk memeriksa status koneksi
+  lottie: ^2.3.2
 
 
   # Firebase
@@ -142,7 +143,9 @@ flutter:
     - assets/dashboard_screen/upload_icon.png
     - assets/dashboard_screen/icon_promo.png
     - assets/dashboard_screen/icon_event.png
+    - assets/dashboard_screen/icon_halo_pensiun.png
     - assets/dashboard_screen/icon_article.png
+    - assets/dashboard_screen/icon_forum.png
     - assets/dashboard_screen/icon_franchise.png
     - assets/dashboard_screen/icon_toko.png
     - assets/dashboard_screen/icon_karir.png
@@ -183,13 +186,10 @@ flutter:
     - assets/point/logo_shopee.png
     - assets/point/kp_point.png
     - assets/icon/icon_event.png
-    - assets/icon/icon_artikel.png
     - assets/icon/icon_kesehatan.png
     - assets/icon/icon_usaha.png
     - assets/icon/icon_toko.png
-    - assets/icon/icon_halo_pensiun.png
     - assets/icon/icon_points.png
-    - assets/icon/icon_forum.png
     - assets/icon/profile/pengajuan_anda.png
     - assets/icon/profile/cs.png
     - assets/icon/profile/faq.png
@@ -254,35 +254,6 @@ flutter:
   # list giving the asset and other descriptors for the font. For
   # example:
   fonts:
-    - family: Hind
-      fonts:
-        - asset: assets/font/Hind/Hind-Bold.ttf
-        - asset: assets/font/Hind/Hind-Light.ttf
-        - asset: assets/font/Hind/Hind-Medium.ttf
-        - asset: assets/font/Hind/Hind-Regular.ttf
-        - asset: assets/font/Hind/Hind-SemiBold.ttf
-    - family: San Fransisco
-      fonts:
-        - asset: assets/font/San-Fransisco/SFNSDisplay-Light.otf
-          weight: 200
-        - asset: assets/font/San-Fransisco/SFNSDisplay-Regular.otf
-          weight: 500
-        - asset: assets/font/San-Fransisco/SFNSDisplay-SemiBold.otf
-          weight: 700
-        - asset: assets/font/San-Fransisco/SFNSDisplay-Bold.otf
-          weight: 900
-    - family: Unna
-      fonts:
-        - asset: assets/font/Unna/Unna-Bold.ttf
-        - asset: assets/font/Unna/Unna-BoldItalic.ttf
-        - asset: assets/font/Unna/Unna-Italic.ttf
-        - asset: assets/font/Unna/Unna-Regular.ttf
-    - family: Athelas
-      fonts:
-        - asset: assets/font/Athelas/Athelas-Bold.ttf
-        - asset: assets/font/Athelas/Athelas-BoldItalic.ttf
-        - asset: assets/font/Athelas/Athelas-Italic.ttf
-        - asset: assets/font/Athelas/Athelas-Regular.ttf
     - family: Poppins
       fonts:
         - asset: assets/font/Poppins/Poppins-Regular.ttf
@@ -302,3 +273,32 @@ flutter:
 #   # - flutter pub run flutter_native_splash:remove
 #   color: "#ffffff"
 #   image: assets/splash_screen/splash_pensiunku.png
+# - family: Hind
+#       fonts:
+#         - asset: assets/font/Hind/Hind-Bold.ttf
+#         - asset: assets/font/Hind/Hind-Light.ttf
+#         - asset: assets/font/Hind/Hind-Medium.ttf
+#         - asset: assets/font/Hind/Hind-Regular.ttf
+#         - asset: assets/font/Hind/Hind-SemiBold.ttf
+#     - family: San Fransisco
+#       fonts:
+#         - asset: assets/font/San-Fransisco/SFNSDisplay-Light.otf
+#           weight: 200
+#         - asset: assets/font/San-Fransisco/SFNSDisplay-Regular.otf
+#           weight: 500
+#         - asset: assets/font/San-Fransisco/SFNSDisplay-SemiBold.otf
+#           weight: 700
+#         - asset: assets/font/San-Fransisco/SFNSDisplay-Bold.otf
+#           weight: 900
+#     - family: Unna
+#       fonts:
+#         - asset: assets/font/Unna/Unna-Bold.ttf
+#         - asset: assets/font/Unna/Unna-BoldItalic.ttf
+#         - asset: assets/font/Unna/Unna-Italic.ttf
+#         - asset: assets/font/Unna/Unna-Regular.ttf
+#     - family: Athelas
+#       fonts:
+#         - asset: assets/font/Athelas/Athelas-Bold.ttf
+#         - asset: assets/font/Athelas/Athelas-BoldItalic.ttf
+#         - asset: assets/font/Athelas/Athelas-Italic.ttf
+#         - asset: assets/font/Athelas/Athelas-Regular.ttf

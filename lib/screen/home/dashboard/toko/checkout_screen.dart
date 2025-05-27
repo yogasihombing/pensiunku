@@ -108,6 +108,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
+          centerTitle: true,
           elevation: 0.0,
           backgroundColor: Colors.transparent,
           leading: IconButton(
@@ -115,22 +116,39 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               Navigator.of(context).pop(true);
             },
             icon: Icon(Icons.arrow_back),
-            color: Colors.black,
+            color: Color(0xFF017964),
           ),
           title: Text(
             "Checkout",
             style: theme.textTheme.headline6?.copyWith(
               fontWeight: FontWeight.w600,
-              color: Colors.black,
+              color: Color(0xFF017964),
             ),
           )),
-      body: RefreshIndicator(
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.white,
+              Colors.white,
+              Colors.white,
+              Color(0xFFDCE293),
+            ],
+            stops: [0.25, 0.5, 0.75, 1.0],
+          ),
+        ),
+        child: RefreshIndicator(
           onRefresh: () {
             return _refreshData();
           },
           child: SingleChildScrollView(
-              physics: AlwaysScrollableScrollPhysics(),
-              child: Stack(children: [
+            physics: AlwaysScrollableScrollPhysics(),
+            child: Stack(
+              children: [
                 Container(
                   height: MediaQuery.of(context).size.height -
                       AppBar().preferredSize.height * 1.2,
@@ -440,7 +458,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     ),
                   ],
                 ),
-              ]))),
+              ],
+            ),
+          ),
+        ),
+      ),
       bottomNavigationBar: Container(
         height: 55.0,
         child: Row(
@@ -450,14 +472,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 width: screenSize.width * 0.6,
                 height: 55.0,
                 decoration:
-                    BoxDecoration(color: Color.fromRGBO(229, 229, 229, 1.0)),
+                    BoxDecoration(color: Color(0xFF017964)),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Total Harga'),
+                    Text('Total Harga', style: TextStyle(color: Colors.white)),
                     totalHarga == 0
-                        ? Text('Rp. 0,-')
+                        ? Text('Rp. 0,-', style: TextStyle(color: Colors.white))
                         : Text(
                             CurrencyTextInputFormatter(
                               locale: 'id',
@@ -465,7 +487,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                               symbol: 'Rp. ',
                             ).format(totalHarga.toString()),
                             style: theme.textTheme.subtitle1
-                                ?.copyWith(fontWeight: FontWeight.bold),
+                                ?.copyWith(fontWeight: FontWeight.bold, color: Colors.white),
                           )
                   ],
                 )),
@@ -481,11 +503,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 child: Container(
                   width: screenSize.width * 0.4,
                   alignment: Alignment.center,
-                  decoration: BoxDecoration(color: Colors.red),
+                  decoration: BoxDecoration(color: Color(0xFFFFC950)),
                   child: Text(
                     'Buat Pesanan',
                     style: theme.textTheme.subtitle1
-                        ?.copyWith(color: Colors.white),
+                        ?.copyWith(color: Colors.black),
                   ),
                 ))
           ],

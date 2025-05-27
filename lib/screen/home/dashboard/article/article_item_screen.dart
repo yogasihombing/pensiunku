@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pensiunku/model/article_model.dart';
-import 'package:pensiunku/screen/article/article_detail_screen.dart';
+import 'package:pensiunku/screen/home/dashboard/article/article_detail_screen.dart';
 
 class ArticleItemScreen extends StatelessWidget {
   final MobileArticleModel article;

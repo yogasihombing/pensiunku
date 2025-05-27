@@ -130,6 +130,7 @@ class _KeranjangScreenState extends State<KeranjangScreen> {
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
+        centerTitle: true,
           elevation: 0.0,
           backgroundColor: Colors.transparent,
           leading: IconButton(
@@ -137,106 +138,126 @@ class _KeranjangScreenState extends State<KeranjangScreen> {
               Navigator.of(context).pop(true);
             },
             icon: Icon(Icons.arrow_back),
-            color: Colors.black,
+            color: Color(0xFF017964),
           ),
           title: Text(
             "Keranjang Belanjaan",
             style: theme.textTheme.headline6?.copyWith(
               fontWeight: FontWeight.w600,
-              color: Colors.black,
+              color: Color(0xFF017964),
             ),
           )),
-      body: RefreshIndicator(
-        onRefresh: () {
-          return _refreshData();
-        },
-        child: SingleChildScrollView(
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.white,
+              Colors.white,
+              Colors.white,
+              Color(0xFFDCE293),
+            ],
+            stops: [0.25, 0.5, 0.75, 1.0],
+          ),
+        ),
+        child: RefreshIndicator(
+          onRefresh: () {
+            return _refreshData();
+          },
+          child: SingleChildScrollView(
             physics: AlwaysScrollableScrollPhysics(),
-            child: Stack(children: [
-              Container(
-                height: MediaQuery.of(context).size.height -
-                    AppBar().preferredSize.height * 1.2,
-              ),
-              Column(
-                children: [
-                  Container(
-                    height: 40.0,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                        border: Border.all(
-                            color: Color.fromRGBO(76, 169, 156, 1.0))),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          flex: 1,
-                          child: Container(
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                                color: Color.fromRGBO(76, 169, 156, 1.0)),
-                            child: Text(
-                              'Keranjang',
-                              style: theme.textTheme.subtitle1
-                                  ?.copyWith(color: Colors.white),
-                            ),
-                          ),
-                        ),
-                        Expanded(
-                          flex: 1,
-                          child: InkWell(
-                            onTap: () {
-                              Navigator.of(context)
-                                  .popAndPushNamed(HistoryScreen.ROUTE_NAME);
-                            },
+            child: Stack(
+              children: [
+                Container(
+                  height: MediaQuery.of(context).size.height -
+                      AppBar().preferredSize.height * 1.2,
+                ),
+                Column(
+                  children: [
+                    Container(
+                      height: 40.0,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                          border: Border.all(
+                              color: Color(0xFF017964))),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            flex: 1,
                             child: Container(
                               alignment: Alignment.center,
-                              decoration: BoxDecoration(color: Colors.white),
+                              decoration: BoxDecoration(
+                                  color: Color(0xFF017964)),
                               child: Text(
-                                'Riwayat',
+                                'Keranjang',
                                 style: theme.textTheme.subtitle1
-                                    ?.copyWith(color: Colors.black),
+                                    ?.copyWith(color: Colors.white),
                               ),
                             ),
                           ),
-                        )
-                      ],
+                          Expanded(
+                            flex: 1,
+                            child: InkWell(
+                              onTap: () {
+                                Navigator.of(context)
+                                    .popAndPushNamed(HistoryScreen.ROUTE_NAME);
+                              },
+                              child: Container(
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(color: Colors.white),
+                                child: Text(
+                                  'Riwayat',
+                                  style: theme.textTheme.subtitle1
+                                      ?.copyWith(color: Colors.black),
+                                ),
+                              ),
+                            ),
+                          )
+                        ],
+                      ),
                     ),
-                  ),
-                  FutureBuilder(
-                      future: _futureDataCarts,
-                      builder: (BuildContext context,
-                          AsyncSnapshot<ResultModel<List<Cart>>> snapshot) {
-                        if (snapshot.hasData) {
-                          if (snapshot.data?.data?.isNotEmpty == true) {
-                            List<Cart> carts = snapshot.data!.data!;
-                            return Column(
-                              children: [...carts.map((e) => itemCard(e))],
-                            );
+                    FutureBuilder(
+                        future: _futureDataCarts,
+                        builder: (BuildContext context,
+                            AsyncSnapshot<ResultModel<List<Cart>>> snapshot) {
+                          if (snapshot.hasData) {
+                            if (snapshot.data?.data?.isNotEmpty == true) {
+                              List<Cart> carts = snapshot.data!.data!;
+                              return Column(
+                                children: [...carts.map((e) => itemCard(e))],
+                              );
+                            } else {
+                              String errorTitle =
+                                  'Wah, keranjang belanjaanmu kosong';
+                              String? errorSubtitle = snapshot.data?.error;
+                              return Container(
+                                child: ErrorCard(
+                                  title: errorTitle,
+                                  subtitle: errorSubtitle,
+                                  iconData: Icons.shopping_cart_outlined,
+                                ),
+                              );
+                            }
                           } else {
-                            String errorTitle =
-                                'Wah, keranjang belanjaanmu kosong';
-                            String? errorSubtitle = snapshot.data?.error;
                             return Container(
-                              child: ErrorCard(
-                                title: errorTitle,
-                                subtitle: errorSubtitle,
-                                iconData: Icons.shopping_cart_outlined,
+                              height: promoCarouselHeight + 36 + 16.0,
+                              child: Center(
+                                child: CircularProgressIndicator(
+                                  color: theme.primaryColor,
+                                ),
                               ),
                             );
                           }
-                        } else {
-                          return Container(
-                            height: promoCarouselHeight + 36 + 16.0,
-                            child: Center(
-                              child: CircularProgressIndicator(
-                                color: theme.primaryColor,
-                              ),
-                            ),
-                          );
-                        }
-                      }),
-                ],
-              ),
-            ])),
+                        }),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
       bottomNavigationBar: Container(
         height: 55.0,
@@ -247,22 +268,23 @@ class _KeranjangScreenState extends State<KeranjangScreen> {
                 width: screenSize.width * 0.6,
                 height: 55.0,
                 decoration:
-                    BoxDecoration(color: Color.fromRGBO(229, 229, 229, 1.0)),
+                    BoxDecoration(color: Color(0xFF017964)),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Total Harga'),
+                    Text('Total Harga', style: TextStyle(color: Colors.white)),
                     totalHarga == 0
-                        ? Text('Rp. 0,-')
+                        ? Text('Rp. 0,-', style: TextStyle(color: Colors.white))
                         : Text(
                             CurrencyTextInputFormatter(
                               locale: 'id',
                               decimalDigits: 0,
-                              symbol: 'Rp. ',
+                              symbol: 'Rp. ', 
                             ).format(totalHarga.toString()),
                             style: theme.textTheme.subtitle1
-                                ?.copyWith(fontWeight: FontWeight.bold),
+                                ?.copyWith(fontWeight: FontWeight.bold,
+                                color: Colors.white),
                           )
                   ],
                 )),
@@ -279,12 +301,12 @@ class _KeranjangScreenState extends State<KeranjangScreen> {
                   width: screenSize.width * 0.4,
                   alignment: Alignment.center,
                   decoration: totalHarga == 0
-                      ? BoxDecoration(color: Colors.redAccent)
-                      : BoxDecoration(color: Colors.red),
+                      ? BoxDecoration(color: Color(0xFFFEC842))
+                      : BoxDecoration(color: Color(0xFFFEC842)),
                   child: Text(
                     'Bayar',
                     style: theme.textTheme.subtitle1?.copyWith(
-                        color: totalHarga == 0 ? Colors.white54 : Colors.white),
+                        color: totalHarga == 0 ? Colors.white54 : Colors.black),
                   ),
                 ))
           ],
@@ -325,7 +347,7 @@ class _KeranjangScreenState extends State<KeranjangScreen> {
                   Text(
                     cart.product.getTotalPriceFormatted(),
                     style: theme.textTheme.subtitle1
-                        ?.copyWith(color: Color.fromRGBO(76, 167, 157, 1.0)),
+                        ?.copyWith(color: Color(0xFF017964)),
                   ),
                   SizedBox(
                     height: 25.0,
@@ -366,7 +388,7 @@ class _KeranjangScreenState extends State<KeranjangScreen> {
                         ),
                         height: 20.0,
                         minWidth: 0.0,
-                        splashColor: Color.fromRGBO(76, 169, 156, 1.0),
+                        splashColor: Color(0xFF017964),
                         padding: EdgeInsets.all(0.0),
                         shape: CircleBorder(),
                       ),

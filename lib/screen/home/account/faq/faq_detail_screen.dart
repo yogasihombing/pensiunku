@@ -7,9 +7,7 @@ import 'package:pensiunku/widget/item_faq.dart';
 class FaqDetailScreenArguments {
   final FaqCategoryModel faqCategoryModel;
 
-  FaqDetailScreenArguments({
-    required this.faqCategoryModel,
-  });
+  FaqDetailScreenArguments({required this.faqCategoryModel});
 }
 
 class FaqDetailScreen extends StatefulWidget {
@@ -31,8 +29,7 @@ class _FaqDetailScreenState extends State<FaqDetailScreen> {
   @override
   void initState() {
     super.initState();
-
-    Future.delayed(Duration(milliseconds: 0), () {
+    Future.delayed(Duration.zero, () {
       setState(() {
         _isBottomNavBarVisible = true;
       });
@@ -43,26 +40,50 @@ class _FaqDetailScreenState extends State<FaqDetailScreen> {
   Widget build(BuildContext context) {
     ThemeData theme = Theme.of(context);
 
-    return Scaffold(
-      appBar: WidgetUtil.getNewAppBar(context, 'FAQ', 2, (newIndex) {
-        Navigator.of(context).pop(newIndex);
-      }, () {
-        Navigator.of(context).pop();
-      }, useNotificationIcon: false),
-      body: Stack(
-        children: [
-          SingleChildScrollView(
-            child: Stack(
-              children: [
-                Container(
-                  height: MediaQuery.of(context).size.height -
-                      AppBar().preferredSize.height,
-                ),
-                Padding(
+    return Stack(
+      children: [
+        // Background gradasi
+        Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Colors.white,
+                Color(0xFFDCE293), // gradasi hijau kekuningan
+              ],
+              stops: [0.6, 1.0],
+            ),
+          ),
+        ),
+
+        // Scaffold dengan AppBar transparan dan body konten
+        Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            centerTitle: true,
+            leading: IconButton(
+              icon: Icon(Icons.arrow_back, color: Color(0xFF017964)),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            title: Text(
+              'FAQ',
+              style: TextStyle(
+                color: Color(0xFF017964),
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          body: Stack(
+            children: [
+              SingleChildScrollView(
+                child: Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
                     children: [
-                      SizedBox(height: 40.0),
+                      const SizedBox(height: 40.0),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 24.0),
                         child: Column(
@@ -78,7 +99,7 @@ class _FaqDetailScreenState extends State<FaqDetailScreen> {
                                 ),
                               ),
                             ),
-                            SizedBox(height: 60.0),
+                            const SizedBox(height: 60.0),
                             Text(
                               'Pertanyaan Seputar Pensiunku',
                               textAlign: TextAlign.center,
@@ -87,28 +108,28 @@ class _FaqDetailScreenState extends State<FaqDetailScreen> {
                           ],
                         ),
                       ),
-                      SizedBox(height: 8.0),
+                      const SizedBox(height: 8.0),
                       ...widget.faqCategoryModel.faqs.map(
-                        (faq) => ItemFaq(
-                          model: faq,
-                        ),
+                        (faq) => ItemFaq(model: faq),
                       ),
-                      SizedBox(height: 80.0), // BottomNavBar
+                      const SizedBox(height: 80.0), // Untuk space BottomNavBar
                     ],
                   ),
                 ),
-              ],
-            ),
+              ),
+
+              // FloatingBottomNavigationBar jika diperlukan
+              // FloatingBottomNavigationBar(
+              //   isVisible: _isBottomNavBarVisible,
+              //   currentIndex: 2,
+              //   onTapItem: (newIndex) {
+              //     Navigator.of(context).pop(newIndex);
+              //   },
+              // ),
+            ],
           ),
-          // FloatingBottomNavigationBar(
-          //   isVisible: _isBottomNavBarVisible,
-          //   currentIndex: 2,
-          //   onTapItem: (newIndex) {
-          //     Navigator.of(context).pop(newIndex);
-          //   },
-          // ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

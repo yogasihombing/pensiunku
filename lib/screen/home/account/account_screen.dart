@@ -35,7 +35,6 @@ class AccountScreen extends StatefulWidget {
 }
 
 class _AccountScreenState extends State<AccountScreen> {
- 
   UserModel? _userModel; // Model pengguna (opsional)
   late Future<ResultModel<UserModel>> _future;
   bool _isActivated = false;

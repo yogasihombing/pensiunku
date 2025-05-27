@@ -9,7 +9,6 @@ import 'package:pensiunku/screen/home/dashboard/toko/checkout_screen.dart';
 import 'package:pensiunku/util/shared_preferences_util.dart';
 import 'package:pensiunku/widget/error_card.dart';
 
-
 class ShippingAddressScreen extends StatefulWidget {
   static const String ROUTE_NAME = '/shipping-address';
 
@@ -149,9 +148,9 @@ class _ShippingAddressScreenState extends State<ShippingAddressScreen> {
   Widget build(BuildContext context) {
     ThemeData theme = Theme.of(context);
     Size screenSize = MediaQuery.of(context).size;
-    Color dividerColor = Color.fromRGBO(236, 236, 236, 1.0);
+    Color dividerColor = Colors.white;
     Color iconColor = Color.fromARGB(76, 167, 157, 1);
-    Color fontColor = Color.fromRGBO(0, 186, 175, 1.0);
+    Color fontColor = Color(0xFF017964);
     double carouselWidth = screenSize.width * 0.9;
     double cardWidth = carouselWidth - 16.0;
     double promoCardHeight = cardWidth * (746 / 1697) + 24.0;
@@ -160,6 +159,7 @@ class _ShippingAddressScreenState extends State<ShippingAddressScreen> {
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
+          centerTitle: true,
           elevation: 0.0,
           backgroundColor: Colors.transparent,
           leading: IconButton(
@@ -167,13 +167,13 @@ class _ShippingAddressScreenState extends State<ShippingAddressScreen> {
               Navigator.of(context).pop(true);
             },
             icon: Icon(Icons.arrow_back),
-            color: Colors.black,
+            color: Color(0xFF017964),
           ),
           title: Text(
             "Alamat Pengiriman",
             style: theme.textTheme.headline6?.copyWith(
               fontWeight: FontWeight.w600,
-              color: Colors.black,
+              color: Color(0xFF017964),
             ),
           )),
       floatingActionButton: FloatingActionButton(
@@ -208,7 +208,7 @@ class _ShippingAddressScreenState extends State<ShippingAddressScreen> {
                         child: Container(
                           width: screenSize.width,
                           alignment: Alignment.center,
-                          decoration: BoxDecoration(color: Colors.red),
+                          decoration: BoxDecoration(color: Color(0xFF017964)),
                           child: Text(
                             'Pilih Alamat',
                             style: theme.textTheme.subtitle1
@@ -232,11 +232,11 @@ class _ShippingAddressScreenState extends State<ShippingAddressScreen> {
                         child: Container(
                           width: screenSize.width,
                           alignment: Alignment.center,
-                          decoration: BoxDecoration(color: Colors.red),
+                          decoration: BoxDecoration(color: Color(0xFFFEC842)),
                           child: Text(
                             'Tambah Alamat',
                             style: theme.textTheme.subtitle1
-                                ?.copyWith(color: Colors.white),
+                                ?.copyWith(color: Colors.black),
                           ),
                         ))
                   ],
@@ -248,59 +248,78 @@ class _ShippingAddressScreenState extends State<ShippingAddressScreen> {
           }
         }),
       ),
-      body: RefreshIndicator(
-        onRefresh: () {
-          return _refreshData();
-        },
-        child: ListView(
-          children: [
-            ListTile(
-              title: Text("Dikirimkan ke"),
-            ),
-            Divider(
-              height: 1,
-            ),
-            FutureBuilder(
-              future: _futureData,
-              builder: (BuildContext context,
-                  AsyncSnapshot<ResultModel<List<ShippingAddress>>> snapshot) {
-                if (snapshot.hasData) {
-                  if (snapshot.data?.data?.isNotEmpty == true) {
-                    List<ShippingAddress> shippingAddresses =
-                        snapshot.data!.data!;
-                    return Column(
-                      children: [
-                        ...shippingAddresses.map((e) => singleDeliveryItem(e)),
-                        SizedBox(
-                          height: 50,
-                        )
-                      ],
-                    );
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.white,
+              Colors.white,
+              Colors.white,
+              Color(0xFFDCE293),
+            ],
+            stops: [0.25, 0.5, 0.75, 1.0],
+          ),
+        ),
+        child: RefreshIndicator(
+          onRefresh: () {
+            return _refreshData();
+          },
+          child: ListView(
+            children: [
+              ListTile(
+                title: Text("Dikirimkan ke"),
+              ),
+              Divider(
+                height: 1,
+              ),
+              FutureBuilder(
+                future: _futureData,
+                builder: (BuildContext context,
+                    AsyncSnapshot<ResultModel<List<ShippingAddress>>>
+                        snapshot) {
+                  if (snapshot.hasData) {
+                    if (snapshot.data?.data?.isNotEmpty == true) {
+                      List<ShippingAddress> shippingAddresses =
+                          snapshot.data!.data!;
+                      return Column(
+                        children: [
+                          ...shippingAddresses
+                              .map((e) => singleDeliveryItem(e)),
+                          SizedBox(
+                            height: 50,
+                          )
+                        ],
+                      );
+                    } else {
+                      String errorTitle =
+                          'Belum ada data alamat pengiriman.\nSilahkan tambahkan data alamat pengiriman';
+                      String? errorSubtitle = snapshot.data?.error;
+                      return Container(
+                        child: ErrorCard(
+                          title: errorTitle,
+                          subtitle: errorSubtitle,
+                          iconData: Icons.info_outline,
+                        ),
+                      );
+                    }
                   } else {
-                    String errorTitle =
-                        'Belum ada data alamat pengiriman.\nSilahkan tambahkan data alamat pengiriman';
-                    String? errorSubtitle = snapshot.data?.error;
                     return Container(
-                      child: ErrorCard(
-                        title: errorTitle,
-                        subtitle: errorSubtitle,
-                        iconData: Icons.info_outline,
+                      height: promoCarouselHeight + 36 + 16.0,
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          color: theme.primaryColor,
+                        ),
                       ),
                     );
                   }
-                } else {
-                  return Container(
-                    height: promoCarouselHeight + 36 + 16.0,
-                    child: Center(
-                      child: CircularProgressIndicator(
-                        color: theme.primaryColor,
-                      ),
-                    ),
-                  );
-                }
-              },
-            )
-          ],
+                },
+              )
+            ],
+          ),
         ),
       ),
     );

@@ -174,7 +174,7 @@ class _ForumScreenState extends State<ForumScreen> {
                   child: Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
-                      'Forum\nPensiun Hebat',
+                      'Pensiunku\nTalk',
                       style: whiteTextStyle.copyWith(
                         fontSize: 32,
                         fontWeight: FontWeight.bold,
@@ -448,37 +448,37 @@ class _ForumScreenState extends State<ForumScreen> {
 
               //FOOTER
               Row(
+                mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   FutureBuilder<ResultModel<String>>(
                     future: ForumRepository().checkStatusLike(post.id_forum!),
                     builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.done) {
-                        bool isLike = snapshot.data!.data! == "1";
-                        return LikeButton(
-                          isLiked: isLike,
-                          likeCount: post.total_like,
-                          likeBuilder: (bool isLiked) {
-                            // print(isLiked);
-                            return Icon(
-                              Icons.favorite,
-                              color:
-                                  isLiked ? Colors.red[500] : Colors.grey[400],
-                            );
-                          },
-                          countBuilder: (likeCount, isLiked, text) {
-                            return Text(
-                              text,
-                              style: blackTextStyle,
-                            );
-                          },
-                          onTap: (isLiked) {
-                            return onLikeButtonTapped(isLiked, post.id_forum!);
-                          },
-                        );
-                      } else {
-                        return Container();
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        // Bisa tampilkan placeholder atau SizedBox.shrink()
+                        return SizedBox.shrink();
                       }
+                      if (!snapshot.hasData || snapshot.data?.data == null) {
+                        // Jaga-jaga kalau data null, tampilkan tombol default
+                        return LikeButton(
+                          isLiked: false,
+                          likeCount: post.total_like,
+                          likeBuilder: (isLiked) =>
+                              Icon(Icons.favorite, color: Colors.grey[400]),
+                          onTap: (isLiked) =>
+                              onLikeButtonTapped(isLiked, post.id_forum!),
+                        );
+                      }
+                      // Kalau data ada dan bukan null
+                      bool isLike = snapshot.data!.data == "1";
+                      return LikeButton(
+                        isLiked: isLike,
+                        likeCount: post.total_like,
+                        likeBuilder: (liked) => Icon(Icons.favorite,
+                            color: liked ? Colors.red[500] : Colors.grey[400]),
+                        onTap: (liked) =>
+                            onLikeButtonTapped(liked, post.id_forum!),
+                      );
                     },
                   ),
                   Row(
@@ -600,20 +600,43 @@ class _ForumScreenState extends State<ForumScreen> {
       );
     }
 
-    return Scaffold(
-      backgroundColor: Color.fromRGBO(247, 247, 247, 1.0),
-      body: RefreshIndicator(
-        onRefresh: () => _refreshData(),
-        child: CustomScrollView(
-          shrinkWrap: true,
-          slivers: [
-            header(),
-            posting(),
-            toggleButton(),
-            cardPosting(),
-          ],
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        // 1) Background gradient
+        Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Colors.white,
+                Colors.white,
+                Colors.white,
+                Color(0xFFDCE293),
+              ],
+              stops: [0.25, 0.5, 0.75, 1.0],
+            ),
+          ),
         ),
-      ),
+
+        // 2) Scaffold transparan di atasnya
+        Scaffold(
+          backgroundColor: Colors.transparent,
+          body: RefreshIndicator(
+            onRefresh: () => _refreshData(),
+            child: CustomScrollView(
+              shrinkWrap: true,
+              slivers: [
+                header(),
+                posting(),
+                toggleButton(),
+                cardPosting(),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
