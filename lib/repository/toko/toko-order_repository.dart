@@ -5,7 +5,7 @@ import 'package:pensiunku/data/api/toko/toko-order_api.dart';
 import 'package:pensiunku/model/toko/toko-order_model.dart';
 import 'package:pensiunku/model/toko/toko_model.dart';
 import 'package:pensiunku/repository/base_repository.dart';
-import 'package:pensiunku/repository/result_model.dart';
+import 'package:pensiunku/model/result_model.dart';
 
 
 class TokoOrderRepository extends BaseRepository {

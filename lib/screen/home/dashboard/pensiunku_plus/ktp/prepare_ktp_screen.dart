@@ -6,7 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:pensiunku/model/camera_result_model.dart';
 import 'package:pensiunku/model/ktp_model.dart';
 import 'package:pensiunku/model/submission_model.dart';
-import 'package:pensiunku/repository/result_model.dart';
+import 'package:pensiunku/model/result_model.dart';
 import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/ktp/camera_ktp_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/ktp/confirm_ktp_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/ktp/preview_ktp_screen.dart';

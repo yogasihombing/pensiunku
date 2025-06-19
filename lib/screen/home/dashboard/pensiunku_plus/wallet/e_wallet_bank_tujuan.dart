@@ -14,57 +14,48 @@ class EWalletBankTujuan extends StatefulWidget {
 }
 
 class _EWalletBankTujuanState extends State<EWalletBankTujuan> {
-  // Data pengguna (simulasi)
   UserModel? _userModel;
   late Future<String> _futureGreeting;
-
-  // Padding horizontal global
-  final double horizontalPadding = 16.0;
 
   @override
   void initState() {
     super.initState();
-    print('EWalletBankTujuan initialized');
     _refreshData();
     _futureGreeting = fetchGreeting();
   }
 
-  // Fungsi refresh data pengguna
+  /// Memuat ulang data pengguna (dengan token dari SharedPreferences)
   Future<void> _refreshData() async {
-    String? token = SharedPreferencesUtil()
-        .sharedPreferences
-        .getString(SharedPreferencesUtil.SP_KEY_TOKEN);
+    final prefs = SharedPreferencesUtil().sharedPreferences;
+    String? token = prefs.getString(SharedPreferencesUtil.SP_KEY_TOKEN);
     if (token != null) {
-      UserRepository().getOne(token).then((result) {
-        if (result.error == null) {
-          setState(() {
-            _userModel = result.data;
-            print('User ID: ${_userModel?.id}');
-          });
-        } else {
-          print("Error fetching user: ${result.error}");
-        }
-      });
+      final result = await UserRepository().getOne(token);
+      if (result.error == null) {
+        setState(() {
+          _userModel = result.data;
+          debugPrint('User ID: ${_userModel?.id}');
+        });
+      } else {
+        debugPrint("Error fetching user: ${result.error}");
+      }
     }
   }
 
-  // Fungsi untuk mengambil greeting dari API
+  /// Mengambil greeting dari API eksternal
   Future<String> fetchGreeting() async {
     const String baseUrl = 'https://api.pensiunku.id/new.php/greeting';
     try {
-      print('Fetching greeting from: $baseUrl');
-      final response = await http.post(Uri.parse(baseUrl)).timeout(
-        const Duration(seconds: 10),
-        onTimeout: () {
-          throw TimeoutException('Koneksi timeout');
-        },
-      );
-      print('Response status: ${response.statusCode}');
-      print('Response body: ${response.body}');
+      final response = await http
+          .post(Uri.parse(baseUrl))
+          .timeout(const Duration(seconds: 10), onTimeout: () {
+        throw TimeoutException('Koneksi timeout');
+      });
+
       if (response.statusCode == 200) {
         return response.body;
       } else {
-        throw Exception('Failed to load greeting');
+        throw Exception(
+            'Failed to load greeting (Status: ${response.statusCode})');
       }
     } on SocketException {
       throw Exception('Tidak ada koneksi internet');
@@ -77,14 +68,21 @@ class _EWalletBankTujuanState extends State<EWalletBankTujuan> {
 
   @override
   Widget build(BuildContext context) {
+    // Ambil ukuran layar
+    final mediaQuery = MediaQuery.of(context);
+    final screenHeight = mediaQuery.size.height;
+    final screenWidth = mediaQuery.size.width;
+
+    // Padding horizontal relatif terhadap lebar layar
+    final double horizontalPadding = screenWidth * 0.04; // misal 4% dari lebar
+
     return Scaffold(
-      // Stack untuk latar belakang dan konten utama
       body: Stack(
         children: [
-          // Background gradient
+          // Background gradient full screen
           Container(
-            width: double.infinity,
-            height: double.infinity,
+            width: screenWidth,
+            height: screenHeight,
             decoration: const BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
@@ -99,77 +97,42 @@ class _EWalletBankTujuanState extends State<EWalletBankTujuan> {
               ),
             ),
           ),
-          // Header background (warna kuning dengan border radius)
+
+          // Header background (kuning) dengan ketinggian 34% dari tinggi layar
           Positioned(
             top: 0,
             left: 0,
             right: 0,
-            height: MediaQuery.of(context).size.height * 0.34,
+            height: screenHeight * 0.28,
             child: Container(
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFC950),
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(30),
-                  bottomRight: Radius.circular(30),
+              decoration: const BoxDecoration(
+                color: Color(0xFFFFC950),
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(20),
+                  bottomRight: Radius.circular(20),
                 ),
               ),
             ),
           ),
+
           // Konten utama
           SafeArea(
             child: SingleChildScrollView(
-              padding: EdgeInsets.symmetric(
-                  horizontal: horizontalPadding, vertical: 0),
+              padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // App Bar: Back button dan judul di tengah
-                  SizedBox(
-                    height: kToolbarHeight,
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        // Tombol back
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: IconButton(
-                            icon: const Icon(Icons.arrow_back,
-                                color: Color(0xFFF017964)),
-                            onPressed: () => Navigator.pop(context),
-                          ),
-                        ),
-                        // Judul "Bank Tujuan"
-                        Center(
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: const Text(
-                              "Bank Tujuan",
-                              style: TextStyle(
-                                color: Color(0xFF017964),
-                                fontSize: 18,
-                                fontWeight: FontWeight.w600,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  // Profile Greeting: Avatar, greeting, dan username
-                  Center(
-                    child: _buildProfileGreeting(),
-                  ),
-                  const SizedBox(height: 24),
-                  // Saldo Dompet
-                  _buildWalletBalance(),
-                  const SizedBox(height: 24),
-                  // Container Bank Detail
-                  _buildBankDetail(),
-                  const SizedBox(height: 16),
-                  _buildAddBank(),
+                  SizedBox(height: screenHeight * 0.02), // 2% dari tinggi layar
+                  _buildAppBar(context, screenHeight, screenWidth),
+                  SizedBox(height: screenHeight * 0.02), // 2% dari tinggi layar
+                  Center(child: _buildProfileGreeting(screenWidth)),
+                  SizedBox(height: screenHeight * 0.02), // 2% dari tinggi layar
+                  _buildWalletBalance(screenWidth),
+                  SizedBox(height: screenHeight * 0.04),
+                  _buildBankDetail(screenWidth),
+                  SizedBox(height: screenHeight * 0.02),
+                  _buildAddBank(screenWidth),
+                  SizedBox(height: screenHeight * 0.02),
                 ],
               ),
             ),
@@ -179,8 +142,48 @@ class _EWalletBankTujuanState extends State<EWalletBankTujuan> {
     );
   }
 
-  /// Widget Profile Greeting: Menampilkan avatar, greeting, dan username
-  Widget _buildProfileGreeting() {
+  /// AppBar Custom: Back button dan judul
+  Widget _buildAppBar(
+      BuildContext context, double screenHeight, double screenWidth) {
+    return SizedBox(
+      height: kToolbarHeight,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // Tombol back di kiri
+          Align(
+            alignment: Alignment.centerLeft,
+            child: IconButton(
+              icon: Icon(
+                Icons.arrow_back,
+                color: const Color(0xFFF017964),
+                size: screenWidth * 0.06, // ukuran ikon relatif
+              ),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ),
+          // Judul di tengah
+          Center(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: const Text(
+                "Bank Tujuan",
+                style: TextStyle(
+                  color: Color(0xFF017964),
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Profile Greeting: Avatar, greeting, dan username
+  Widget _buildProfileGreeting(double screenWidth) {
+    final avatarRadius = screenWidth * 0.10; // 10% dari lebar layar
     const TextStyle greetingStyle = TextStyle(
       fontSize: 12,
       fontWeight: FontWeight.normal,
@@ -194,69 +197,71 @@ class _EWalletBankTujuanState extends State<EWalletBankTujuan> {
 
     return Row(
       children: [
-        // CircleAvatar dengan ikon default
+        // CircleAvatar
+        SizedBox(width: screenWidth * 0.06),
         CircleAvatar(
-          radius: 40,
-          backgroundColor: Colors.white.withOpacity(0.3),
-          child: const Icon(Icons.person, color: Color(0xFFF017964)),
+          radius: avatarRadius,
+          backgroundColor: Colors.white.withOpacity(0.2),
+          child: Icon(
+            Icons.person,
+            color: const Color(0xFFF017964),
+            size: avatarRadius, // ikon seukuran radius
+          ),
         ),
-        const SizedBox(width: 20),
-        // Kolom untuk greeting dan username
+        SizedBox(width: screenWidth * 0.05), // 5% dari lebar layar
         Expanded(
-          child: Container(
-            alignment: Alignment.centerLeft,
-            child: FutureBuilder<String>(
-              future: _futureGreeting,
-              builder: (context, snapshot) {
-                String greeting;
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  greeting = '...';
-                } else if (snapshot.hasError) {
-                  greeting = 'Selamat datang';
-                } else if (snapshot.hasData) {
-                  greeting = snapshot.data!;
-                } else {
-                  greeting = 'Selamat datang';
-                }
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        greeting,
-                        style: greetingStyle,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+          child: FutureBuilder<String>(
+            future: _futureGreeting,
+            builder: (context, snapshot) {
+              String greeting;
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                greeting = '...';
+              } else if (snapshot.hasError) {
+                greeting = 'Selamat datang';
+              } else if (snapshot.hasData) {
+                greeting = snapshot.data!;
+              } else {
+                greeting = 'Selamat datang';
+              }
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      greeting,
+                      style: greetingStyle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 4),
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        _userModel?.username ?? 'Pengguna',
-                        style: usernameStyle,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                  ),
+                  SizedBox(height: screenWidth * 0.01), // spasi kecil
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      _userModel?.username ?? 'Pengguna',
+                      style: usernameStyle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ],
-                );
-              },
-            ),
+                  ),
+                ],
+              );
+            },
           ),
         ),
       ],
     );
   }
 
-  /// Widget Saldo Dompet: Menampilkan informasi saldo
-  Widget _buildWalletBalance() {
+  /// Saldo Dompet: Menampilkan informasi saldo pengguna
+  Widget _buildWalletBalance(double screenWidth) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(screenWidth * 0.04), // 4% padding
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -274,7 +279,7 @@ class _EWalletBankTujuanState extends State<EWalletBankTujuan> {
           Row(
             children: [
               const Icon(Icons.account_balance_wallet, color: Colors.black),
-              const SizedBox(width: 8),
+              SizedBox(width: screenWidth * 0.02), // 2% spacing
               Flexible(
                 child: FittedBox(
                   fit: BoxFit.scaleDown,
@@ -288,7 +293,7 @@ class _EWalletBankTujuanState extends State<EWalletBankTujuan> {
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: screenWidth * 0.02),
           Center(
             child: FittedBox(
               fit: BoxFit.scaleDown,
@@ -305,114 +310,129 @@ class _EWalletBankTujuanState extends State<EWalletBankTujuan> {
     );
   }
 
-  /// Widget Bank Detail:
-  /// Menampilkan informasi bank tujuan dengan logo di kiri dan informasi bank (nama bank, nomor rekening dan nama pemilik) di sisi kanan.
-  Widget _buildBankDetail() {
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(top: 24),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 8,
-            offset: Offset(0, 4),
-          )
-        ],
-      ),
-      child: Row(
-        children: [
-          // Logo bank (pastikan image asset sudah disiapkan dan didaftarkan pada pubspec.yaml)
-          Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-              image: const DecorationImage(
-                image: AssetImage('assets/bank_logo.png'), // ganti dengan path logo bank yang sesuai
-                fit: BoxFit.contain,
-              ),
+  Widget _buildBankDetail(double screenWidth) {
+    final logoSize = screenWidth * 0.15; // 15% dari lebar layar
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Judul Rekening Pencairan
+
+        Padding(
+          padding: EdgeInsets.only(
+              left: screenWidth * 0.01, bottom: screenWidth * 0.03),
+          child: const Text(
+            "Rekening Pencairan",
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
             ),
           ),
-          const SizedBox(width: 12),
-          // Informasi bank: Nama bank, nomor rekening, dan nama pemilik
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                Text(
-                  "Bank Capital",
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
+        ),
+        // Box detail rekening
+        Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(screenWidth * 0.04),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: const [
+              BoxShadow(
+                color: Colors.black12,
+                blurRadius: 8,
+                offset: Offset(0, 4),
+              )
+            ],
+          ),
+          child: Row(
+            children: [
+              // Logo bank
+              Container(
+                width: logoSize,
+                height: logoSize,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  image: const DecorationImage(
+                    image: AssetImage('assets/bank_logo.png'),
+                    fit: BoxFit.contain,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
-                SizedBox(height: 4),
-                Text(
-                  "No. Rekening: 1234567890",
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+              ),
+              SizedBox(width: screenWidth * 0.03), // 3% dari lebar layar
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: const [
+                    Text(
+                      "Bank Capital",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      "No. Rekening: 1234567890",
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.black87,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      "Pemilik: John Doe",
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.black87,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                 ),
-                SizedBox(height: 2),
-                Text(
-                  "Pemilik: John Doe",
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          )
-        ],
-      ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
-  
-  /// Widget _buildAddBank:
-  /// Widget untuk menampilkan tombol Submit (Add Bank) dengan tampilan yang proporsional.
-  Widget _buildAddBank() {
-    return Container(
+  /// Tombol "Tambah Rekening Baru"
+  Widget _buildAddBank(double screenWidth) {
+    return SizedBox(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      child: Align(
-        alignment: Alignment.center,
-        child: ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFFFFC950),
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(22),
-            ),
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFFFFC950),
+          padding: EdgeInsets.symmetric(
+            horizontal: screenWidth * 0.08, // 8% padding kiri-kanan
+            vertical: screenWidth * 0.035, // 3.5% padding atas-bawah
           ),
-          onPressed: () {
-            // Aksi submit dapat ditambahkan di sini
-          },
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            child: const Text(
-              'Tambah Rekening Baru',
-              style: TextStyle(
-                color: Colors.black,
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(22),
+          ),
+        ),
+        onPressed: () {
+          // TODO: Aksi submit dapat ditambahkan di sini
+        },
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: const Text(
+            'Tambah Rekening Baru',
+            style: TextStyle(
+              color: Colors.black,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
       ),

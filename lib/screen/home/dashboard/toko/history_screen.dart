@@ -4,7 +4,7 @@ import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:intl/intl.dart';
 import 'package:pensiunku/config.dart';
 import 'package:pensiunku/model/toko/toko-order_model.dart';
-import 'package:pensiunku/repository/result_model.dart';
+import 'package:pensiunku/model/result_model.dart';
 import 'package:pensiunku/model/toko/toko_model.dart' as TokoMod;
 import 'package:pensiunku/repository/toko/toko-order_repository.dart';
 import 'package:pensiunku/repository/toko/toko_repository.dart';

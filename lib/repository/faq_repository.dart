@@ -4,7 +4,7 @@ import 'package:pensiunku/data/api/faq_api.dart';
 import 'package:pensiunku/data/db/app_database.dart';
 import 'package:pensiunku/model/faq_category_model.dart';
 import 'package:pensiunku/repository/base_repository.dart';
-import 'package:pensiunku/repository/result_model.dart';
+import 'package:pensiunku/model/result_model.dart';
 
 class FaqRepository extends BaseRepository {
   static String tag = 'FaqRepository';

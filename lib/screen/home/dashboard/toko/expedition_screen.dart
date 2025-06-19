@@ -1,7 +1,7 @@
 import 'package:currency_text_input_formatter/currency_text_input_formatter.dart';
 import 'package:flutter/material.dart';
 import 'package:pensiunku/model/toko/ongkir_model.dart';
-import 'package:pensiunku/repository/result_model.dart';
+import 'package:pensiunku/model/result_model.dart';
 import 'package:pensiunku/repository/toko/ongkir_repository.dart';
 import 'package:pensiunku/widget/error_card.dart';
 

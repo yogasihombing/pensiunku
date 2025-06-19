@@ -5,7 +5,7 @@ import 'package:pensiunku/data/api/usaha_api.dart';
 import 'package:pensiunku/model/usaha_detail_model.dart';
 import 'package:pensiunku/model/usaha_model.dart';
 import 'package:pensiunku/repository/base_repository.dart';
-import 'package:pensiunku/repository/result_model.dart';
+import 'package:pensiunku/model/result_model.dart';
 
 class UsahaRepository extends BaseRepository {
   static String tag = 'Usaha Repository';

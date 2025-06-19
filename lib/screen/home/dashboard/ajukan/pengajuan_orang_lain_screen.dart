@@ -6,7 +6,7 @@ import 'package:pensiunku/data/db/pengajuan_orang_lain_dao.dart';
 import 'package:pensiunku/model/option_model.dart';
 import 'package:pensiunku/model/user_model.dart';
 import 'package:pensiunku/repository/location_repository.dart';
-import 'package:pensiunku/repository/result_model.dart';
+import 'package:pensiunku/model/result_model.dart';
 import 'package:pensiunku/repository/user_repository.dart';
 import 'package:pensiunku/screen/home/submission/riwayat_pengajuan_orang_lain.dart';
 import 'package:pensiunku/util/shared_preferences_util.dart';
@@ -453,12 +453,14 @@ class _PengajuanOrangLainScreenState extends State<PengajuanOrangLainScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Tambahkan dua baris ini
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+
     return Stack(
       children: [
         // Background gradient
         Container(
-          // width: double.infinity,
-          // height: double.infinity,
           decoration: const BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topCenter,
@@ -475,22 +477,36 @@ class _PengajuanOrangLainScreenState extends State<PengajuanOrangLainScreen> {
         ),
         Scaffold(
           backgroundColor: Colors.transparent, // Pastikan scaffold transparan
-          appBar: AppBar(
-            backgroundColor: Colors.transparent, // Pastikan scaffold transparan
-            centerTitle: true,
-            iconTheme: const IconThemeData(
-              color: Color(0xFF017964), // Ubah warna ikon back di sini
-            ),
-            title: Text(
-              'Form Mitra',
-              style: TextStyle(
-                color: Color(0xFF017964),
-                fontWeight: FontWeight.bold,
-                fontSize: 20,
+
+          appBar: PreferredSize(
+            preferredSize:
+                Size.fromHeight(kToolbarHeight + screenHeight * 0.02),
+            child: AppBar(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              toolbarHeight: kToolbarHeight + screenHeight * 0.01,
+              // 1. Bungkus leading dengan Padding agar tombol back turun
+              leading: Padding(
+                padding: EdgeInsets.only(top: screenHeight * 0.01),
+                child: IconButton(
+                  icon: Icon(Icons.arrow_back, color: Color(0xFF017964)),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ),
+              centerTitle: true,
+              // 2. Bungkus title dengan Padding agar judul juga turun
+              title: Padding(
+                padding: EdgeInsets.only(top: screenHeight * 0.01),
+                child: Text(
+                  'Form Mitra',
+                  style: TextStyle(
+                    color: Color(0xFF017964),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20,
+                  ),
+                ),
               ),
             ),
-            // backgroundColor: Colors.transparent, // Agar AppBar pun transparan
-            elevation: 0,
           ),
           body: SingleChildScrollView(
             physics: AlwaysScrollableScrollPhysics(),
@@ -591,7 +607,6 @@ class _PengajuanOrangLainScreenState extends State<PengajuanOrangLainScreen> {
                         child: TextFormField(
                           controller: TextEditingController(
                             text: namaFotoKTP ?? '',
-                            // fileKTP != null ? fileKTP!.split('/').last : '',
                           ),
                           decoration: InputDecoration(
                             labelText: 'KTP',
@@ -610,8 +625,7 @@ class _PengajuanOrangLainScreenState extends State<PengajuanOrangLainScreen> {
                       _isKtpUploading // Jika sedang upload, tampilkan progres
                           ? Expanded(
                               child: LinearProgressIndicator(
-                                value:
-                                    _ktpUploadProgress, // Menampilkan progres upload KTP
+                                value: _ktpUploadProgress,
                                 backgroundColor: Colors.grey[200],
                                 valueColor:
                                     AlwaysStoppedAnimation<Color>(Colors.blue),
@@ -635,11 +649,7 @@ class _PengajuanOrangLainScreenState extends State<PengajuanOrangLainScreen> {
                       Expanded(
                         child: TextFormField(
                           controller:
-                              TextEditingController(text: namaFotoNPWP ?? ''
-                                  // text: fileNPWP != null
-                                  //     ? fileNPWP!.split('/').last
-                                  //     : '',
-                                  ),
+                              TextEditingController(text: namaFotoNPWP ?? ''),
                           decoration: InputDecoration(
                             labelText: 'NPWP',
                             border: OutlineInputBorder(),
@@ -657,8 +667,7 @@ class _PengajuanOrangLainScreenState extends State<PengajuanOrangLainScreen> {
                       _isNpwpUploading // Jika sedang upload, tampilkan progres
                           ? Expanded(
                               child: LinearProgressIndicator(
-                                value:
-                                    _npwpUploadProgress, // Menampilkan progres upload NPWP
+                                value: _npwpUploadProgress,
                                 backgroundColor: Colors.grey[200],
                                 valueColor:
                                     AlwaysStoppedAnimation<Color>(Colors.blue),
@@ -681,11 +690,7 @@ class _PengajuanOrangLainScreenState extends State<PengajuanOrangLainScreen> {
                       Expanded(
                         child: TextFormField(
                           controller:
-                              TextEditingController(text: namaFotoKarip ?? ''
-                                  // text: fileKarip != null
-                                  //     ? fileKarip!.split('/').last
-                                  //     : '',
-                                  ),
+                              TextEditingController(text: namaFotoKarip ?? ''),
                           decoration: InputDecoration(
                             labelText: 'SK Pensiun/SK Aktif/Karip/Karpeg',
                             border: OutlineInputBorder(),
@@ -703,8 +708,7 @@ class _PengajuanOrangLainScreenState extends State<PengajuanOrangLainScreen> {
                       _isKaripUploading // Jika sedang upload, tampilkan progres
                           ? Expanded(
                               child: LinearProgressIndicator(
-                                value:
-                                    _karipUploadProgress, // Menampilkan progres upload SK Pensiun
+                                value: _karipUploadProgress,
                                 backgroundColor: Colors.grey[200],
                                 valueColor:
                                     AlwaysStoppedAnimation<Color>(Colors.blue),

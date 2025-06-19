@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:pensiunku/model/article_model.dart';
 import 'package:pensiunku/model/theme_model.dart';
 import 'package:pensiunku/repository/article_repository.dart';
-import 'package:pensiunku/repository/result_model.dart';
+import 'package:pensiunku/model/result_model.dart';
 import 'package:pensiunku/repository/theme_repository.dart';
 import 'package:pensiunku/widget/error_card.dart';
 import 'package:flutter_advanced_switch/flutter_advanced_switch.dart';

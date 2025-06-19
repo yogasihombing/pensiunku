@@ -2,7 +2,7 @@ import 'dart:developer';
 
 import 'package:dio/dio.dart';
 import 'package:pensiunku/data/api/customer_support_api.dart';
-import 'package:pensiunku/repository/result_model.dart';
+import 'package:pensiunku/model/result_model.dart';
 
 class CustomerSupportRepository {
   static String tag = 'CustomerSupportRepository';

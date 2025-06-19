@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:pensiunku/model/toko/toko-order_model.dart';
-import 'package:pensiunku/repository/result_model.dart';
+import 'package:pensiunku/model/result_model.dart';
 import 'package:pensiunku/repository/toko/toko-order_repository.dart';
 import 'package:pensiunku/screen/home/dashboard/toko/penilaian-produk_screen.dart';
 import 'package:pensiunku/util/shared_preferences_util.dart';

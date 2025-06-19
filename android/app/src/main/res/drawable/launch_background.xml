@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Drawable untuk latar belakang UI Flutter. -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
- 
+    <!-- Baris ini membuat latar belakang benar-benar transparan. -->
+    <item android:drawable="@android:color/transparent" />
 </layer-list>

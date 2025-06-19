@@ -1,4 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ic_launcher_background">#16826e</color>
+    <!-- Warna untuk notifikasi, jika belum ada -->
+    <color name="notif_color">#FF017964</color> <!-- Sesuaikan dengan warna utama aplikasi Anda -->
+
+    <!-- *** Tambahkan baris ini *** -->
+    <!-- Warna latar belakang untuk ikon launcher adaptif Anda -->
+    <color name="ic_launcher_background">#FFFFFF</color> <!-- Contoh warna putih, sesuaikan jika Anda ingin warna lain -->
 </resources>

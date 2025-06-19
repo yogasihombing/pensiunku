@@ -9,7 +9,7 @@ import 'package:pensiunku/repository/gender_repository.dart';
 import 'package:pensiunku/repository/job_repository.dart';
 import 'package:pensiunku/repository/location_repository.dart';
 import 'package:pensiunku/repository/religion_repository.dart';
-import 'package:pensiunku/repository/result_model.dart';
+import 'package:pensiunku/model/result_model.dart';
 import 'package:pensiunku/repository/user_repository.dart';
 import 'package:pensiunku/screen/home/account/account_info/account_info_controller.dart';
 import 'package:pensiunku/util/shared_preferences_util.dart';

@@ -2,10 +2,10 @@
 bool isProd = true;
 String get apiHost {
   if (isProd) {
-    return "https://pensiunku.id/mobileapi/";
+    return "https://pensiunku.id/mobileapi";
   }
 
-  return "https://pensiunku.id/mobileapi/";
+  return "https://pensiunku.id/mobileapi";
 }
 
 String get midtransClientKey {

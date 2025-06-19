@@ -14,7 +14,7 @@ import 'package:like_button/like_button.dart';
 import 'package:pensiunku/config.dart' show apiHost;
 
 import '../../../../repository/forum_repository.dart';
-import '../../../../repository/result_model.dart';
+import '../../../../model/result_model.dart';
 import '../../../../util/shared_preferences_util.dart';
 import '../../../common/galery_fullscreen.dart';
 

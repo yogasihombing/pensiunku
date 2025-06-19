@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:pensiunku/config.dart';
 import 'package:pensiunku/model/toko/ongkir_model.dart';
 import 'package:pensiunku/model/toko/toko_model.dart';
-import 'package:pensiunku/repository/result_model.dart';
+import 'package:pensiunku/model/result_model.dart';
 import 'package:pensiunku/repository/toko/toko-order_repository.dart';
 import 'package:pensiunku/repository/toko/toko_repository.dart';
 import 'package:pensiunku/screen/home/dashboard/toko/expedition_screen.dart';

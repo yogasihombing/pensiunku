@@ -42,8 +42,11 @@ class _InitScreenState extends State<InitScreen> with SingleTickerProviderStateM
       systemNavigationBarColor: Colors.transparent,
     ));
 
-    // Mulai proses inisialisasi
+    // Mulai proses inisialisasi library inti
     _initializeApp();
+
+    // Mulai setup Firebase Messaging (Notifikasi)
+    _setupFirebaseMessaging();
   }
 
   @override
@@ -53,23 +56,23 @@ class _InitScreenState extends State<InitScreen> with SingleTickerProviderStateM
     super.dispose();
   }
 
-  /// Fungsi utama untuk inisialisasi aplikasi
+  /// Fungsi utama untuk inisialisasi aplikasi (database, preferences)
   Future<void> _initializeApp() async {
     try {
       if (!mounted) return;
 
-      // Jalankan inisialisasi database dan preferences
+      // Jalankan inisialisasi database dan preferences secara paralel
       await Future.wait([
         _initializeDatabase(),
         _initializePreferences(),
-      ]).timeout(Duration(seconds: 10));
+      ]).timeout(Duration(seconds: 10)); // Batas waktu 10 detik
 
       if (!mounted) return;
 
-      // Cek token dan setup FCM
+      // Cek token pengguna dan setup FCM (token FCM juga dihandle di sini)
       final token = await _handleTokenAndNavigation();
 
-      // Navigasi ke screen berikutnya berdasarkan token
+      // Navigasi ke screen berikutnya berdasarkan keberadaan token
       await _navigateToNextScreen(token);
     } catch (e) {
       print('Error during initialization: $e');
@@ -81,19 +84,23 @@ class _InitScreenState extends State<InitScreen> with SingleTickerProviderStateM
     }
   }
 
+  /// Fungsi untuk inisialisasi database
   Future<void> _initializeDatabase() async {
     final appDatabase = AppDatabase();
     await appDatabase.init();
   }
 
+  /// Fungsi untuk inisialisasi shared preferences
   Future<void> _initializePreferences() async {
     await SharedPreferencesUtil().init();
   }
 
+  /// Fungsi untuk menangani token pengguna dan FCM
   Future<String?> _handleTokenAndNavigation() async {
     final prefs = SharedPreferencesUtil().sharedPreferences;
     final token = prefs.getString(SharedPreferencesUtil.SP_KEY_TOKEN);
 
+    // Cek FCM token dan perbarui jika diperlukan
     final savedFcmToken = prefs.getString(SharedPreferencesUtil.SP_KEY_FCM_TOKEN);
     if (savedFcmToken == null) {
       await _setupFCMToken(prefs);
@@ -102,14 +109,18 @@ class _InitScreenState extends State<InitScreen> with SingleTickerProviderStateM
     return token;
   }
 
+  /// Fungsi untuk mendapatkan dan menyimpan FCM token
   Future<void> _setupFCMToken(SharedPreferences prefs) async {
     final messaging = FirebaseMessaging.instance;
     final fcmToken = await messaging.getToken();
     if (fcmToken != null) {
       await prefs.setString(SharedPreferencesUtil.SP_KEY_FCM_TOKEN, fcmToken);
+      print('FCM Token baru: $fcmToken');
+      // Anda mungkin ingin mengirim token ini ke backend Anda di sini
     }
   }
 
+  /// Fungsi untuk menampilkan Snackbar error
   void _showErrorSnackbar() {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -118,14 +129,60 @@ class _InitScreenState extends State<InitScreen> with SingleTickerProviderStateM
     ));
   }
 
+  /// Fungsi untuk navigasi ke screen berikutnya setelah delay
   Future<void> _navigateToNextScreen(String? token) async {
-    await Future.delayed(Duration(seconds: 2));
+    await Future.delayed(Duration(seconds: 2)); // Delay 2 detik
     if (!mounted) return;
 
     if (token != null) {
+      // Jika ada token, navigasi ke PrepareRegisterScreen
       Navigator.of(context).pushNamedAndRemoveUntil(PrepareRegisterScreen.ROUTE_NAME, (route) => false);
     } else {
+      // Jika tidak ada token, navigasi ke WelcomeScreen (halaman default)
       Navigator.of(context).pushNamedAndRemoveUntil(WelcomeScreen.ROUTE_NAME, (route) => false);
+    }
+  }
+
+  /// Fungsi untuk setup Firebase Messaging (Push Notifikasi)
+  Future<void> _setupFirebaseMessaging() async {
+    FirebaseMessaging messaging = FirebaseMessaging.instance;
+
+    // 1. Meminta Izin Notifikasi dari pengguna
+    NotificationSettings settings = await messaging.requestPermission(
+      alert: true,
+      announcement: false,
+      badge: true,
+      carPlay: false,
+      criticalAlert: false,
+      provisional: false,
+      sound: true,
+    );
+
+    print('Izin notifikasi diberikan: ${settings.authorizationStatus}');
+
+    // 2. Mendengarkan pesan saat aplikasi di foreground
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      print('Menerima pesan saat aplikasi di foreground!');
+      print('Data pesan: ${message.data}');
+
+      if (message.notification != null) {
+        print('Pesan juga berisi notifikasi: ${message.notification?.title} / ${message.notification?.body}');
+      
+      }
+    });
+
+    // 3. Menangani saat notifikasi ditekan (saat aplikasi di background/terminated)
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      print('Event onMessageOpenedApp dipublikasikan!');
+      print('Data pesan: ${message.data}');
+    
+    });
+
+    // 4. Menangani saat aplikasi dibuka dari keadaan terminated oleh notifikasi
+    RemoteMessage? initialMessage = await messaging.getInitialMessage();
+    if (initialMessage != null) {
+      print('Aplikasi dibuka dari keadaan terminated oleh notifikasi: ${initialMessage.data}');
+   
     }
   }
 

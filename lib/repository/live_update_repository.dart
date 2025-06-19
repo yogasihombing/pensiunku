@@ -4,7 +4,7 @@ import 'package:pensiunku/data/api/live_update_api.dart';
 import 'package:pensiunku/data/db/app_database.dart';
 import 'package:pensiunku/model/live_update_model.dart';
 import 'package:pensiunku/repository/base_repository.dart';
-import 'package:pensiunku/repository/result_model.dart';
+import 'package:pensiunku/model/result_model.dart';
 
 class LiveUpdateRepository extends BaseRepository {
   static String tag = 'LiveUpdateRepository';

@@ -4,7 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:pensiunku/data/api/event_api.dart';
 import 'package:pensiunku/model/event_model.dart';
 import 'package:pensiunku/repository/base_repository.dart';
-import 'package:pensiunku/repository/result_model.dart';
+import 'package:pensiunku/model/result_model.dart';
 
 class EventRepository extends BaseRepository {
   static String tag = 'Point Repository';

@@ -3,7 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:pensiunku/data/api/point_api.dart';
 import 'package:pensiunku/model/point_model.dart';
 import 'package:pensiunku/repository/base_repository.dart';
-import 'package:pensiunku/repository/result_model.dart';
+import 'package:pensiunku/model/result_model.dart';
 
 class PointRepository extends BaseRepository {
   static String tag = 'Point Repository';

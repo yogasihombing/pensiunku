@@ -2,7 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:pensiunku/model/halopensiun_model.dart';
 import 'package:pensiunku/repository/halopensiun_repository.dart';
-import 'package:pensiunku/repository/result_model.dart';
+import 'package:pensiunku/model/result_model.dart';
 import 'package:pensiunku/util/shared_preferences_util.dart';
 import 'package:pensiunku/widget/chip_tab.dart';
 import 'package:pensiunku/widget/sliver_app_bar_sheet_top.dart';

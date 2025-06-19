@@ -5,7 +5,7 @@ import 'package:pensiunku/data/db/pengajuan_anda_dao.dart';
 import 'package:pensiunku/model/option_model.dart';
 import 'package:pensiunku/model/user_model.dart';
 import 'package:pensiunku/repository/location_repository.dart';
-import 'package:pensiunku/repository/result_model.dart';
+import 'package:pensiunku/model/result_model.dart';
 import 'package:pensiunku/repository/user_repository.dart';
 import 'package:pensiunku/screen/home/submission/riwayat_pengajuan_anda.dart';
 import 'package:pensiunku/util/shared_preferences_util.dart';
@@ -530,30 +530,33 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
         ),
         Scaffold(
           backgroundColor: Colors.transparent,
-          appBar: PreferredSize(
-            preferredSize: Size.fromHeight(kToolbarHeight),
-            child: AppBar(
-              title: Text(''),
-              leading: IconButton(
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            // 1. Atur total tinggi toolbar (toolbarHeight) lebih besar dari default
+            toolbarHeight: kToolbarHeight + screenHeight * 0.02,
+            // 2. Padding di leading agar ikon back juga turun
+            leading: Padding(
+              padding: EdgeInsets.only(top: screenHeight * 0.02),
+              child: IconButton(
                 icon: Icon(Icons.arrow_back, color: Color(0xFF017964)),
                 onPressed: () => Navigator.pop(context),
               ),
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              flexibleSpace: Center(
-                child: Padding(
-                  padding: EdgeInsets.only(top: safeAreaTop),
-                  child: Text(
-                    'Form Pengajuan',
-                    style: TextStyle(
-                      color: Color(0xFF017964),
-                      fontWeight: FontWeight.bold,
-                      fontSize: screenWidth * 0.05,
-                    ),
-                  ),
+            ),
+            // 3. Hapus flexibleSpace, pakai title dengan Padding
+            title: Padding(
+              padding: EdgeInsets.only(top: screenHeight * 0.02),
+              child: Text(
+                'Form Pengajuan',
+                style: TextStyle(
+                  color: Color(0xFF017964),
+                  fontWeight: FontWeight.bold,
+                  fontSize: screenWidth * 0.05,
                 ),
               ),
             ),
+            centerTitle:
+                true, // opsional: agar teks berada di tengah horizontal
           ),
           body: SafeArea(
             child: Stack(

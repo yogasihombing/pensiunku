@@ -8,7 +8,7 @@ import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:lazy_load_scrollview/lazy_load_scrollview.dart';
 import 'package:pensiunku/model/toko/promo_model.dart';
 import 'package:pensiunku/model/toko/toko_model.dart';
-import 'package:pensiunku/repository/result_model.dart';
+import 'package:pensiunku/model/result_model.dart';
 import 'package:pensiunku/repository/toko/promo_repository.dart';
 import 'package:pensiunku/repository/toko/toko_repository.dart';
 import 'package:pensiunku/screen/home/dashboard/toko/barang_screen.dart';
@@ -243,6 +243,7 @@ class _TokoScreenState extends State<TokoScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
+        
         leading: IconButton(
           icon: Icon(
             Icons.arrow_back,

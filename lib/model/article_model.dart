@@ -7,7 +7,7 @@ class ArticleCategoryModel {
 
   factory ArticleCategoryModel.fromJson(Map<String, dynamic> json) {
     return ArticleCategoryModel(
-      name: json['name'],
+      name: json['name']?.toString() ?? '', // Perbaikan: Pastikan string tidak null
     );
   }
 
@@ -35,12 +35,22 @@ class ArticleModel {
   });
 
   factory ArticleModel.fromJson(Map<String, dynamic> json) {
+    final idValue = json['id'];
+    int parsedId;
+    if (idValue is int) {
+      parsedId = idValue;
+    } else if (idValue is String) {
+      parsedId = int.tryParse(idValue) ?? 0;
+    } else {
+      parsedId = 0;
+    }
+
     return ArticleModel(
-      imageUrl: json['image'],
-      title: json['title'],
-      category: json['category'],
-      url: json['url'],
-      id: json['id'],
+      imageUrl: json['image']?.toString() ?? '', // Perbaikan: Pastikan string tidak null
+      title: json['title']?.toString() ?? '', // Perbaikan: Pastikan string tidak null
+      category: json['category']?.toString() ?? '', // Perbaikan: Pastikan string tidak null
+      url: json['url']?.toString() ?? '', // Perbaikan: Pastikan string tidak null
+      id: parsedId,
     );
   }
 
@@ -76,14 +86,24 @@ class MobileArticleModel {
   });
 
   factory MobileArticleModel.fromJson(Map<String, dynamic> json) {
+    final idValue = json['id'];
+    int parsedId;
+    if (idValue is int) {
+      parsedId = idValue;
+    } else if (idValue is String) {
+      parsedId = int.tryParse(idValue) ?? 0;
+    } else {
+      parsedId = 0;
+    }
+
     return MobileArticleModel(
-      id: json['id'],
-      imageUrl: json['image'],
-      title: json['title'],
-      category: json['category'],
-      url: json['url'],
-      tanggal: json['tanggal'],
-      penulis: json['penulis']
+      id: parsedId,
+      imageUrl: json['image']?.toString() ?? '', // Perbaikan: Pastikan string tidak null
+      title: json['title']?.toString() ?? '', // Perbaikan: Pastikan string tidak null
+      category: json['category']?.toString() ?? '', // Perbaikan: Pastikan string tidak null
+      url: json['url']?.toString() ?? '', // Perbaikan: Pastikan string tidak null
+      tanggal: json['tanggal']?.toString() ?? '', // Perbaikan: Pastikan string tidak null
+      penulis: json['penulis']?.toString() ?? '', // Perbaikan: Pastikan string tidak null
     );
   }
 
@@ -104,7 +124,7 @@ class MobileArticleModel {
 class MobileArticleDetailModel {
   final int id;
   final String title;
-  final String imageUrl;
+  final String imageUrl; // Pastikan ini 'image' dari JSON jika itu yang dikirim API
   final String category;
   final String tanggal;
   final String penulis;
@@ -121,14 +141,24 @@ class MobileArticleDetailModel {
   });
 
   factory MobileArticleDetailModel.fromJson(Map<String, dynamic> json) {
+    final idValue = json['id'];
+    int parsedId;
+    if (idValue is int) {
+      parsedId = idValue;
+    } else if (idValue is String) {
+      parsedId = int.tryParse(idValue) ?? 0;
+    } else {
+      parsedId = 0;
+    }
+    
     return MobileArticleDetailModel(
-      id: json['id'],
-      title: json['title'],
-      imageUrl: json['imageUrl'],
-      category: json['category'],
-      tanggal: json['tanggal'],
-      penulis: json['penulis'],
-      content: json['content'],
+      id: parsedId,
+      title: json['title']?.toString() ?? '',          // Perbaikan: Handle null to String
+      imageUrl: json['image']?.toString() ?? '',       // Perbaikan: Handle null to String (dan pastikan key adalah 'image')
+      category: json['category']?.toString() ?? '',    // Perbaikan: Handle null to String
+      tanggal: json['tanggal']?.toString() ?? '',      // Perbaikan: Handle null to String
+      penulis: json['penulis']?.toString() ?? '',      // Perbaikan: Handle null to String
+      content: json['content']?.toString() ?? '',      // Perbaikan: Handle null to String
     );
   }
 

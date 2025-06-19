@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pensiunku/model/usaha_model.dart';
-import 'package:pensiunku/repository/result_model.dart';
+import 'package:pensiunku/model/result_model.dart';
 import 'package:pensiunku/repository/usaha_repository.dart';
 import 'package:pensiunku/screen/home/dashboard/usaha/usaha_detail_screen.dart';
 import 'package:pensiunku/widget/error_card.dart';

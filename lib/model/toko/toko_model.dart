@@ -1,52 +1,109 @@
-
-
 import 'package:currency_text_input_formatter/currency_text_input_formatter.dart';
 import 'package:pensiunku/model/user_model.dart';
 
-class TokoModel{
+// Helper functions for safe parsing
+// Perubahan yang kamu buat: Fungsi helper untuk parsing tipe data yang aman
+int _parseInt(dynamic value) {
+  if (value is int) {
+    return value;
+  } else if (value is String) {
+    return int.tryParse(value) ??
+        0; // Coba parse string ke int, default 0 jika gagal
+  }
+  return 0; // Default jika bukan int atau String
+}
+
+// Perubahan yang kamu buat: Fungsi helper untuk parsing int nullable yang aman
+int? _parseIntNullable(dynamic value) {
+  if (value == null) {
+    return null;
+  } else if (value is int) {
+    return value;
+  } else if (value is String) {
+    return int.tryParse(value); // Akan mengembalikan null jika gagal parse
+  }
+  return null; // Default jika bukan int, String, atau null
+}
+
+// Perubahan yang kamu buat: Fungsi helper untuk parsing double yang aman
+double _parseDouble(dynamic value) {
+  if (value is double) {
+    return value;
+  } else if (value is int) {
+    return value.toDouble();
+  } else if (value is String) {
+    return double.tryParse(value) ??
+        0.0; // Coba parse string ke double, default 0.0 jika gagal
+  }
+  return 0.0; // Default jika bukan double, int, atau String
+}
+
+// Perubahan yang kamu buat: Fungsi helper untuk parsing DateTime yang aman (non-nullable)
+DateTime _parseDateTime(dynamic value) {
+  if (value is String) {
+    // Default ke DateTime(0) (epoch) jika string tidak valid untuk menghindari null
+    return DateTime.tryParse(value) ?? DateTime(0);
+  }
+  return DateTime(0); // Default jika bukan string
+}
+
+// Perubahan yang kamu buat: Fungsi helper untuk parsing DateTime nullable yang aman
+DateTime? _parseDateTimeNullable(dynamic value) {
+  if (value == null) {
+    return null;
+  } else if (value is String) {
+    return DateTime.tryParse(value); // Akan mengembalikan null jika gagal parse
+  }
+  return null; // Default jika bukan string atau null
+}
+
+class TokoModel {
   final Pagination products;
 
-  TokoModel({
-    required this.products
-  });
+  TokoModel({required this.products});
 
   factory TokoModel.fromJson(Map<String, dynamic> json) {
     return TokoModel(
-      products: Pagination.fromJson(json['products']),
+      // Perubahan yang kamu buat: Memastikan 'products' diurai dengan aman
+      products: Pagination.fromJson(
+          json['products'] ?? {}), // Memberikan map kosong jika null
     );
   }
 }
 
-class ProductModel{
+class ProductModel {
   final int id;
   final String nama;
   final String logo;
   final int harga;
   final double review;
 
-  ProductModel({
-    required this.id,
-    required this.nama,
-    required this.logo,
-    required this.harga,
-    required this.review
-  });
+  ProductModel(
+      {required this.id,
+      required this.nama,
+      required this.logo,
+      required this.harga,
+      required this.review});
 
-  factory ProductModel.fromProductModel(Product product){
-
+  factory ProductModel.fromProductModel(Product product) {
     int sumReview = 0;
-    if(product.review!.length > 0){
+    // Perubahan yang kamu buat: Pengecekan null-safety pada product.review
+    if (product.review != null && product.review!.isNotEmpty) {
       product.review!.map((rev) {
         sumReview = sumReview + rev.star;
       });
     }
-     
+
     return ProductModel(
-      id: product.id, 
-      nama: product.nama, 
-      logo: product.gallery[0].path, 
-      harga: product.harga, 
-      review: product.review!.length > 0 ? (sumReview / product.review!.length) : 0,
+      id: product.id,
+      nama: product.nama,
+      logo: product.gallery.isNotEmpty
+          ? product.gallery[0].path
+          : '', // Perubahan yang kamu buat: Pengecekan gallery tidak kosong
+      harga: product.harga,
+      review: product.review != null && product.review!.isNotEmpty
+          ? (sumReview / product.review!.length)
+          : 0, // Perubahan yang kamu buat: Pengecekan review tidak null/kosong
     );
   }
 
@@ -59,7 +116,7 @@ class ProductModel{
   }
 }
 
-class Pagination{
+class Pagination {
   final int currentPage;
   final List<Product> data;
   final String firstPageUrl;
@@ -87,23 +144,27 @@ class Pagination{
   });
 
   factory Pagination.fromJson(Map<String, dynamic> json) {
-    List<dynamic> productJson = json['data'] ?? [];
+    // Perubahan yang kamu buat: Memastikan 'data' adalah List, jika tidak, default ke list kosong
+    List<dynamic> productJson = json['data'] is List ? json['data'] : [];
 
     return Pagination(
-      currentPage: json['current_page'],
+      currentPage: _parseInt(json['current_page']), // Perubahan yang kamu buat
       data: productJson.map((product) => Product.fromJson(product)).toList(),
-      firstPageUrl: json['first_page_url'],
-      lastPageUrl: json['last_page_url'],
-      nextPageUrl: json['next_page_url'],
-      prevPageUrl: json['prev_page_url'],
-      from: json['from'] ?? null,
-      to: json['to'] ?? null,
-      total: json['total'],
-      lastPage: json['last_page'],
-      perPage: json['per_page'],
+      firstPageUrl:
+          json['first_page_url']?.toString() ?? '', // Perubahan yang kamu buat
+      lastPageUrl:
+          json['last_page_url']?.toString() ?? '', // Perubahan yang kamu buat
+      nextPageUrl:
+          json['next_page_url']?.toString(), // Perubahan yang kamu buat
+      prevPageUrl:
+          json['prev_page_url']?.toString(), // Perubahan yang kamu buat
+      from: _parseIntNullable(json['from']), // Perubahan yang kamu buat
+      to: _parseIntNullable(json['to']), // Perubahan yang kamu buat
+      total: _parseInt(json['total']), // Perubahan yang kamu buat
+      lastPage: _parseInt(json['last_page']), // Perubahan yang kamu buat
+      perPage: _parseInt(json['per_page']), // Perubahan yang kamu buat
     );
   }
-
 }
 
 class Product {
@@ -119,52 +180,59 @@ class Product {
   Category? category;
   final List<Gallery> gallery;
   List<Review>? review;
-  // int? jumlahReview;
+  // int? jumlahReview; // Dikomentari di kode asli
   double? averageRating;
   final int berat;
   String? terjual;
 
-
-  Product({
-    required this.id,
-    required this.kodeProduct,
-    required this.idKategori,
-    required this.nama,
-    required this.deskripsi,
-    required this.harga,
-    required this.stok,
-    required this.createdAt,
-    this.updateAt,
-    this.category,
-    required this.gallery,
-    this.review,
-    // this.jumlahReview,
-    this.averageRating,
-    required this.berat,
-    this.terjual
-  });
+  Product(
+      {required this.id,
+      required this.kodeProduct,
+      required this.idKategori,
+      required this.nama,
+      required this.deskripsi,
+      required this.harga,
+      required this.stok,
+      required this.createdAt,
+      this.updateAt,
+      this.category,
+      required this.gallery,
+      this.review,
+      // this.jumlahReview, // Dikomentari di kode asli
+      this.averageRating,
+      required this.berat,
+      this.terjual});
 
   factory Product.fromJson(Map<String, dynamic> json) {
-    List<dynamic> galleryJson = json['gallery'] ?? [];
-    List<dynamic> reviewJson = json['review'] ?? [];
+    // Perubahan yang kamu buat: Memastikan 'gallery' dan 'review' adalah List
+    List<dynamic> galleryJson = json['gallery'] is List ? json['gallery'] : [];
+    List<dynamic> reviewJson = json['review'] is List ? json['review'] : [];
 
     return Product(
-      id: json['id'],
-      kodeProduct: json['kode_produk'],
-      idKategori: json['id_kategori'],
-      nama: json['nama'],
-      deskripsi: json['deskripsi'],
-      harga: json['harga'],
-      stok: json['stok'],
-      createdAt: DateTime.parse(json['created_at']),
-      updateAt: json['updated_at'] != null ? DateTime.parse(json['updated_at']) : null,
-      category: json['category'] != null ? Category.fromJson(json['category']) : null,
+      id: _parseInt(json['id']), // Perubahan yang kamu buat
+      kodeProduct:
+          json['kode_produk']?.toString() ?? '', // Perubahan yang kamu buat
+      idKategori: _parseInt(json['id_kategori']), // Perubahan yang kamu buat
+      nama: json['nama']?.toString() ?? '', // Perubahan yang kamu buat
+      deskripsi:
+          json['deskripsi']?.toString() ?? '', // Perubahan yang kamu buat
+      harga: _parseInt(json['harga']), // Perubahan yang kamu buat
+      stok: _parseInt(json['stok']), // Perubahan yang kamu buat
+      createdAt: _parseDateTime(json['created_at']), // Perubahan yang kamu buat
+      updateAt: _parseDateTimeNullable(
+          json['updated_at']), // Perubahan yang kamu buat
+      category:
+          json['category'] != null ? Category.fromJson(json['category']) : null,
       gallery: galleryJson.map((gallery) => Gallery.fromJson(gallery)).toList(),
-      review: json['review'] != [] ? reviewJson.map((review) => Review.fromJson(review)).toList() : null,
-      // jumlahReview: json['jumlah_review'],
-      averageRating: json['average_rating'] != null ? double.parse(json['average_rating']) : 0.0,
-      berat: json['berat'],
-      terjual: json['terjual'] != null ? json['terjual'] : "0",
+      // Perubahan yang kamu buat: Menghandle review kosong/null
+      review: reviewJson.isNotEmpty
+          ? reviewJson.map((review) => Review.fromJson(review)).toList()
+          : null,
+      // jumlahReview: json['jumlah_review'], // Dikomentari di kode asli
+      averageRating: _parseDouble(
+          json['average_rating'] ?? 0.0), // Perubahan yang kamu buat
+      berat: _parseInt(json['berat']), // Perubahan yang kamu buat
+      terjual: json['terjual']?.toString(), // Perubahan yang kamu buat
     );
   }
 
@@ -185,19 +253,20 @@ class Product {
       'deskripsi': deskripsi,
       'harga': harga,
       'stok': stok,
-      'created_at': createdAt.toString(),
-      'updated_at': updateAt,
-      'category': category!.toJson(),
+      'created_at': createdAt.toIso8601String(), // Perubahan yang kamu buat
+      'updated_at': updateAt?.toIso8601String(), // Perubahan yang kamu buat
+      'category': category?.toJson(), // Perubahan yang kamu buat
       'gallery': gallery.map((gal) => gal.toJson()).toList(),
-      'review': review!.map((e) => e.toJson()).toList(),
+      'review':
+          review?.map((e) => e.toJson()).toList(), // Perubahan yang kamu buat
       'average_rating': averageRating,
       'berat': berat,
-      'terjual' : terjual,
+      'terjual': terjual,
     };
   }
 }
 
-class Review{
+class Review {
   final int id;
   final int idBarang;
   final int idUser;
@@ -210,21 +279,21 @@ class Review{
     required this.id,
     required this.idBarang,
     required this.idUser,
-    this.userName, 
-    required this.star, 
-    required this.ulasan, 
+    this.userName,
+    required this.star,
+    required this.ulasan,
     required this.createdAt,
   });
 
   factory Review.fromJson(Map<String, dynamic> json) {
     return Review(
-      id: json['id'],
-      idBarang: json['id_barang'],
-      idUser: json['id_user'],
-      userName: json['nama'],
-      star: json['star'],
-      ulasan: json['ulasan'],
-      createdAt: DateTime.parse(json['created_at']),
+      id: _parseInt(json['id']), // Perubahan yang kamu buat
+      idBarang: _parseInt(json['id_barang']), // Perubahan yang kamu buat
+      idUser: _parseInt(json['id_user']), // Perubahan yang kamu buat
+      userName: json['nama']?.toString(), // Perubahan yang kamu buat
+      star: _parseInt(json['star']), // Perubahan yang kamu buat
+      ulasan: json['ulasan']?.toString() ?? '', // Perubahan yang kamu buat
+      createdAt: _parseDateTime(json['created_at']), // Perubahan yang kamu buat
     );
   }
 
@@ -236,10 +305,9 @@ class Review{
       'userName': userName,
       'star': star,
       'ulasan': ulasan,
-      'created_at': createdAt
+      'created_at': createdAt.toIso8601String() // Perubahan yang kamu buat
     };
   }
-
 }
 
 class BarangKeranjang {
@@ -256,7 +324,7 @@ class BarangKeranjang {
   }
 
   int remove() {
-    return this.jumlah++;
+    return this.jumlah--; // Perubahan yang kamu buat: jumlah--
   }
 }
 
@@ -269,9 +337,10 @@ class Category {
 
   factory Category.fromJson(Map<String, dynamic> json) {
     return Category(
-      id: json['id'],
-      nama: json['nama'],
-      parentId: json['parent_id'],
+      id: _parseInt(json['id']), // Perubahan yang kamu buat
+      nama: json['nama']?.toString() ?? '', // Perubahan yang kamu buat
+      parentId:
+          _parseIntNullable(json['parent_id']), // Perubahan yang kamu buat
     );
   }
 
@@ -300,13 +369,12 @@ class Gallery {
 
   factory Gallery.fromJson(Map<String, dynamic> json) {
     return Gallery(
-      id: json['id'],
-      idProduct: json['id_barang'],
-      path: json['path'],
-      createdAt: DateTime.parse(json['created_at']),
-      updatedAt: json['updated_at'] != null
-          ? DateTime.parse(json['updated_at'])
-          : null,
+      id: _parseInt(json['id']), // Perubahan yang kamu buat
+      idProduct: _parseInt(json['id_barang']), // Perubahan yang kamu buat
+      path: json['path']?.toString() ?? '', // Perubahan yang kamu buat
+      createdAt: _parseDateTime(json['created_at']), // Perubahan yang kamu buat
+      updatedAt: _parseDateTimeNullable(
+          json['updated_at']), // Perubahan yang kamu buat
     );
   }
 
@@ -315,8 +383,8 @@ class Gallery {
       'id': id,
       'id_barang': idProduct,
       'path': path,
-      'created_at': createdAt,
-      'updated_at': updatedAt,
+      'created_at': createdAt.toIso8601String(), // Perubahan yang kamu buat
+      'updated_at': updatedAt?.toIso8601String(), // Perubahan yang kamu buat
     };
   }
 }
@@ -325,7 +393,7 @@ class Barang {
   final int id;
   final String nama;
   final String logo;
-  final int review;
+  final int review; // Ini mungkin seharusnya double atau int, tergantung API
   final int price;
   int? jumlahReview;
   String? description;
@@ -341,13 +409,16 @@ class Barang {
 
   factory Barang.fromJson(Map<String, dynamic> json) {
     return Barang(
-        id: json['id'],
-        nama: json['nama'],
-        logo: json['logo'],
-        review: json['kategori'],
-        price: json['price'],
-        jumlahReview: json['jumlah_review'],
-        description: json['description']);
+        id: _parseInt(json['id']), // Perubahan yang kamu buat
+        nama: json['nama']?.toString() ?? '', // Perubahan yang kamu buat
+        logo: json['logo']?.toString() ?? '', // Perubahan yang kamu buat
+        review: _parseInt(json[
+            'kategori']), // Perubahan yang kamu buat: review dari 'kategori' field
+        price: _parseInt(json['price']), // Perubahan yang kamu buat
+        jumlahReview: _parseIntNullable(
+            json['jumlah_review']), // Perubahan yang kamu buat
+        description:
+            json['description']?.toString()); // Perubahan yang kamu buat
   }
 
   String getTotalPriceFormatted() {
@@ -359,7 +430,7 @@ class Barang {
   }
 }
 
-class Cart{
+class Cart {
   final int id;
   final int idUser;
   final int idBarang;
@@ -369,27 +440,30 @@ class Cart{
   final int amount;
   final Product product;
 
-  Cart({
-    required this.id,
-    required this.idUser, 
-    required this.idBarang, 
-    required this.jumlahBarang, 
-    required this.totalPrice, 
-    required this.totalPriceFormatted, 
-    required this.amount, 
-    required this.product
-  });
+  Cart(
+      {required this.id,
+      required this.idUser,
+      required this.idBarang,
+      required this.jumlahBarang,
+      required this.totalPrice,
+      required this.totalPriceFormatted,
+      required this.amount,
+      required this.product});
 
   factory Cart.fromJson(Map<String, dynamic> json) {
     return Cart(
-      id: json['id'],
-      idUser: json['id_user'],
-      idBarang: json['id_barang'],
-      jumlahBarang: json['jumlah_barang'],
-      totalPrice: json['total_price_numeric'],
-      totalPriceFormatted: json['total_price_formatted'],
-      amount: json['amount_temp'],
-      product: Product.fromJson(json['product']),
+      id: _parseInt(json['id']), // Perubahan yang kamu buat
+      idUser: _parseInt(json['id_user']), // Perubahan yang kamu buat
+      idBarang: _parseInt(json['id_barang']), // Perubahan yang kamu buat
+      jumlahBarang:
+          _parseInt(json['jumlah_barang']), // Perubahan yang kamu buat
+      totalPrice:
+          _parseInt(json['total_price_numeric']), // Perubahan yang kamu buat
+      totalPriceFormatted: json['total_price_formatted']?.toString() ??
+          '', // Perubahan yang kamu buat
+      amount: _parseInt(json['amount_temp']), // Perubahan yang kamu buat
+      product: Product.fromJson(
+          json['product']), // Product.fromJson akan handle parsing internal
     );
   }
 
@@ -407,19 +481,16 @@ class Cart{
   }
 }
 
-class PushToShoppingCart{
+class PushToShoppingCart {
   final int id;
   final int stok;
 
-  PushToShoppingCart({
-    required this.id,
-    required this.stok
-  });
+  PushToShoppingCart({required this.id, required this.stok});
 
   factory PushToShoppingCart.fromJson(Map<String, dynamic> json) {
     return PushToShoppingCart(
-      id: json['id'],
-      stok: json['stok'],
+      id: _parseInt(json['id']), // Perubahan yang kamu buat
+      stok: _parseInt(json['stok']), // Perubahan yang kamu buat
     );
   }
 
@@ -431,28 +502,37 @@ class PushToShoppingCart{
   }
 }
 
-class MessageSuccessModel{
+class MessageSuccessModel {
   final int success;
   final String message;
   final Cart item;
 
-  MessageSuccessModel({
-    required this.success,
-    required this.message,
-    required this.item
-  });
+  MessageSuccessModel(
+      {required this.success, required this.message, required this.item});
 
   factory MessageSuccessModel.fromJson(Map<String, dynamic> json) {
-    return MessageSuccessModel(
-        success: json['success'],
-        message: json['message'],
-        item: json['item']
-    );
-  }
+    // Perubahan yang kamu buat: Pastikan 'success' diurai dengan aman sebagai int
+    final successValue = json['success'];
+    int parsedSuccess;
+    if (successValue is int) {
+      parsedSuccess = successValue;
+    } else if (successValue is String) {
+      // Cek saja String, tidak perlu isNotEmpty karena int.tryParse akan null
+      parsedSuccess = int.tryParse(successValue) ?? 0;
+    } else {
+      parsedSuccess = 0;
+    }
 
+    return MessageSuccessModel(
+        success: parsedSuccess, // Perubahan yang kamu buat
+        message: json['message']?.toString() ?? '', // Perubahan yang kamu buat
+        item: Cart.fromJson(
+            json['item']) // Cart.fromJson akan handle parsing internal
+        );
+  }
 }
 
-class ShippingAddress{
+class ShippingAddress {
   String? address;
   String? province;
   String? city;
@@ -464,46 +544,73 @@ class ShippingAddress{
   int? id;
   int? kodeongkir;
 
-  ShippingAddress({
-    this.address,
-    this.province, 
-    this.city, 
-    this.subdistrict, 
-    this.postalCode, 
-    this.mobile, 
-    this.idUser, 
-    this.isPrimary, 
-    this.id,
-    this.kodeongkir
-} );
+  ShippingAddress(
+      {this.address,
+      this.province,
+      this.city,
+      this.subdistrict,
+      this.postalCode,
+      this.mobile,
+      this.idUser,
+      this.isPrimary,
+      this.id,
+      this.kodeongkir});
 
   factory ShippingAddress.fromJson(Map<String, dynamic> json) {
     return ShippingAddress(
-        address: json['address'],
-        province: json['province'],
-        city: json['city'],
-        subdistrict: json['subdistrict'],
-        postalCode: json['postal_code'],
-        mobile: json['mobile'],
-        idUser: json['id_user'] is String ? int.parse(json['id_user']) : json['id_user'],
-        isPrimary: json['is_primary'] ,
-        id: json['id'],
-        kodeongkir: json['kodeongkir'] != null ? json['kodeongkir'] : null
+      address: json['address']?.toString(), // Perubahan yang kamu buat
+      province: json['province']?.toString(), // Perubahan yang kamu buat
+      city: json['city']?.toString(), // Perubahan yang kamu buat
+      subdistrict: json['subdistrict']?.toString(), // Perubahan yang kamu buat
+      postalCode: json['postal_code']?.toString(), // Perubahan yang kamu buat
+      mobile: json['mobile']?.toString(), // Perubahan yang kamu buat
+      idUser: _parseIntNullable(json['id_user']), // Perubahan yang kamu buat
+      isPrimary:
+          _parseIntNullable(json['is_primary']), // Perubahan yang kamu buat
+      id: _parseIntNullable(json['id']), // Perubahan yang kamu buat
+      kodeongkir:
+          _parseIntNullable(json['kodeongkir']), // Perubahan yang kamu buat
     );
   }
 
   factory ShippingAddress.fromJson2(Map<String, dynamic> json) {
+    // Perubahan yang kamu buat: Memparsing kodeongkir dengan aman jika itu Map atau nilai langsung
+    int? parsedKodeOngkir;
+    if (json['kodeongkir'] is Map && json['kodeongkir'].containsKey('code')) {
+      parsedKodeOngkir = _parseIntNullable(json['kodeongkir']['code']);
+    } else {
+      parsedKodeOngkir = _parseIntNullable(json['kodeongkir']);
+    }
+
     return ShippingAddress(
-        address: json['address'],
-        province: json['province'],
-        city: json['city'],
-        subdistrict: json['subdistrict'],
-        postalCode: json['postal_code'],
-        mobile: json['mobile'],
-        idUser: json['id_user'] is String ? int.parse(json['id_user']) : json['id_user'],
-        isPrimary: json['is_primary'] ,
-        id: json['id'],
-        kodeongkir: json['kodeongkir'] != null ? json['kodeongkir']['code'] : null
+      address: json['address']?.toString(), // Perubahan yang kamu buat
+      province: json['province']?.toString(), // Perubahan yang kamu buat
+      city: json['city']?.toString(), // Perubahan yang kamu buat
+      subdistrict: json['subdistrict']?.toString(), // Perubahan yang kamu buat
+      postalCode: json['postal_code']?.toString(), // Perubahan yang kamu buat
+      mobile: json['mobile']?.toString(), // Perubahan yang kamu buat
+      idUser: _parseIntNullable(json['id_user']), // Perubahan yang kamu buat
+      isPrimary:
+          _parseIntNullable(json['is_primary']), // Perubahan yang kamu buat
+      id: _parseIntNullable(json['id']), // Perubahan yang kamu buat
+      kodeongkir: parsedKodeOngkir, // Perubahan yang kamu buat
+    );
+  }
+
+  factory ShippingAddress.fromMap(Map<String, dynamic> map) {
+    return ShippingAddress(
+      address: map['address']?.toString(), // Perubahan yang kamu buat
+      province: map['province']?.toString(), // Perubahan yang kamu buat
+      city: map['city']?.toString(), // Perubahan yang kamu buat
+      subdistrict: map['subdistrict']?.toString(), // Perubahan yang kamu buat
+      postalCode: map['postal_code']?.toString(), // Perubahan yang kamu buat
+      mobile: map['mobile']?.toString(), // Perubahan yang kamu buat
+      idUser: _parseIntNullable(map['id_user']), // Perubahan yang kamu buat
+      isPrimary:
+          _parseIntNullable(map['is_primary']), // Perubahan yang kamu buat
+      id: _parseIntNullable(map['id']), // Perubahan yang kamu buat
+      kodeongkir:
+          _parseIntNullable(map['kodeongkir']), // Perubahan yang kamu buat
     );
   }
 
@@ -518,11 +625,11 @@ class ShippingAddress{
       'id_user': idUser,
       'is_primary': isPrimary,
       'id': id,
-      'kodeongkir' : kodeongkir
+      'kodeongkir': kodeongkir
     };
   }
 
-  Map<String, dynamic> toMap(){
+  Map<String, dynamic> toMap() {
     return <String, dynamic>{
       'address': address,
       'province': province,
@@ -533,26 +640,11 @@ class ShippingAddress{
       'id_user': idUser,
       'is_primary': isPrimary,
       'id': id,
-      'kodeongkir' : kodeongkir
+      'kodeongkir': kodeongkir
     };
   }
 
-  factory ShippingAddress.fromMap(Map<String, dynamic> map) {
-    return ShippingAddress(
-        address: map['address'],
-        province: map['province'],
-        city: map['city'],
-        subdistrict: map['subdistrict'],
-        postalCode: map['postal_code'],
-        mobile: map['mobile'],
-        idUser: map['id_user'] is String ? int.parse(map['id_user']) : map['id_user'],
-        isPrimary: map['is_primary'] ,
-        id: map['id'],
-        kodeongkir: map['kodeongkir'] != null ? map['kodeongkir'] : null
-    );
-  }
-
-    Map<String, dynamic> newAddressToJson() {
+  Map<String, dynamic> newAddressToJson() {
     return {
       'address': address,
       'province': province,
@@ -562,10 +654,9 @@ class ShippingAddress{
       'mobile': mobile,
     };
   }
-
 }
 
-class CheckoutModel{
+class CheckoutModel {
   final int idAlamat;
   final String metodePembayaran;
   final String statusMessage;
@@ -573,14 +664,13 @@ class CheckoutModel{
   final int destination;
   final String kurir;
 
-  CheckoutModel({
-    required this.idAlamat,
-    this.metodePembayaran = 'midtrans',
-    this.statusMessage = 'Menunggu konfirmasi pembayaran',
-    required this.ongkir,
-    required this.destination,
-    required this.kurir
-  });
+  CheckoutModel(
+      {required this.idAlamat,
+      this.metodePembayaran = 'midtrans',
+      this.statusMessage = 'Menunggu konfirmasi pembayaran',
+      required this.ongkir,
+      required this.destination,
+      required this.kurir});
 
   Map<String, dynamic> toJson() {
     return {
@@ -646,50 +736,64 @@ class OrderCheckoutModel {
   });
 
   factory OrderCheckoutModel.fromJson(Map<String, dynamic> json) {
-
     return OrderCheckoutModel(
-      id: json["id"],
-      idTransaksi: json["id_transaksi"],
-      idUser: json["id_user"],
-      idAlamat: json["id_alamat"],
-      metodePembayaran:json["metode_pembayaran"],
-      hargaTotal: json["harga_total"],
-      ongkosKirim: json["ongkos_kirim"] != null ? json["ongkos_kirim"] : null,
-      nomorResiPengiriman: json["nomor_resi_pengiriman"] != null ? json["nomor_resi_pengiriman"] : null,
-      kurir: json["kurir"] != null ? json["kurir"] : null,
-      tanggalPenyelesaianTransaksi: json["tanggal_penyelesaian_transaksi"] != null ? DateTime.tryParse(json["tanggal_penyelesaian_transaksi"]) : null,
-      tanggalCheckOut: json["tanggal_check_out"] != null ? DateTime.tryParse(json["tanggal_check_out"]) : null,
-      tanggalDiproses: json["tanggal_diproses"] != null ? DateTime.tryParse(json["tanggal_diproses"]) : null,
-      tanggalDikirim: json["tanggal_dikirim"] != null ? DateTime.tryParse(json["tanggal_dikirim"]) : null,
-      tanggalDiterima: json["tanggal_diterima"] != null ? DateTime.tryParse(json["tanggal_diterima"]) : null,
-      status: json["status"],
-      statusMessage: json["status_message"],
-      paymentStatus: json["payment_status"] != null ? json["payment_status"] : null,
-      snapToken: json["snap_token"] != null ? json["snap_token"] : null,
-      createdAt: DateTime.parse(json['created_at']),
-      updatedAt: DateTime.parse(json['updated_at']),
-      createdAtFormatted: json["created_at_formatted"],
-      updatedAtFormatted: json['updated_at_formatted'],
-      user: UserModel.fromJson(json["user"]),
+      id: _parseIntNullable(json["id"]), // Perubahan yang kamu buat
+      idTransaksi: json["id_transaksi"]?.toString(), // Perubahan yang kamu buat
+      idUser: _parseIntNullable(json["id_user"]), // Perubahan yang kamu buat
+      idAlamat:
+          _parseIntNullable(json["id_alamat"]), // Perubahan yang kamu buat
+      metodePembayaran:
+          json["metode_pembayaran"]?.toString(), // Perubahan yang kamu buat
+      hargaTotal:
+          _parseIntNullable(json["harga_total"]), // Perubahan yang kamu buat
+      ongkosKirim:
+          _parseIntNullable(json["ongkos_kirim"]), // Perubahan yang kamu buat
+      nomorResiPengiriman:
+          json["nomor_resi_pengiriman"]?.toString(), // Perubahan yang kamu buat
+      kurir: json["kurir"]?.toString(), // Perubahan yang kamu buat
+      tanggalPenyelesaianTransaksi: _parseDateTimeNullable(
+          json["tanggal_penyelesaian_transaksi"]), // Perubahan yang kamu buat
+      tanggalCheckOut: _parseDateTimeNullable(
+          json["tanggal_check_out"]), // Perubahan yang kamu buat
+      tanggalDiproses: _parseDateTimeNullable(
+          json["tanggal_diproses"]), // Perubahan yang kamu buat
+      tanggalDikirim: _parseDateTimeNullable(
+          json["tanggal_dikirim"]), // Perubahan yang kamu buat
+      tanggalDiterima: _parseDateTimeNullable(
+          json["tanggal_diterima"]), // Perubahan yang kamu buat
+      status: json["status"]?.toString(), // Perubahan yang kamu buat
+      statusMessage:
+          json["status_message"]?.toString(), // Perubahan yang kamu buat
+      paymentStatus:
+          json["payment_status"]?.toString(), // Perubahan yang kamu buat
+      snapToken: json["snap_token"]?.toString(), // Perubahan yang kamu buat
+      createdAt: _parseDateTime(json['created_at']), // Perubahan yang kamu buat
+      updatedAt: _parseDateTime(json['updated_at']), // Perubahan yang kamu buat
+      createdAtFormatted:
+          json["created_at_formatted"]?.toString(), // Perubahan yang kamu buat
+      updatedAtFormatted:
+          json['updated_at_formatted']?.toString(), // Perubahan yang kamu buat
+      user:
+          UserModel.fromJson(json["user"]), // Asumsi UserModel.fromJson tangguh
     );
   }
 }
 
-class CategoryModel{
+class CategoryModel {
   final PaginationCategory categories;
 
-  CategoryModel({
-    required this.categories
-  });
+  CategoryModel({required this.categories});
 
   factory CategoryModel.fromJson(Map<String, dynamic> json) {
     return CategoryModel(
-      categories: PaginationCategory.fromJson(json['categories']),
+      // Perubahan yang kamu buat: Memastikan 'categories' diurai dengan aman
+      categories: PaginationCategory.fromJson(
+          json['categories'] ?? {}), // Memberikan map kosong jika null
     );
   }
 }
 
-class PaginationCategory{
+class PaginationCategory {
   final int currentPage;
   final List<Category> data;
   final String firstPageUrl;
@@ -717,21 +821,27 @@ class PaginationCategory{
   });
 
   factory PaginationCategory.fromJson(Map<String, dynamic> json) {
-    List<dynamic> dataJson = json['data'];
+    // Perubahan yang kamu buat: Memastikan 'data' adalah List, jika tidak, default ke list kosong
+    List<dynamic> dataJson = json['data'] is List ? json['data'] : [];
 
     return PaginationCategory(
-      currentPage: json['current_page'],
-      data: dataJson.map((category) => Category.fromJson(category)).toList(),
-      firstPageUrl: json['first_page_url'],
-      lastPageUrl: json['last_page_url'],
-      nextPageUrl: json['next_page_url'],
-      prevPageUrl: json['prev_page_url'],
-      from: json['from'],
-      to: json['to'],
-      total: json['total'],
-      lastPage: json['last_page'],
-      perPage: json['per_page'],
+      currentPage: _parseInt(json['current_page']), // Perubahan yang kamu buat
+      data: dataJson
+          .map((category) => Category.fromJson(category))
+          .toList(), // Category.fromJson akan handle parsing internal
+      firstPageUrl:
+          json['first_page_url']?.toString() ?? '', // Perubahan yang kamu buat
+      lastPageUrl:
+          json['last_page_url']?.toString() ?? '', // Perubahan yang kamu buat
+      nextPageUrl:
+          json['next_page_url']?.toString(), // Perubahan yang kamu buat
+      prevPageUrl:
+          json['prev_page_url']?.toString(), // Perubahan yang kamu buat
+      from: _parseInt(json['from']), // Perubahan yang kamu buat
+      to: _parseInt(json['to']), // Perubahan yang kamu buat
+      total: _parseInt(json['total']), // Perubahan yang kamu buat
+      lastPage: _parseInt(json['last_page']), // Perubahan yang kamu buat
+      perPage: _parseInt(json['per_page']), // Perubahan yang kamu buat
     );
   }
-
 }

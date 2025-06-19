@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:pensiunku/model/notification_model.dart';
 import 'package:pensiunku/repository/notification_repository.dart';
-import 'package:pensiunku/repository/result_model.dart';
+import 'package:pensiunku/model/result_model.dart';
 import 'package:pensiunku/util/shared_preferences_util.dart';
 import 'package:pensiunku/util/widget_util.dart';
 import 'package:pensiunku/widget/error_card.dart';

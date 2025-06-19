@@ -6,7 +6,7 @@ import 'package:pensiunku/model/ktp_model.dart';
 
 import 'package:pensiunku/model/user_model.dart';
 
-import 'package:pensiunku/repository/result_model.dart';
+import 'package:pensiunku/model/result_model.dart';
 import 'package:pensiunku/repository/user_repository.dart';
 import 'package:pensiunku/screen/home/account/TNC/term_and_condition.dart';
 import 'package:pensiunku/screen/home/account/account_info/account_info_screen.dart';

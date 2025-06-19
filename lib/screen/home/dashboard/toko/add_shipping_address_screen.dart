@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:pensiunku/model/option_model.dart';
 import 'package:pensiunku/model/toko/toko_model.dart';
 import 'package:pensiunku/repository/location_repository.dart';
-import 'package:pensiunku/repository/result_model.dart';
+import 'package:pensiunku/model/result_model.dart';
 import 'package:pensiunku/repository/toko/toko_repository.dart';
 import 'package:pensiunku/screen/home/dashboard/toko/add_shipping_address_controller.dart';
 import 'package:pensiunku/util/shared_preferences_util.dart';

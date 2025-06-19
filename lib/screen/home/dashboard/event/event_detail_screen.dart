@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:pensiunku/model/event_model.dart';
 import 'package:pensiunku/repository/event_repository.dart';
-import 'package:pensiunku/repository/result_model.dart';
+import 'package:pensiunku/model/result_model.dart';
 import 'package:pensiunku/screen/common/galery_fullscreen.dart';
 import 'package:pensiunku/screen/common/gallery_youtube_fullscreen.dart';
 import 'package:pensiunku/util/shared_preferences_util.dart';

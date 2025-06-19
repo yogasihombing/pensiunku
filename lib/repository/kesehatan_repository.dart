@@ -4,7 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:pensiunku/data/api/kesehatan_api.dart';
 import 'package:pensiunku/model/kesehatan_model.dart';
 import 'package:pensiunku/repository/base_repository.dart';
-import 'package:pensiunku/repository/result_model.dart';
+import 'package:pensiunku/model/result_model.dart';
 
 class KesehatanRepository extends BaseRepository {
   static String tag = 'Usaha Repository';

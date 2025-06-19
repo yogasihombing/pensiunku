@@ -1,25 +1,51 @@
+// android/build.gradle (Project-level)
 
- buildscript {
-    ext.kotlin_version = '1.9.0'
-    // ext.kotlin_version = '1.9.21'
+// --- BAGIAN YANG PERLU DITAMBAHKAN/DIPERBAIKI ---
+// Deklarasi ext di tingkat root project.
+// Ini akan membuat properti 'kotlin_version' tersedia secara global.
+ext {
+    kotlin_version = '1.9.21' // Versi Kotlin yang diinginkan
+}
+// --- AKHIR BAGIAN YANG PERLU DITAMBAHKAN/DIPERBAIKI ---
+
+
+buildscript {
+    // Deklarasi ext di dalam buildscript. Ini memastikan 'kotlin_version'
+    // dapat diakses langsung oleh plugin di dalam blok 'dependencies' buildscript ini.
+    // Ini adalah solusi langsung untuk error 'Cannot get property kotlin_version' di line 19.
+    ext {
+        kotlin_version = '1.9.21' // Harus sesuai dengan versi di root ext {}
+    }
+
     repositories {
         google()
-        jcenter()
+        jcenter() // Mempertahankan jcenter sesuai permintaan Anda
     }
 
     dependencies {
-        // classpath 'com.android.tools.build:gradle:8.1.1'
-        //classpath 'com.android.tools.build:gradle:7.0.2' //ini versi sebelumnya
-        classpath 'com.android.tools.build:gradle:7.2.1'
+        classpath 'com.android.tools.build:gradle:7.2.1' // Versi Android Gradle Plugin Anda
+        // Baris 19: Sekarang '$kotlin_version' akan di-resolve dari 'ext {}' di atasnya
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-        classpath 'com.google.gms:google-services:4.3.8'
+        classpath 'com.google.gms:google-services:4.3.8' // Versi Google Services plugin Anda
     }
 }
 
 allprojects {
     repositories {
         google()
-        jcenter()
+        jcenter() // Mempertahankan jcenter sesuai permintaan Anda
+    }
+
+    // Konfigurasi untuk memaksa versi Kotlin di semua sub-proyek.
+    // Menggunakan 'rootProject.ext.kotlin_version' untuk mengakses variabel global.
+    configurations.all {
+        resolutionStrategy {
+            force "org.jetbrains.kotlin:kotlin-stdlib:${rootProject.ext.kotlin_version}"
+            force "org.jetbrains.kotlin:kotlin-stdlib-jdk7:${rootProject.ext.kotlin_version}"
+            force "org.jetbrains.kotlin:kotlin-stdlib-jdk8:${rootProject.ext.kotlin_version}"
+            // Memaksa versi plugin Kotlin Gradle agar juga konsisten
+            force "org.jetbrains.kotlin:kotlin-gradle-plugin:${rootProject.ext.kotlin_version}"
+        }
     }
 }
 

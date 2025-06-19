@@ -6,7 +6,7 @@ import 'package:pensiunku/data/db/app_database.dart';
 
 import 'package:pensiunku/model/toko/toko_model.dart';
 import 'package:pensiunku/repository/base_repository.dart';
-import 'package:pensiunku/repository/result_model.dart';
+import 'package:pensiunku/model/result_model.dart';
 
 class TokoRepository extends BaseRepository {
   static String tag = 'Toko Repository';

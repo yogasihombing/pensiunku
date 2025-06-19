@@ -1,36 +1,26 @@
 {
   "project_info": {
-    "project_number": "652589830258",
-    "project_id": "kredit-pensiun-mobile",
-    "storage_bucket": "kredit-pensiun-mobile.appspot.com"
+    "project_number": "252062741700",
+    "project_id": "pensiunku-mobile",
+    "storage_bucket": "pensiunku-mobile.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:652589830258:android:f53f1f487b4a4e613af2eb",
+        "mobilesdk_app_id": "1:252062741700:android:9f5e37d330a60d4b78c591",
         "android_client_info": {
           "package_name": "com.pensiunku"
         }
       },
-      "oauth_client": [
-        {
-          "client_id": "652589830258-6nq9fhd6n6jirt9dsf1uhaec7spgakf9.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
+      "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyAQNxmwaTE7GYSwMd9vEjU1pm9FsBPY3i0"
+          "current_key": "AIzaSyBBcC08qEmarWsUwuIFdMCm948VahMxoRs"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "652589830258-6nq9fhd6n6jirt9dsf1uhaec7spgakf9.apps.googleusercontent.com",
-              "client_type": 3
-            }
-          ]
+          "other_platform_oauth_client": []
         }
       }
     }

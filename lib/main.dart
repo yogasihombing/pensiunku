@@ -62,34 +62,53 @@ import 'screen/home/dashboard/event/event_detail_screen.dart';
 import 'screen/home/dashboard/pensiunku_plus/aktifkan_pensiunku_plus_screen.dart';
 import 'screen/home/dashboard/usaha/usaha_screen.dart';
 
+// Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+//   print("Handling a background message: ${message.messageId}");
+// }
+
+// void main() async {
+//   WidgetsFlutterBinding.ensureInitialized();
+
+//   // Set orientation
+//   SystemChrome.setPreferredOrientations(
+//       [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
+
+//   // Initialize Firebase first
+//   await Firebase.initializeApp();
+//   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
+//   runApp(MyApp());
+// }
+// Background message handler (harus di level top, bukan di dalam class)
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  // Initialize Firebase jika belum
+  await Firebase.initializeApp();
+  
   print("Handling a background message: ${message.messageId}");
+  print("Background message data: ${message.data}");
+  print("Background message notification: ${message.notification?.title}");
+  
+  // Anda bisa menambahkan logic tambahan di sini untuk handle background message
 }
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Set orientation
-  SystemChrome.setPreferredOrientations(
-      [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp, 
+    DeviceOrientation.portraitDown
+  ]);
 
   // Initialize Firebase first
   await Firebase.initializeApp();
+  
+  // Set the background messaging handler
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
   runApp(MyApp());
 }
-// void main() async {
-//   // add these lines
-//   WidgetsFlutterBinding.ensureInitialized();
-//   SystemChrome.setPreferredOrientations(
-//       [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
 
-//   await Firebase.initializeApp();
-//   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-
-//   runApp(MyApp());
-// }
 
 class MyApp extends StatelessWidget {
   @override

@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:pensiunku/model/selfie_model.dart';
 import 'package:pensiunku/model/submission_model.dart';
 import 'package:pensiunku/model/user_model.dart';
-import 'package:pensiunku/repository/result_model.dart';
+import 'package:pensiunku/model/result_model.dart';
 import 'package:pensiunku/repository/submission_repository.dart';
 import 'package:pensiunku/repository/user_repository.dart';
 import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/ktp/prepare_ktp_screen.dart';

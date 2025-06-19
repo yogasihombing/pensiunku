@@ -3,7 +3,7 @@ import 'dart:developer';
 import 'package:currency_text_input_formatter/currency_text_input_formatter.dart';
 import 'package:flutter/material.dart';
 import 'package:pensiunku/model/toko/toko_model.dart';
-import 'package:pensiunku/repository/result_model.dart';
+import 'package:pensiunku/model/result_model.dart';
 import 'package:pensiunku/repository/toko/toko_repository.dart';
 import 'package:pensiunku/screen/home/dashboard/toko/checkout_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/toko/history_screen.dart';

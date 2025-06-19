@@ -556,6 +556,7 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen> {
         controller: screenshotController,
         child: Stack(
           children: [
+            
             // Latar belakang gradien yang mengisi layar.
             Container(
               decoration: const BoxDecoration(
@@ -574,7 +575,7 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen> {
             ),
             // Custom top bar dengan tombol back dan judul.
             Positioned(
-              top: 0,
+              top: 18,
               left: 0,
               right: 0,
               child: SafeArea(
@@ -582,6 +583,7 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen> {
                   height: topBarHeight,
                   child: Stack(
                     children: [
+                      
                       // Tombol back di kiri.
                       Positioned(
                         left: 0,
@@ -614,7 +616,7 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen> {
               top: topBarHeight + topPadding,
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 24.0, vertical: 12.0),
+                    horizontal: 24.0, vertical: 18.0),
                 child: Form(
                   key: _formKey,
                   child: Column(

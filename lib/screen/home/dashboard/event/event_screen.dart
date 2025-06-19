@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:pensiunku/model/event_model.dart';
 import 'package:pensiunku/repository/event_repository.dart';
-import 'package:pensiunku/repository/result_model.dart';
+import 'package:pensiunku/model/result_model.dart';
 import 'package:pensiunku/screen/home/dashboard/event/event_item_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/event/latest_event_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/event/no_event_screen.dart';

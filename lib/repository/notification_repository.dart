@@ -5,7 +5,7 @@ import 'package:pensiunku/data/api/notification_api.dart';
 import 'package:pensiunku/data/db/app_database.dart';
 import 'package:pensiunku/model/notification_model.dart';
 import 'package:pensiunku/repository/base_repository.dart';
-import 'package:pensiunku/repository/result_model.dart';
+import 'package:pensiunku/model/result_model.dart';
 
 class NotificationRepository extends BaseRepository {
   static String tag = 'NotificationRepository';

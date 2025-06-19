@@ -3,7 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:pensiunku/data/api/forum_api.dart';
 import 'package:pensiunku/model/forum_model.dart';
 import 'package:pensiunku/repository/base_repository.dart';
-import 'package:pensiunku/repository/result_model.dart';
+import 'package:pensiunku/model/result_model.dart';
 
 import '../util/shared_preferences_util.dart';
 

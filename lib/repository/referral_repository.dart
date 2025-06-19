@@ -6,7 +6,7 @@ import 'package:pensiunku/data/api/referral_api.dart';
 import 'package:pensiunku/data/db/app_database.dart';
 import 'package:pensiunku/model/referral_model.dart';
 import 'package:pensiunku/repository/base_repository.dart';
-import 'package:pensiunku/repository/result_model.dart';
+import 'package:pensiunku/model/result_model.dart';
 import 'package:pensiunku/util/shared_preferences_util.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:path/path.dart' as path;

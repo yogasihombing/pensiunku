@@ -7,7 +7,7 @@ import 'package:pensiunku/data/api/user_api.dart';
 import 'package:pensiunku/data/db/app_database.dart';
 import 'package:pensiunku/model/user_model.dart';
 import 'package:pensiunku/repository/base_repository.dart';
-import 'package:pensiunku/repository/result_model.dart';
+import 'package:pensiunku/model/result_model.dart';
 import 'package:pensiunku/util/shared_preferences_util.dart';
 
 class UserRepository extends BaseRepository {

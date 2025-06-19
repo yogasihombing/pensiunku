@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:developer';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:pensiunku/data/api/riwayat_pengajuan_orang_lain_api.dart';
@@ -23,8 +25,7 @@ import 'package:pensiunku/widget/floating_bottom_navigation_bar.dart';
 import 'package:new_version/new_version.dart';
 
 /// Home Screen
-///
-/// This screen is the main screen of the app.
+/// Layar ini adalah layar utama aplikasi.
 ///
 class HomeScreen extends StatefulWidget {
   static const String ROUTE_NAME = '/home';
@@ -48,6 +49,7 @@ class _HomeScreenState extends State<HomeScreen> {
   int? _walkthroughIndex;
 
   _handleApplySubmission(_) {
+    print('Home Screen: Menangani pengajuan aplikasi, navigasi ke indeks 1.');
     setState(() {
       _currentIndex = 1;
       _controller.index = 1;
@@ -56,6 +58,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   _handleApplySubmissionBack() {
+    print(
+        'Home Screen: Menangani kembali pengajuan aplikasi, mengatur _showApplySubmissionScreen ke false.');
     setState(() {
       _showApplySubmissionScreen = false;
     });
@@ -63,13 +67,15 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void initState() {
+    super.initState();
+    print('Home Screen: initState dipanggil.');
+
     final newVersion = NewVersion(androidId: 'com.pensiunku');
 
     Timer(const Duration(milliseconds: 800), () {
+      print('Home Screen: Memeriksa versi baru setelah penundaan 800ms.');
       checkNewVersion(newVersion);
     });
-
-    super.initState();
 
     const AndroidNotificationChannel channel = AndroidNotificationChannel(
         'birthday', // id
@@ -98,21 +104,34 @@ class _HomeScreenState extends State<HomeScreen> {
     flutterLocalNotificationsPlugin
         .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>()
-        ?.createNotificationChannel(channel);
+        ?.createNotificationChannel(channel)
+        .then((_) {
+      print('Home Screen: Saluran notifikasi dibuat: ${channel.id}');
+    });
 
     flutterLocalNotificationsPluginOthers
         .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>()
-        ?.createNotificationChannel(channel_others);
+        ?.createNotificationChannel(channel_others)
+        .then((_) {
+      print('Home Screen: Saluran notifikasi dibuat: ${channel_others.id}');
+    });
 
     FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
         alert: true, badge: true, sound: true);
 
-    //On Terminated
+    print(
+        'Home Screen: Opsi presentasi notifikasi latar depan FirebaseMessaging diatur.');
+
+    // Ketika aplikasi diluncurkan dari keadaan terminate (ditutup sepenuhnya) melalui notifikasi
     FirebaseMessaging.instance.getInitialMessage().then((message) {
       if (message != null) {
+        print(
+            'Home Screen: Aplikasi diluncurkan dari keadaan terminated melalui notifikasi.');
+        print('Data Pesan Awal: ${message.data}');
         dynamic data = jsonDecode(message.data["data"]);
         String finalRoute = data["route"];
+        print('Rute Pesan Awal: $finalRoute');
         if (finalRoute == "birthday" ||
             finalRoute == "big_day" ||
             finalRoute == "others") {
@@ -138,16 +157,24 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           );
         }
+      } else {
+        print('Home Screen: Aplikasi diluncurkan tanpa pesan awal.');
       }
     });
 
-    //Backgroung App
+    // Ketika aplikasi dibuka dari latar belakang melalui notifikasi
     FirebaseMessaging.onMessageOpenedApp.listen((message) {
       if (message.data.isNotEmpty) {
+        print(
+            'Home Screen: Aplikasi dibuka dari latar belakang melalui notifikasi.');
+        print('Data Pesan yang Dibuka: ${message.data}');
         dynamic data = jsonDecode(message.data["data"]);
         String finalRoute = data["route"];
-        print(finalRoute);
-        print(message.notification!.body);
+        print(finalRoute); // Log asli dari kode Anda
+        print(message.notification!.body); // Log asli dari kode Anda
+        print('Rute Pesan yang Dibuka: $finalRoute');
+        print(
+            'Isi Notifikasi Pesan yang Dibuka: ${message.notification?.body}');
         if (finalRoute == "birthday" ||
             finalRoute == "big_day" ||
             finalRoute == "others") {
@@ -176,14 +203,19 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     });
 
-    //Foreground App
+    // Ketika aplikasi berada di latar depan dan menerima notifikasi
     FirebaseMessaging.onMessage.listen((message) {
+      print('Home Screen: Menerima pesan di latar depan.');
+      print('Data Pesan Latar Depan: ${message.data}');
+      print(
+          'Judul Notifikasi Pesan Latar Depan: ${message.notification?.title}');
+      print('Isi Notifikasi Pesan Latar Depan: ${message.notification?.body}');
       RemoteNotification? notification = message.notification;
       AndroidNotification? android = message.notification?.android;
 
-      // If `onMessage` is triggered with a notification, construct our own
-      // local notification to show to users using the created channel.
+      // Jika `onMessage` dipicu dengan notifikasi, buat notifikasi lokal kita sendiri
       if (notification != null && android != null) {
+        print('Home Screen: Menampilkan notifikasi lokal.');
         if (channel.id == 'birthday') {
           flutterLocalNotificationsPlugin.show(
               notification.hashCode,
@@ -192,9 +224,8 @@ class _HomeScreenState extends State<HomeScreen> {
               NotificationDetails(
                 android: AndroidNotificationDetails(channel.id, channel.name,
                     playSound: true,
-                    sound: RawResourceAndroidNotificationSound('happy_birthday')
-                    // other properties...
-                    ),
+                    sound:
+                        RawResourceAndroidNotificationSound('happy_birthday')),
               ));
         } else if (channel_others.id == 'another_notification') {
           flutterLocalNotificationsPluginOthers.show(
@@ -203,9 +234,7 @@ class _HomeScreenState extends State<HomeScreen> {
               notification.body,
               NotificationDetails(
                 android: AndroidNotificationDetails(
-                    channel_others.id, channel_others.name
-                    // other properties...
-                    ),
+                    channel_others.id, channel_others.name),
               ));
         }
       }
@@ -216,6 +245,7 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         _isBottomNavBarVisible = true;
       });
+      print('Home Screen: Bilah navigasi bawah diatur menjadi terlihat.');
     });
     Future.delayed(Duration(seconds: 1), () {
       bool? isFinishedWalkththrough = SharedPreferencesUtil()
@@ -225,76 +255,85 @@ class _HomeScreenState extends State<HomeScreen> {
         setState(() {
           _walkthroughIndex = 0;
         });
+        print(
+            'Home Screen: Walkthrough dimulai, _walkthroughIndex diatur ke 0.');
+      } else {
+        print('Home Screen: Walkthrough sudah selesai.');
       }
     });
 
-    // Save FCM token
+    // Simpan token FCM
     _saveFcmToken();
-    // Listen on new FCM token
+    // Dengarkan pembaruan token FCM
     _onFcmTokenRefresh();
   }
 
   void checkNewVersion(NewVersion newVersion) async {
-    final status = await newVersion.getVersionStatus();
-    if (status != null) {
-      if (status.canUpdate) {
-        showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return UpdateDialog(
-              allowDismissal: false,
-              description: status.releaseNotes!,
-              version: status.storeVersion,
-              appLink: status.appStoreLink,
-            );
-          },
-        );
+    print('Home Screen: checkNewVersion dipanggil.');
+    try {
+      final status = await newVersion.getVersionStatus();
+      if (status != null) {
+        // Log status umum versi
+        print(
+            'Home Screen: Status versi diterima - Lokal: ${status.localVersion}, Toko: ${status.storeVersion}, Bisa Update: ${status.canUpdate}');
+
+        // Siapkan string deskripsi yang aman
+        String releaseNotesDescription = 'Tidak ada catatan rilis tersedia.';
+        if (status.releaseNotes != null && status.releaseNotes!.isNotEmpty) {
+          releaseNotesDescription = status.releaseNotes!;
+          print('Home Screen: Catatan rilis ditemukan dan akan digunakan.');
+        } else {
+          print('Home Screen: Catatan rilis kosong atau null.');
+        }
+
+        if (status.canUpdate) {
+          print(
+              'Home Screen: Versi baru tersedia, menampilkan dialog pembaruan.');
+          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return UpdateDialog(
+                allowDismissal: false,
+                // Gunakan releaseNotesDescription yang sudah dipersiapkan
+                description: releaseNotesDescription,
+                version: status.storeVersion,
+                appLink: status.appStoreLink,
+              );
+            },
+          );
+        } else {
+          print('Home Screen: Tidak ada versi baru yang tersedia.');
+        }
+      } else {
+        print(
+            'Home Screen: Status versi null, tidak dapat memeriksa versi baru.');
       }
+    } catch (e) {
+      // Log error, akan selalu muncul di konsol
+      print('Home Screen: Error memeriksa versi baru: $e');
+      // Penting: Di sini Anda bisa mempertimbangkan untuk menampilkan pesan error di UI
+      // kepada pengguna, misalnya dengan SnackBar atau custom dialog,
+      // agar mereka tahu bahwa ada masalah saat memeriksa pembaruan.
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // bool isWalkthroughStep2 = _walkthroughIndex == 2;
-    // bool isWalkthroughStep3 = _walkthroughIndex == 3;
-
     return Scaffold(
       body: Stack(
         children: [
           _buildBody(),
-          // if (_walkthroughIndex != null)
-          //   AnimatedContainer(
-          //     color: isWalkthroughStep2 || isWalkthroughStep3
-          //         ? Colors.black.withOpacity(0.35)
-          //         : Colors.transparent,
-          //     duration: Duration(milliseconds: 300),
-          //   ),
-          // if (_walkthroughIndex != null)
-          //   FloatingTooltip(
-          //     text: 'Menu aplikasi untuk melihat pilihan produk',
-          //     width: 200,
-          //     isVisible: isWalkthroughStep2,
-          //     bottom: 86.0,
-          //     left: MediaQuery.of(context).size.width * 0.24,
-          //   ),
-          // if (_walkthroughIndex != null)
-          //   FloatingTooltip(
-          //     text: 'Pantau proses pengajuan anda kapan saja',
-          //     width: 180,
-          //     isVisible: isWalkthroughStep3,
-          //     bottom: 86.0,
-          //     right: 48.0,
-          //   ),
           FloatingBottomNavigationBar(
             isVisible: _isBottomNavBarVisible,
             currentIndex: _currentIndex,
             onTapItem: (newIndex) {
+              print(
+                  'Home Screen: Item nav bawah diketuk, mengubah indeks dari $_currentIndex ke $newIndex.');
               setState(() {
                 _currentIndex = newIndex;
               });
             },
           ),
-          
         ],
       ),
     );
@@ -306,6 +345,8 @@ class _HomeScreenState extends State<HomeScreen> {
         return DashboardScreen(
           onApplySubmission: _handleApplySubmission,
           onChangeBottomNavIndex: (newIndex) {
+            print(
+                'Home Screen: Dashboard meminta perubahan indeks nav bawah ke $newIndex.');
             setState(() {
               _currentIndex = newIndex;
             });
@@ -316,6 +357,8 @@ class _HomeScreenState extends State<HomeScreen> {
       case 1:
         return RiwayatPengajuanOrangLainScreen(
           onChangeBottomNavIndex: (newIndex) {
+            print(
+                'Home Screen: Riwayat Pengajuan meminta perubahan indeks nav bawah ke $newIndex.');
             setState(() {
               _currentIndex = newIndex;
             });
@@ -325,6 +368,8 @@ class _HomeScreenState extends State<HomeScreen> {
       default:
         return AccountScreen(
           onChangeBottomNavIndex: (newIndex) {
+            print(
+                'Home Screen: Akun meminta perubahan indeks nav bawah ke $newIndex.');
             setState(() {
               _currentIndex = newIndex;
             });
@@ -341,21 +386,43 @@ class _HomeScreenState extends State<HomeScreen> {
         .sharedPreferences
         .getString(SharedPreferencesUtil.SP_KEY_FCM_TOKEN);
 
-    if (fcmToken != null) {
-      UserRepository().saveFcmToken(token!, fcmToken).then((value) {
+    print('Home Screen: Mencoba menyimpan token FCM.');
+    print(
+        'Home Screen: Token pengguna diambil: ${token != null ? "ada" : "null"}');
+    print(
+        'Home Screen: Token FCM diambil: ${fcmToken != null ? "ada" : "null"}');
+
+    if (fcmToken != null && token != null) {
+      UserRepository().saveFcmToken(token, fcmToken).then((value) {
+        print(
+            'Home Screen: Panggilan API penyimpanan token FCM selesai. Nilai: $value');
         return value;
+      }).catchError((e) {
+        print('Home Screen: Error menyimpan token FCM: $e');
       });
+    } else {
+      print(
+          'Home Screen: Token FCM tidak disimpan, token pengguna atau token FCM null.');
     }
   }
 
   _onFcmTokenRefresh() {
     FirebaseMessaging messaging = FirebaseMessaging.instance;
     messaging.onTokenRefresh.listen((newFcmToken) {
+      print('Home Screen: Token FCM diperbarui. Token baru: $newFcmToken');
       SharedPreferencesUtil()
           .sharedPreferences
-          .setString(SharedPreferencesUtil.SP_KEY_FCM_TOKEN, newFcmToken);
-      _saveFcmToken();
+          .setString(SharedPreferencesUtil.SP_KEY_FCM_TOKEN, newFcmToken)
+          .then((success) {
+        print(
+            'Home Screen: Token FCM disimpan ke Shared Preferences: $success');
+      }).catchError((e) {
+        print(
+            'Home Screen: Error menyimpan token FCM baru ke Shared Preferences: $e');
+      });
+      _saveFcmToken(); // Panggil untuk menyimpan token baru ke backend
     });
+    print('Home Screen: Listener pembaruan token FCM terdaftar.');
   }
 }
 
@@ -413,4 +480,28 @@ class _HomeScreenState extends State<HomeScreen> {
           //     child: Container(
           //       color: Colors.transparent,
           //     ),
+          //   ),
+
+          // if (_walkthroughIndex != null)
+          //   AnimatedContainer(
+          //     color: isWalkthroughStep2 || isWalkthroughStep3
+          //         ? Colors.black.withOpacity(0.35)
+          //         : Colors.transparent,
+          //     duration: Duration(milliseconds: 300),
+          //   ),
+          // if (_walkthroughIndex != null)
+          //   FloatingTooltip(
+          //     text: 'Menu aplikasi untuk melihat pilihan produk',
+          //     width: 200,
+          //     isVisible: isWalkthroughStep2,
+          //     bottom: 86.0,
+          //     left: MediaQuery.of(context).size.width * 0.24,
+          //   ),
+          // if (_walkthroughIndex != null)
+          //   FloatingTooltip(
+          //     text: 'Pantau proses pengajuan anda kapan saja',
+          //     width: 180,
+          //     isVisible: isWalkthroughStep3,
+          //     bottom: 86.0,
+          //     right: 48.0,
           //   ),

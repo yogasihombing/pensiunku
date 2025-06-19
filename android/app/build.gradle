@@ -4,7 +4,7 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        // OneSignal-Gradle-Plugin (Opsional)
+        // OneSignal-Gradle-Plugin (Opsional, sudah ada dan tidak diaktifkan)
         // classpath 'gradle.plugin.com.onesignal:onesignal-gradle-plugin:[0.12.10, 0.99.99]'
     }
 }
@@ -27,7 +27,7 @@ def flutterVersionName = localProperties.getProperty('flutter.versionName', '1.0
 
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
-apply plugin: 'com.google.gms.google-services'
+apply plugin: 'com.google.gms.google-services' // PASTIKAN BARIS INI ADA
 apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
 
 def keystoreProperties = new Properties()
@@ -37,32 +37,33 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    compileSdkVersion 34
+    compileSdkVersion 34 // Ini sudah benar
 
     sourceSets {
         main.java.srcDirs += 'src/main/kotlin'
     }
 
     defaultConfig {
-        applicationId "com.pensiunku"
-        minSdkVersion 21
+        applicationId "com.pensiunku" // Pastikan ini adalah package name Anda
+        minSdkVersion 21 // Minimal 21 untuk FCM
         targetSdkVersion 34
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
+        multiDexEnabled true // Sudah benar, penting untuk banyak dependensi
     }
 
     signingConfigs {
-       release {
-           keyAlias keystoreProperties['keyAlias']
-           keyPassword keystoreProperties['keyPassword']
-           storeFile keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null
-           storePassword keystoreProperties['storePassword']
-       }
-   }
+        release {
+            keyAlias keystoreProperties['keyAlias']
+            keyPassword keystoreProperties['keyPassword']
+            storeFile keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null
+            storePassword keystoreProperties['storePassword']
+        }
+    }
 
     buildTypes {
         release {
-           signingConfig signingConfigs.release
+            signingConfig signingConfigs.release
         }
     }
 }
@@ -72,12 +73,21 @@ flutter {
 }
 
 dependencies {
+    implementation 'androidx.multidex:multidex:2.0.1' // Sudah benar
     def work_version = "2.7.0"
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
     implementation "androidx.work:work-runtime-ktx:$work_version"
 
     // Tambahkan ML Kit Text Recognition
     implementation 'com.google.mlkit:text-recognition:16.0.0'
+
+    // Ini adalah library Material Components yang menyediakan tema
+    implementation 'com.google.android.material:material:1.11.0' // Versi stabil terbaru sudah benar
+    // Firebase platform (direkomendasikan untuk manajemen versi)
+    // PASTIKAN BARIS INI ADA DAN VERSI BOM SESUAI
+    implementation platform('com.google.firebase:firebase-bom:32.8.1') 
+    // PASTIKAN BARIS INI ADA
+    implementation 'com.google.firebase:firebase-messaging-ktx'
 }
 
 android.buildTypes.release.ndk.debugSymbolLevel = 'FULL'

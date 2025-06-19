@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:pensiunku/model/faq_category_model.dart';
 import 'package:pensiunku/repository/faq_repository.dart';
-import 'package:pensiunku/repository/result_model.dart';
+import 'package:pensiunku/model/result_model.dart';
 import 'package:pensiunku/util/widget_util.dart';
 import 'package:pensiunku/widget/error_card.dart';
 import 'package:pensiunku/widget/floating_bottom_navigation_bar.dart';

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:pensiunku/model/article_model.dart';
 import 'package:pensiunku/repository/article_repository.dart';
-import 'package:pensiunku/repository/result_model.dart';
+import 'package:pensiunku/model/result_model.dart';
 import 'package:pensiunku/screen/home/dashboard/article/article_item_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/article/latest_articles_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/article/no_article_screen.dart';
@@ -346,7 +346,7 @@ class _ArticleScreenState extends State<ArticleScreen> {
                           topLeft: Radius.circular(36),
                           bottomLeft: Radius.circular(36)),
                       color:
-                          _filterIndex == 0 ? Color(0xFFF017964) : Colors.white,
+                          _filterIndex == 0 ? Color(0xFF017964) : Colors.white,
                     ),
                     child: Text(
                       "Akan Berlangsung",
