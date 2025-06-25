@@ -220,11 +220,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  // New function to fetch user balance
+  /// PENTING: Fungsi untuk mengambil saldo pengguna dari API
   Future<void> _fetchBalance(String userId) async {
-    print('DashboardScreen: Memulai pengambilan saldo user untuk ID: $userId');
+    if (!mounted) return; // Tambahkan check mounted
     setState(() {
-      _isLoadingBalance = true;
+      _isLoadingBalance = true; // Set status loading true
     });
     try {
       const String url = 'https://api.pensiunku.id/new.php/getBalance';
@@ -234,48 +234,58 @@ class _DashboardScreenState extends State<DashboardScreen> {
         body: jsonEncode({'id_user': userId}),
       );
 
+      debugPrint(
+          'Respons API Get Balance (Status: ${response.statusCode}): ${response.body}');
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        print('DashboardScreen: Saldo API response: $data');
         if (data != null &&
             data['text'] != null &&
             data['text']['balance'] != null) {
-          final balanceStr = data['text']['balance'].toString();
+          String balanceStr = data['text']['balance'].toString();
+          // Hapus "Rp ", titik (ribuan), dan koma (desimal) sebelum parsing
+          balanceStr = balanceStr
+              .replaceAll('Rp ', '')
+              .replaceAll('.', '')
+              .replaceAll(',', '')
+              .trim();
+
           final formatter = NumberFormat.currency(
               locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
           if (mounted) {
+            // Check mounted
             setState(() {
               _userBalance = formatter.format(double.tryParse(balanceStr) ?? 0);
-              print('DashboardScreen: Saldo user diperbarui: $_userBalance');
+              debugPrint('Saldo diterima dan diformat: $_userBalance');
             });
           }
         } else {
-          print(
-              "DashboardScreen: Error: Field 'balance' tidak ditemukan dalam response: ${response.body}");
+          debugPrint(
+              "Error: Field 'balance' tidak ditemukan dalam response: ${response.body}");
           if (mounted) {
+            // Check mounted
             setState(() {
-              _userBalance = 'Error';
+              _userBalance =
+                  'Error'; // Tampilkan error jika field tidak ditemukan
             });
           }
         }
       } else {
-        print(
-            'DashboardScreen: Gagal memuat saldo dengan status code: ${response.statusCode}');
         throw Exception(
             'Failed to load balance with status code: ${response.statusCode}');
       }
     } catch (e) {
-      print("DashboardScreen: Error fetching balance: $e");
+      debugPrint("Error fetching balance: $e");
       if (mounted) {
+        // Check mounted
         setState(() {
-          _userBalance = 'Error';
+          _userBalance = 'Error'; // Tampilkan error jika ada exception
         });
       }
     } finally {
       if (mounted) {
         setState(() {
-          _isLoadingBalance = false;
-          print('DashboardScreen: _isLoadingBalance diatur ke false.');
+          _isLoadingBalance = false; // Set status loading false setelah selesai
         });
       }
     }

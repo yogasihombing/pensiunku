@@ -547,7 +547,7 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen> {
   @override
   Widget build(BuildContext context) {
     // Ambil tinggi top bar (misalnya 56) dan padding atas dari SafeArea.
-    final double topBarHeight = 56.0;
+    final double topBarHeight = 50.0;
     final double topPadding = MediaQuery.of(context).padding.top;
 
     return Scaffold(
@@ -575,7 +575,7 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen> {
             ),
             // Custom top bar dengan tombol back dan judul.
             Positioned(
-              top: 18,
+              top: 10,
               left: 0,
               right: 0,
               child: SafeArea(
@@ -626,7 +626,7 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen> {
                       Center(
                         child: Image.asset(
                           'assets/register_screen/pensiunku.png',
-                          height: 35,
+                          height: 45,
                         ),
                       ),
                       const SizedBox(height: 32.0),

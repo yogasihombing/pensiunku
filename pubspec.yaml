@@ -69,6 +69,7 @@ dependencies:
   # Firebase
   firebase_core: ^2.8.0 # Updated to a compatible version
   firebase_messaging: ^14.3.0 # Updated to a compatible version
+  flutter_local_notifications: ^16.3.0
 
   # Miscellaneous
   age_calculator: ^1.0.0 # Keeping current version
@@ -76,7 +77,6 @@ dependencies:
   restart_app: ^1.1.0
   new_version: ^0.3.1
   month_picker_dialog: ^0.4.0 # Keeping current version due to large breaking changes in newer versions
-  flutter_local_notifications: ^16.3.0
   youtube_player_flutter: ^8.0.0
   photo_view: ^0.14.0
   flutter_advanced_switch: ^3.0.1 # Keeping current version

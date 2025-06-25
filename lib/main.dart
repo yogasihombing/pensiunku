@@ -2,6 +2,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:pensiunku/data/api/pengajuan_anda_api.dart';
 
 import 'package:pensiunku/screen/home/dashboard/article/article_detail_screen.dart';
@@ -29,10 +30,10 @@ import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/ktp/prepare_ktp_s
 import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/ktp/preview_ktp_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/pensiunkuplus_success_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/selfie/preview_selfie_screen.dart';
-import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/wallet/e_wallet_bank_tujuan.dart';
-import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/wallet/e_wallet_histori.dart';
-import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/wallet/e_wallet_info_akun.dart';
-import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/wallet/e_wallet_pencairan.dart';
+import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/wallet/bank_tujuan/e_wallet_bank_tujuan.dart';
+import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/wallet/histori/e_wallet_histori.dart';
+import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/wallet/info_wallet/e_wallet_info_akun.dart';
+import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/wallet/pencairan/e_wallet_pencairan.dart';
 import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/wallet/e_wallet_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/toko/add_shipping_address_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/toko/barang_screen.dart';
@@ -81,33 +82,86 @@ import 'screen/home/dashboard/usaha/usaha_screen.dart';
 // }
 // Background message handler (harus di level top, bukan di dalam class)
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  // Initialize Firebase jika belum
   await Firebase.initializeApp();
-  
   print("Handling a background message: ${message.messageId}");
   print("Background message data: ${message.data}");
   print("Background message notification: ${message.notification?.title}");
-  
-  // Anda bisa menambahkan logic tambahan di sini untuk handle background message
+
+  // Optional: Tampilkan notifikasi lokal di background juga
+  // Jika Anda ingin menampilkan notifikasi di background dari handler ini,
+  // Anda juga perlu inisialisasi flutter_local_notifications di sini
+  // Ini lebih kompleks karena isolat, tapi bisa dilakukan.
+  // Untuk saat ini, kita fokus di foreground dulu.
 }
+
+// Global instance untuk flutter_local_notifications
+final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+    FlutterLocalNotificationsPlugin();
+
+// Pengaturan channel notifikasi untuk Android (Penting untuk Android 8.0+)
+const AndroidNotificationChannel channel = AndroidNotificationChannel(
+  'high_importance_channel', // id
+  'High Importance Notifications', // title
+  description: 'This channel is used for important notifications.', // description
+  importance: Importance.max,
+);
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Set orientation
   await SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp, 
+    DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown
   ]);
 
-  // Initialize Firebase first
+  // Inisialisasi Firebase
   await Firebase.initializeApp();
-  
+
+  // Inisialisasi flutter_local_notifications
+  // Pengaturan untuk Android
+  var androidInitializeSettings =
+      const AndroidInitializationSettings('@mipmap/ic_launcher');
+  // Pengaturan untuk iOS
+  var iOSInitializeSettings = const DarwinInitializationSettings(
+    requestAlertPermission: true,
+    requestBadgePermission: true,
+    requestSoundPermission: true,
+  );
+  var initializationSettings = InitializationSettings(
+      android: androidInitializeSettings, iOS: iOSInitializeSettings);
+
+  await flutterLocalNotificationsPlugin.initialize(
+    initializationSettings,
+    onDidReceiveNotificationResponse: (NotificationResponse notificationResponse) async {
+      // Callback saat notifikasi lokal ditekan
+      // Anda bisa menangani navigasi di sini juga jika notifikasi lokal yang dipicu
+      // mengandung data navigasi.
+      print('Notification payload: ${notificationResponse.payload}');
+      // Contoh: Navigasi ke NotificationScreen jika payload sesuai
+      if (notificationResponse.payload != null) {
+        // Asumsi payload adalah JSON string dari data FCM
+        // Anda mungkin perlu parsing JSON di sini jika payload adalah data kompleks
+        // Misal: Navigator.pushNamed(context, '/detail_screen', arguments: notificationResponse.payload);
+      }
+    },
+    // Jika Anda menggunakan onDidReceiveBackgroundNotificationResponse untuk iOS 10+ di background
+    // onDidReceiveBackgroundNotificationResponse: (NotificationResponse notificationResponse) {
+    //   print('Background notification payload: ${notificationResponse.payload}');
+    // },
+  );
+
+  // Buat channel notifikasi untuk Android (hanya perlu sekali)
+  await flutterLocalNotificationsPlugin
+      .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>()
+      ?.createNotificationChannel(channel);
+
   // Set the background messaging handler
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
   runApp(MyApp());
 }
+
 
 
 class MyApp extends StatelessWidget {

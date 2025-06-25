@@ -1,6 +1,4 @@
-import 'dart:developer'; // Digunakan untuk fungsi log, yang lebih baik untuk logging di Flutter daripada print biasa
 import 'package:dio/dio.dart'; // Pustaka Dio untuk melakukan HTTP request
-import 'package:flutter/foundation.dart'; // Digunakan untuk kDebugMode, agar log hanya muncul di mode debug
 import 'package:pensiunku/config.dart'
     show apiHost; // Mengimpor apiHost dari file config.dart
 

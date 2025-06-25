@@ -5,9 +5,12 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:pensiunku/data/api/user_api.dart';
 import 'package:pensiunku/data/db/app_database.dart';
+import 'package:pensiunku/model/e_wallet/transaction_history_model.dart';
+import 'package:pensiunku/model/e_wallet/user_bank_detail_model.dart';
 import 'package:pensiunku/model/user_model.dart';
 import 'package:pensiunku/repository/base_repository.dart';
 import 'package:pensiunku/model/result_model.dart';
+import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/wallet/histori/e_wallet_histori.dart';
 import 'package:pensiunku/util/shared_preferences_util.dart';
 
 class UserRepository extends BaseRepository {
@@ -15,18 +18,15 @@ class UserRepository extends BaseRepository {
   UserApi api = UserApi();
   AppDatabase database = AppDatabase();
 
-  // Tambahkan konstanta untuk konfigurasi
-  static const int DEFAULT_TIMEOUT = 15000; // 15 detik timeout
+  static const int DEFAULT_TIMEOUT = 15000;
   static const int MAX_RETRY_ATTEMPTS = 2;
-  static const int RETRY_DELAY_MS = 1500; // 1.5 detik delay antar percobaan
+  static const int RETRY_DELAY_MS = 1500;
 
-  // Fungsi untuk memeriksa koneksi internet
   Future<bool> _isConnected() async {
     var connectivityResult = await Connectivity().checkConnectivity();
     return connectivityResult != ConnectivityResult.none;
   }
 
-  // Fungsi untuk melakukan request dengan retry
   Future<Response> _retryRequest(
       Future<Response> Function() requestFunction) async {
     int attempts = 0;
@@ -39,7 +39,6 @@ class UserRepository extends BaseRepository {
           await Future.delayed(Duration(milliseconds: RETRY_DELAY_MS));
         }
 
-        // Tambahkan timeout dengan cara yang benar
         return await requestFunction().timeout(
           Duration(milliseconds: DEFAULT_TIMEOUT),
           onTimeout: () {
@@ -54,11 +53,10 @@ class UserRepository extends BaseRepository {
         lastError = e;
         attempts++;
 
-        // Hanya retry jika error terkait jaringan atau server timeout
         if (e.type != DioErrorType.connectTimeout &&
             e.type != DioErrorType.receiveTimeout &&
             e.type != DioErrorType.sendTimeout &&
-            !e.message.contains('SocketException')) {
+            e.message != null && !e.message!.contains('SocketException')) {
           rethrow;
         }
       }
@@ -67,7 +65,6 @@ class UserRepository extends BaseRepository {
     throw lastError!;
   }
 
-  // Fungsi untuk mendapatkan pesan error yang lebih spesifik
   String _getSpecificErrorMessage(dynamic error) {
     if (error is DioError) {
       switch (error.type) {
@@ -90,10 +87,13 @@ class UserRepository extends BaseRepository {
           return 'Terjadi kesalahan pada jaringan.';
         case DioErrorType.cancel:
           return 'Permintaan dibatalkan.';
-        default:
-          if (error.message.contains('SocketException')) {
+        case DioErrorType.other:
+          if (error.message != null && error.message!.contains('SocketException')) {
             return 'Tidak dapat terhubung ke server. Periksa koneksi internet Anda.';
           }
+          return 'Terjadi kesalahan tidak dikenal.';
+        default:
+          return 'Terjadi kesalahan. Silakan coba lagi nanti.';
       }
     }
     return 'Terjadi kesalahan. Silakan coba lagi nanti.';
@@ -105,7 +105,6 @@ class UserRepository extends BaseRepository {
       return true;
     }());
 
-    // Periksa koneksi internet terlebih dahulu
     if (!await _isConnected()) {
       return ResultModel(
         isSuccess: false,
@@ -114,7 +113,6 @@ class UserRepository extends BaseRepository {
     }
 
     try {
-      // Gunakan fungsi retry untuk mengirim OTP
       Response response = await _retryRequest(() => api.sendOtp(phone));
       var responseJson = response.data;
 
@@ -145,7 +143,6 @@ class UserRepository extends BaseRepository {
       return true;
     }());
 
-    // Periksa koneksi internet terlebih dahulu
     if (!await _isConnected()) {
       return ResultModel(
         isSuccess: false,
@@ -154,7 +151,6 @@ class UserRepository extends BaseRepository {
     }
 
     try {
-      // Gunakan fungsi retry untuk verifikasi OTP
       Response response = await _retryRequest(() => api.verifyOtp(phone, otp));
       var responseJson = response.data;
 
@@ -186,10 +182,8 @@ class UserRepository extends BaseRepository {
       return true;
     }());
 
-    // Coba ambil dari database terlebih dahulu
     UserModel? userDb = await database.userDao.getOne();
 
-    // Jika tidak ada koneksi internet tapi ada data cache, gunakan data cache
     if (!await _isConnected()) {
       if (userDb != null) {
         log('Menggunakan data cache karena tidak ada koneksi internet',
@@ -207,24 +201,22 @@ class UserRepository extends BaseRepository {
       }
     }
 
-    // Jika ada koneksi internet, coba ambil dari API
     try {
       Response response = await _retryRequest(() => api.getOne(token));
       var responseJson = response.data;
 
       if (responseJson['status'] == 'success') {
         Map<String, dynamic> userJson = responseJson['data'];
-        int? notificationCounter = userJson['notification_counter'];
+        int? notificationCounter = userJson['notification_counter'] as int?;
         if (notificationCounter != null) {
           SharedPreferencesUtil().sharedPreferences.setInt(
-                SharedPreferencesUtil.SP_KEY_NOTIFICATION_COUNTER,
-                notificationCounter,
-              );
+                  SharedPreferencesUtil.SP_KEY_NOTIFICATION_COUNTER,
+                  notificationCounter,
+                );
         }
 
         UserModel user = UserModel.fromJson(userJson);
 
-        // Simpan ke database
         await database.userDao.removeAll();
         await database.userDao.insert(user);
 
@@ -233,7 +225,6 @@ class UserRepository extends BaseRepository {
           data: user,
         );
       } else {
-        // Jika gagal tapi ada data cache, gunakan data cache
         if (userDb != null) {
           return ResultModel(
             isSuccess: true,
@@ -250,7 +241,6 @@ class UserRepository extends BaseRepository {
     } catch (e) {
       log(e.toString(), name: tag, error: e);
 
-      // Jika terjadi error tapi ada data cache, gunakan data cache
       if (userDb != null) {
         log('Menggunakan data cache karena API error', name: tag);
         return ResultModel(
@@ -266,6 +256,12 @@ class UserRepository extends BaseRepository {
       );
     }
   }
+
+  // Metode getUserRekening TELAH DIHAPUS dari UserRepository karena akan dipindahkan ke EWalletBankTujuan
+  // Future<ResultModel<List<UserBankDetail>>> getUserRekening(String userId, String token) async { ... }
+
+  // Metode getRiwayatWithdraw TELAH DIHAPUS dari UserRepository karena akan dipindahkan ke EWalletHistori
+  // Future<ResultModel<List<TransactionHistory>>> getRiwayatWithdraw(String userId, String token) async { ... }
 
   Future<ResultModel<UserModel>> getOneDb(String token) async {
     assert(() {
@@ -293,7 +289,6 @@ class UserRepository extends BaseRepository {
       return true;
     }());
 
-    // Periksa koneksi internet terlebih dahulu
     if (!await _isConnected()) {
       return ResultModel(
         isSuccess: false,
@@ -302,7 +297,6 @@ class UserRepository extends BaseRepository {
     }
 
     try {
-      // Gunakan fungsi retry untuk update data
       Response response = await _retryRequest(() => api.updateOne(token, data));
       var responseJson = response.data;
 
@@ -310,7 +304,6 @@ class UserRepository extends BaseRepository {
         Map<String, dynamic> userJson = responseJson['data'];
         UserModel user = UserModel.fromJson(userJson);
 
-        // Update database
         await database.userDao.removeAll();
         await database.userDao.insert(user);
 
@@ -339,7 +332,6 @@ class UserRepository extends BaseRepository {
       return true;
     }());
 
-    // Periksa koneksi internet terlebih dahulu
     if (!await _isConnected()) {
       return ResultModel(
         isSuccess: false,
@@ -348,15 +340,13 @@ class UserRepository extends BaseRepository {
     }
 
     try {
-      // Gunakan fungsi retry untuk memeriksa user
       Response response = await _retryRequest(() => api.checkUserExists(phone));
       var responseJson = response.data;
 
-      // Log respons untuk debugging
       log('Response: $responseJson', name: tag);
 
       if (responseJson['status'] == 'success' && responseJson['data'] != null) {
-        bool exists = responseJson['data']['exists'];
+        bool exists = responseJson['data']['exists'] as bool;
 
         if (!exists) {
           return ResultModel(
@@ -388,13 +378,11 @@ class UserRepository extends BaseRepository {
 
   Future<ResultModel<bool>> saveFcmToken(String token, String fcmToken) async {
     assert(() {
-      log('saveFcmToken: $token $fcmToken', name: tag);
+      log('saveFcmToken', name: tag);
       return true;
     }());
 
-    // Periksa koneksi internet terlebih dahulu
     if (!await _isConnected()) {
-      // Simpan FCM token secara lokal untuk dikirim nanti
       _saveFcmTokenLocally(token, fcmToken);
       return ResultModel(
         isSuccess: true,
@@ -404,7 +392,6 @@ class UserRepository extends BaseRepository {
     }
 
     try {
-      // Gunakan fungsi retry untuk menyimpan FCM token
       Response response =
           await _retryRequest(() => api.saveFcmToken(token, fcmToken));
       var responseJson = response.data;
@@ -415,7 +402,6 @@ class UserRepository extends BaseRepository {
           data: true,
         );
       } else {
-        // Jika gagal, simpan token secara lokal untuk dikirim nanti
         _saveFcmTokenLocally(token, fcmToken);
         return ResultModel(
           isSuccess: false,
@@ -425,7 +411,6 @@ class UserRepository extends BaseRepository {
       }
     } catch (e) {
       log(e.toString(), name: tag, error: e);
-      // Jika gagal, simpan token secara lokal untuk dikirim nanti
       _saveFcmTokenLocally(token, fcmToken);
       return ResultModel(
         isSuccess: true,
@@ -435,16 +420,14 @@ class UserRepository extends BaseRepository {
     }
   }
 
-  // Fungsi untuk menyimpan FCM token secara lokal
   void _saveFcmTokenLocally(String token, String fcmToken) {
     SharedPreferencesUtil().sharedPreferences.setString(
-          'PENDING_FCM_TOKEN',
-          fcmToken,
-        );
+            'PENDING_FCM_TOKEN',
+            fcmToken,
+          );
     log('FCM token disimpan secara lokal untuk dikirim nanti', name: tag);
   }
 
-  // Fungsi untuk mengirim FCM token yang tertunda saat koneksi tersedia
   Future<bool> sendPendingFcmToken(String token) async {
     String? pendingFcmToken = SharedPreferencesUtil()
         .sharedPreferences
@@ -463,6 +446,7 @@ class UserRepository extends BaseRepository {
     return false;
   }
 }
+
 
 // class UserRepository extends BaseRepository {
 //   static String tag = 'UserRepository';

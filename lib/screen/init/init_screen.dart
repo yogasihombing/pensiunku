@@ -2,7 +2,10 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:pensiunku/data/db/app_database.dart';
+import 'package:pensiunku/main.dart';
+import 'package:pensiunku/screen/notification/notification_screen.dart';
 import 'package:pensiunku/screen/register/prepare_register_screen.dart';
 import 'package:pensiunku/screen/welcome/welcome_screen.dart';
 import 'package:pensiunku/util/shared_preferences_util.dart';
@@ -48,6 +51,49 @@ class _InitScreenState extends State<InitScreen> with SingleTickerProviderStateM
     // Mulai setup Firebase Messaging (Notifikasi)
     _setupFirebaseMessaging();
   }
+  void _handleNotificationNavigation(RemoteMessage message) {
+  // Pastikan widget masih mounted sebelum mencoba navigasi
+  if (!mounted) {
+    print("Widget tidak mounted, tidak bisa navigasi.");
+    return;
+  }
+
+  final data = message.data;
+  print("Menangani navigasi dengan data: $data");
+
+  // Contoh logic navigasi:
+  // Anda harus menyesuaikan ini dengan struktur data notifikasi Anda
+  if (data.containsKey('screen')) {
+    String targetScreen = data['screen'];
+    switch (targetScreen) {
+      case 'notification_screen':
+        // Pastikan Anda memiliki argument yang sesuai jika NotificationScreen membutuhkannya
+        // Misal: final currentIndex = int.tryParse(data['currentIndex'] ?? '0');
+        // Navigator.of(context).pushNamed(
+        //   NotificationScreen.ROUTE_NAME,
+        //   arguments: NotificationScreenArguments(currentIndex: currentIndex ?? 0),
+        // );
+        // Untuk contoh ini, kita navigasi ke NotificationScreen tanpa argumen spesifik
+        Navigator.of(context).pushNamed(NotificationScreen.ROUTE_NAME);
+        break;
+      case 'home_screen':
+        // Contoh navigasi ke Home Screen
+        // Navigator.of(context).pushNamed(HomeScreen.ROUTE_NAME);
+        break;
+      // Tambahkan case lain sesuai kebutuhan aplikasi Anda
+      default:
+        print('Target screen tidak dikenal: $targetScreen');
+        break;
+    }
+  } else if (data.containsKey('url')) {
+    // Contoh: Buka URL jika notifikasi berisi URL
+    // import 'package:url_launcher/url_launcher.dart';
+    // String url = data['url'];
+    // launchUrl(Uri.parse(url));
+    print('Notifikasi memiliki URL, bisa dibuka: ${data['url']}');
+  }
+  // Tambahkan logic lain berdasarkan struktur data Anda
+}
 
   @override
   void dispose() {
@@ -116,7 +162,10 @@ class _InitScreenState extends State<InitScreen> with SingleTickerProviderStateM
     if (fcmToken != null) {
       await prefs.setString(SharedPreferencesUtil.SP_KEY_FCM_TOKEN, fcmToken);
       print('FCM Token baru: $fcmToken');
-      // Anda mungkin ingin mengirim token ini ke backend Anda di sini
+      // --- Lakukan panggilan API ke backend Anda di sini ---
+    // Contoh (pseudocode):
+    // await YourApiService.sendFcmTokenToBackend(fcmToken, userId);
+
     }
   }
 
@@ -144,46 +193,67 @@ class _InitScreenState extends State<InitScreen> with SingleTickerProviderStateM
   }
 
   /// Fungsi untuk setup Firebase Messaging (Push Notifikasi)
-  Future<void> _setupFirebaseMessaging() async {
-    FirebaseMessaging messaging = FirebaseMessaging.instance;
+  /// Fungsi untuk setup Firebase Messaging (Push Notifikasi)
+Future<void> _setupFirebaseMessaging() async {
+  FirebaseMessaging messaging = FirebaseMessaging.instance;
 
-    // 1. Meminta Izin Notifikasi dari pengguna
-    NotificationSettings settings = await messaging.requestPermission(
-      alert: true,
-      announcement: false,
-      badge: true,
-      carPlay: false,
-      criticalAlert: false,
-      provisional: false,
-      sound: true,
-    );
+  // 1. Meminta Izin Notifikasi dari pengguna
+  // Ini juga akan meminta izin untuk flutter_local_notifications di iOS
+  NotificationSettings settings = await messaging.requestPermission(
+    alert: true,
+    announcement: false,
+    badge: true,
+    carPlay: false,
+    criticalAlert: false,
+    provisional: false,
+    sound: true,
+  );
 
-    print('Izin notifikasi diberikan: ${settings.authorizationStatus}');
+  print('Izin notifikasi diberikan: ${settings.authorizationStatus}');
 
-    // 2. Mendengarkan pesan saat aplikasi di foreground
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      print('Menerima pesan saat aplikasi di foreground!');
-      print('Data pesan: ${message.data}');
+  // 2. Mendengarkan pesan saat aplikasi di foreground
+  FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+    print('Menerima pesan saat aplikasi di foreground!');
+    print('Data pesan: ${message.data}');
 
-      if (message.notification != null) {
-        print('Pesan juga berisi notifikasi: ${message.notification?.title} / ${message.notification?.body}');
-      
-      }
-    });
+    // Tampilkan notifikasi visual menggunakan flutter_local_notifications
+    RemoteNotification? notification = message.notification;
+    AndroidNotification? android = message.notification?.android;
 
-    // 3. Menangani saat notifikasi ditekan (saat aplikasi di background/terminated)
-    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      print('Event onMessageOpenedApp dipublikasikan!');
-      print('Data pesan: ${message.data}');
-    
-    });
-
-    // 4. Menangani saat aplikasi dibuka dari keadaan terminated oleh notifikasi
-    RemoteMessage? initialMessage = await messaging.getInitialMessage();
-    if (initialMessage != null) {
-      print('Aplikasi dibuka dari keadaan terminated oleh notifikasi: ${initialMessage.data}');
-   
+    if (notification != null && android != null) {
+      flutterLocalNotificationsPlugin.show(
+        notification.hashCode, // Gunakan hashCode notifikasi sebagai ID unik
+        notification.title,
+        notification.body,
+        NotificationDetails(
+          android: AndroidNotificationDetails(
+            channel.id, // Gunakan ID channel yang sudah kita buat
+            channel.name,
+            channelDescription: channel.description,
+            icon: '@mipmap/ic_launcher', // Pastikan icon ini ada di folder Android Anda
+          ),
+        ),
+        // Tambahkan payload jika Anda ingin data dari notifikasi FCM diteruskan ke notifikasi lokal
+        payload: message.data.toString(), // Atau JSON.encode(message.data) jika data kompleks
+      );
     }
+  });
+
+  // 3. Menangani saat notifikasi ditekan (saat aplikasi di background/terminated)
+  FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+    print('Event onMessageOpenedApp dipublikasikan!');
+    print('Data pesan: ${message.data}');
+    // Panggil fungsi penanganan navigasi di sini
+    _handleNotificationNavigation(message);
+  });
+
+  // 4. Menangani saat aplikasi dibuka dari keadaan terminated oleh notifikasi
+  RemoteMessage? initialMessage = await messaging.getInitialMessage();
+  if (initialMessage != null) {
+    print('Aplikasi dibuka dari keadaan terminated oleh notifikasi: ${initialMessage.data}');
+    // Panggil fungsi penanganan navigasi di sini
+    _handleNotificationNavigation(initialMessage);
+  }
   }
 
   @override

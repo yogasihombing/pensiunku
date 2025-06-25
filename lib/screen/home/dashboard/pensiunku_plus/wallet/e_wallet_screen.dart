@@ -3,14 +3,16 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:intl/date_symbol_data_local.dart';
+
 import 'package:intl/intl.dart';
 import 'package:pensiunku/model/user_model.dart';
 import 'package:http/http.dart' as http;
 import 'package:pensiunku/repository/user_repository.dart';
-import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/wallet/e_wallet_bank_tujuan.dart';
-import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/wallet/e_wallet_histori.dart';
-import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/wallet/e_wallet_info_akun.dart';
-import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/wallet/e_wallet_pencairan.dart';
+import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/wallet/bank_tujuan/e_wallet_bank_tujuan.dart';
+import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/wallet/histori/e_wallet_histori.dart';
+import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/wallet/info_wallet/e_wallet_info_akun.dart';
+import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/wallet/pencairan/e_wallet_pencairan.dart';
 import 'package:pensiunku/util/shared_preferences_util.dart';
 
 class EWalletScreen extends StatefulWidget {
@@ -26,8 +28,15 @@ class _EWalletScreenState extends State<EWalletScreen> {
   late Future<String> _futureGreeting;
 
   // Variabel state untuk saldo pengguna dan status loading
-  String _userBalance = '0'; // Saldo awal, akan diupdate dari API
+  String _userBalance = 'Rp 0'; // Saldo awal, akan diupdate dari API
   bool _isLoadingBalance = false; // Status loading untuk saldo
+
+  // NEW: Variabel state untuk data dari API getBalance (selain saldo)
+  String _thisMonthIncome = 'Rp 0';
+  String _totalIncome =
+      'Rp 0'; // Sesuai konfirmasi: total pendapatan dari insentif
+  String _greatestIncome = 'Rp 0';
+  String _joinDate = 'N/A'; // Akan diformat menjadi tanggal yang mudah dibaca
 
   // Screen dimensions
   late double screenWidth;
@@ -45,7 +54,13 @@ class _EWalletScreenState extends State<EWalletScreen> {
   void initState() {
     super.initState();
     print('EWalletScreen initialized');
-    _refreshData(); // Memuat data pengguna dan saldo saat inisialisasi
+    // Inisialisasi data lokal untuk DateFormat
+    // Sangat penting untuk memanggil ini sebelum menggunakan DateFormat dengan locale spesifik
+    initializeDateFormatting().then((_) {
+      // Set default locale atau pastikan locale 'en_US' dan 'id_ID' terdaftar
+      // Opsional: Intl.defaultLocale = 'id_ID';
+      _refreshData(); // Memuat data pengguna dan saldo saat inisialisasi
+    });
     _futureGreeting = _fetchGreeting(); // Memuat greeting
   }
 
@@ -66,7 +81,8 @@ class _EWalletScreenState extends State<EWalletScreen> {
     verticalPadding = screenHeight * 0.01; // 1% dari tinggi layar
 
     // Responsive sizes
-    headerHeight = screenHeight * 0.25; // 34% dari tinggi layar
+    headerHeight =
+        screenHeight * 0.25; // 34% dari tinggi layar (diperkecil agar pas)
     avatarRadius = screenWidth * 0.08; // 8% dari lebar layar
     iconSize = screenWidth * 0.18; // 18% dari lebar layar
     cardPadding = screenWidth * 0.04; // 4% dari lebar layar
@@ -75,9 +91,22 @@ class _EWalletScreenState extends State<EWalletScreen> {
   /// Fungsi untuk refresh data pengguna dan saldo
   Future<void> _refreshData() async {
     try {
+      // Pastikan SharedPreferencesUtil diinisialisasi
+      await SharedPreferencesUtil().init();
+
       String? token = SharedPreferencesUtil()
           .sharedPreferences
           .getString(SharedPreferencesUtil.SP_KEY_TOKEN);
+
+      // Untuk tujuan demo, simpan token jika belum ada
+      if (token == null || token.isEmpty) {
+        token =
+            "valid_token_123"; // Contoh token, ganti dengan logika login Anda
+        await SharedPreferencesUtil()
+            .sharedPreferences
+            .setString(SharedPreferencesUtil.SP_KEY_TOKEN, token);
+        print('Token disimpan ke SP: $token');
+      }
 
       if (token != null) {
         final result = await UserRepository().getOne(token);
@@ -127,7 +156,7 @@ class _EWalletScreenState extends State<EWalletScreen> {
     }
   }
 
-  /// PENTING: Fungsi untuk mengambil saldo pengguna dari API
+  /// PENTING: Fungsi untuk mengambil saldo pengguna dan data lainnya dari API
   Future<void> _fetchBalance(String userId) async {
     setState(() {
       _isLoadingBalance = true; // Set status loading true
@@ -140,36 +169,106 @@ class _EWalletScreenState extends State<EWalletScreen> {
         body: jsonEncode({'id_user': userId}),
       );
 
+      debugPrint(
+          'Respons API Get Balance (Status: ${response.statusCode}): ${response.body}');
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        // PENTING: Akses field 'balance' sesuai dengan respons API
-        if (data != null &&
-            data['text'] != null &&
-            data['text']['balance'] != null) {
-          final balanceStr = data['text']['balance'].toString();
-          // Format saldo sebagai mata uang Rupiah
+        if (data != null && data['text'] != null) {
+          // Inisialisasi formatter Rupiah
           final formatter = NumberFormat.currency(
               locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
-          setState(() {
-            _userBalance = formatter.format(double.tryParse(balanceStr) ?? 0);
-          });
+
+          // Fungsi helper untuk memparsing dan memformat nominal
+          String formatAmount(dynamic value) {
+            if (value == null) return 'Rp 0';
+            String cleanValue = value
+                .toString()
+                .replaceAll('Rp ', '')
+                .replaceAll('.', '')
+                .replaceAll(',', '')
+                .trim();
+            return formatter.format(double.tryParse(cleanValue) ?? 0);
+          }
+
+          // Update _userBalance
+          String balanceStr = data['text']['balance']?.toString() ?? '0';
+          balanceStr = balanceStr
+              .replaceAll('Rp ', '')
+              .replaceAll('.', '')
+              .replaceAll(',', '')
+              .trim();
+
+          if (mounted) {
+            setState(() {
+              _userBalance = formatter.format(double.tryParse(balanceStr) ?? 0);
+              debugPrint('Saldo yang diformat dan ditampilkan: $_userBalance');
+
+              // NEW: Update variabel state lainnya
+              _thisMonthIncome = formatAmount(data['text']['this_month']);
+              _totalIncome = formatAmount(data['text']['total']);
+              _greatestIncome = formatAmount(data['text']['greatest']);
+
+              // Format tanggal bergabung
+              String? joinDateRaw = data['text']['join_date'];
+              if (joinDateRaw != null && joinDateRaw.isNotEmpty) {
+                try {
+                  // Perbaikan di sini: gunakan format 'dd MMMM yyyy' untuk parsing karena API mengembalikan tahun
+                  DateTime parsedJoinDate =
+                      DateFormat('dd MMMM yyyy', 'en_US').parse(joinDateRaw);
+                  _joinDate = DateFormat('dd MMMM yyyy', 'id_ID')
+                      .format(parsedJoinDate); // Format ke bahasa Indonesia
+                } catch (e) {
+                  debugPrint('Error parsing join_date: $e');
+                  _joinDate =
+                      joinDateRaw; // Gunakan raw string jika gagal parse
+                }
+              } else {
+                _joinDate = 'N/A';
+              }
+
+              // --- Debug Prints untuk verifikasi data ---
+              debugPrint('--- Verifikasi Data API getBalance ---');
+              debugPrint('Raw API Response (text): ${data['text']}');
+              debugPrint(
+                  'Pencapaian Bulan ini (this_month): ${data['text']['this_month']} -> Formatted: $_thisMonthIncome');
+              debugPrint(
+                  'Total Pendapatan (total): ${data['text']['total']} -> Formatted: $_totalIncome');
+              debugPrint(
+                  'Pendapatan Terbesar (greatest): ${data['text']['greatest']} -> Formatted: $_greatestIncome');
+              debugPrint(
+                  'Tanggal Bergabung (join_date): ${data['text']['join_date']} -> Formatted: $_joinDate');
+              debugPrint('--- End Verifikasi Data ---');
+            });
+          }
         } else {
-          print(
-              "Error: Field 'balance' tidak ditemukan dalam response: ${response.body}");
-          setState(() {
-            _userBalance =
-                'Error'; // Tampilkan error jika field tidak ditemukan
-          });
+          debugPrint(
+              "Error: Struktur respons 'text' tidak ditemukan dalam response: ${response.body}");
+          if (mounted) {
+            setState(() {
+              _userBalance = 'Error';
+              _thisMonthIncome = 'Error';
+              _totalIncome = 'Error';
+              _greatestIncome = 'Error';
+              _joinDate = 'Error';
+            });
+          }
         }
       } else {
         throw Exception(
             'Failed to load balance with status code: ${response.statusCode}');
       }
     } catch (e) {
-      print("Error fetching balance: $e");
-      setState(() {
-        _userBalance = 'Error'; // Tampilkan error jika ada exception
-      });
+      debugPrint("Error fetching balance: $e");
+      if (mounted) {
+        setState(() {
+          _userBalance = 'Error';
+          _thisMonthIncome = 'Error';
+          _totalIncome = 'Error';
+          _greatestIncome = 'Error';
+          _joinDate = 'Error';
+        });
+      }
     } finally {
       if (mounted) {
         setState(() {
@@ -370,7 +469,7 @@ class _EWalletScreenState extends State<EWalletScreen> {
   /// Helper method untuk mendapatkan teks greeting
   String _getGreetingText(AsyncSnapshot<String> snapshot) {
     if (snapshot.connectionState == ConnectionState.waiting) {
-      return '...';
+      return 'Memuat...';
     } else if (snapshot.hasError) {
       return 'Selamat datang';
     } else if (snapshot.hasData) {
@@ -444,6 +543,8 @@ class _EWalletScreenState extends State<EWalletScreen> {
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign
+                              .center, // Tambahkan ini jika ingin teks saldo juga center
                         ),
             ),
           ),
@@ -498,12 +599,14 @@ class _EWalletScreenState extends State<EWalletScreen> {
           child: _buildBoxMenu(
             'assets/pensiunkuplus/e_wallet/wallet-01.png',
             "Pencapaian Bulan ini",
+            value: _thisMonthIncome, // Data dinamis
           ),
         ),
         Expanded(
           child: _buildBoxMenu(
             'assets/pensiunkuplus/e_wallet/wallet-02.png',
-            "Total Pencairan",
+            "Total Pendapatan", // Mengganti "Total Pencairan" menjadi "Total Pendapatan"
+            value: _totalIncome, // Data dinamis
           ),
         ),
       ],
@@ -518,12 +621,14 @@ class _EWalletScreenState extends State<EWalletScreen> {
           child: _buildBoxMenu(
             'assets/pensiunkuplus/e_wallet/wallet-03.png',
             "Pendapatan Terbesar",
+            value: _greatestIncome, // Data dinamis
           ),
         ),
         Expanded(
           child: _buildBoxMenu(
             'assets/pensiunkuplus/e_wallet/wallet-04.png',
             "Tanggal Bergabung",
+            value: _joinDate, // Data dinamis
           ),
         ),
       ],
@@ -571,8 +676,7 @@ class _EWalletScreenState extends State<EWalletScreen> {
   Widget _buildBoxMenu(
     String imagePath,
     String label, {
-    String amount =
-        'Rp 50.000.000', // PENTING: Ini masih hardcoded, bisa diupdate nanti
+    required String value, // Mengubah menjadi required dan dynamic
   }) {
     return Container(
       margin: EdgeInsets.all(screenWidth * 0.02),
@@ -601,17 +705,21 @@ class _EWalletScreenState extends State<EWalletScreen> {
             ),
           ),
           SizedBox(height: screenHeight * 0.01),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: screenWidth * 0.03,
-                fontWeight: FontWeight.w500,
+          // Mengubah alignment untuk label agar di tengah
+          Center(
+            // Wrap FittedBox with Center
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                label,
+                textAlign: TextAlign.center, // Tambahkan TextAlign.center
+                style: TextStyle(
+                  fontSize: screenWidth * 0.03,
+                  fontWeight: FontWeight.w500,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
             ),
           ),
           SizedBox(height: screenHeight * 0.01),
@@ -619,7 +727,7 @@ class _EWalletScreenState extends State<EWalletScreen> {
             child: FittedBox(
               fit: BoxFit.scaleDown,
               child: Text(
-                amount, // Menampilkan nilai hardcoded untuk saat ini
+                value, // Menampilkan nilai yang diterima
                 style: TextStyle(
                   fontSize: screenWidth * 0.04,
                   fontWeight: FontWeight.bold,

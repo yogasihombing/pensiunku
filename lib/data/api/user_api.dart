@@ -4,16 +4,20 @@ import 'package:pensiunku/util/api_util.dart';
 import 'package:pensiunku/config.dart';
 
 class UserApi extends BaseApi {
+  // Konstruktor memanggil super() tanpa parameter.
+  UserApi() : super();
+
+  // Endpoint yang menggunakan baseUrl dari config.dart (misal mobileapi)
   Future<Response> getOne(String token) {
     return httpGet(
-      '/user',
+      '/user', // Path relatif, akan digabungkan dengan BaseApi.baseUrl
       options: ApiUtil.getTokenOptions(token),
     );
   }
 
   Future<Response> updateOne(String token, dynamic data) {
     return httpPost(
-      '/user/update',
+      '/user/update', // Path relatif
       data: data,
       options: ApiUtil.getTokenOptions(token),
     );
@@ -21,8 +25,8 @@ class UserApi extends BaseApi {
 
   Future<Response> sendOtp(String phone) {
     return httpPost(
-      '/user/verify-phone',
-      data: isProd
+      '/user/verify-phone', // Path relatif
+      data: isProd // isProd dari config.dart
           ? {
               'phone': phone,
             }
@@ -35,7 +39,7 @@ class UserApi extends BaseApi {
 
   Future<Response> verifyOtp(String phone, String otp) {
     return httpPost(
-      '/user/verify-otp',
+      '/user/verify-otp', // Path relatif
       data: {
         'phone': phone,
         'otp': otp,
@@ -45,7 +49,7 @@ class UserApi extends BaseApi {
 
   Future<Response> saveFcmToken(String token, String fcmToken) {
     return httpPost(
-      '/user-notification/token',
+      '/user-notification/token', // Path relatif
       data: {
         'token': fcmToken,
       },
@@ -53,13 +57,12 @@ class UserApi extends BaseApi {
     );
   }
 
-  // Endpoint baru untuk mengecek keberadaan pengguna
+  // Endpoint yang menggunakan URL absolut karena berada di domain yang berbeda (new.php)
   Future<Response> checkUserExists(String phone) {
     return httpPost(
-      'https://api.pensiunku.id/new.php/cekNomorTelepon', // Endpoint baru
+      'https://api.pensiunku.id/new.php/cekNomorTelepon', // URL absolut
       data: {
-        'telepon':
-            phone, // Menggunakan 'telepon' sebagai parameter sesuai dengan API
+        'telepon': phone,
       },
     );
   }

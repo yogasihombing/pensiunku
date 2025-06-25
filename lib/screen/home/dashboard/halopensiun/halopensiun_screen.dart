@@ -154,11 +154,16 @@ class _HalopensiunScreenState extends State<HalopensiunScreen> {
                                     child: Stack(
                                       fit: StackFit.loose,
                                       children: [
-                                        Container(
-                                          width: screenSize.width,
-                                          child: Image.asset(
-                                              'assets/halopensiun/banner.png',
-                                              fit: BoxFit.fill),
+                                        Image.asset(
+                                          'assets/halopensiun/banner.png',
+                                          fit: BoxFit.cover,
+                                          width:
+                                              MediaQuery.of(context).size.width,
+                                          height: MediaQuery.of(context)
+                                                  .size
+                                                  .width *
+                                              9 /
+                                              16, // Rasio 16:9
                                         ),
                                       ],
                                     ),
@@ -184,7 +189,10 @@ class _HalopensiunScreenState extends State<HalopensiunScreen> {
                         return Container(
                           child: Padding(
                             padding: EdgeInsets.only(
-                                left: 20.0, right: 20.0, bottom: 12.0, top: 12.0),
+                                left: 20.0,
+                                right: 20.0,
+                                bottom: 12.0,
+                                top: 12.0),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -236,9 +244,9 @@ class _HalopensiunScreenState extends State<HalopensiunScreen> {
                                                   });
                                                   _refreshData();
                                                 },
-                                                backgroundColor: const Color(0xFFFEC842),
+                                                backgroundColor:
+                                                    const Color(0xFFFEC842),
                                               ),
-                                              
                                             );
                                           })
                                           .values
@@ -289,7 +297,6 @@ class _HalopensiunScreenState extends State<HalopensiunScreen> {
                                   imageUrl: _listHalopensiun[index].infografis,
                                   fit: BoxFit.fitWidth,
                                 ),
-                                
                               ],
                             ),
                           ),
