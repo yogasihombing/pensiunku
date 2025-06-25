@@ -159,9 +159,9 @@ class _EWalletInfoAkunState extends State<EWalletInfoAkun> {
                   // Profile Greeting: Avatar, greeting, dan username
                   Center(child: _buildProfileGreeting()),
                   const SizedBox(height: 24),
-                  // Saldo Dompet
-                  _buildWalletBalance(),
-                  const SizedBox(height: 24),
+                  // // Saldo Dompet
+                  // _buildWalletBalance(),
+                  // const SizedBox(height: 24),
                   // Konten tambahan (jika ada info akun lainnya, bisa ditambahkan di sini)
                 ],
               ),
@@ -246,56 +246,56 @@ class _EWalletInfoAkunState extends State<EWalletInfoAkun> {
     );
   }
 
-  /// Widget untuk menampilkan informasi saldo (Dompet Anda)
-  Widget _buildWalletBalance() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 8,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.account_balance_wallet, color: Colors.black),
-              const SizedBox(width: 8),
-              Flexible(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: const Text(
-                    'Dompet Anda',
-                    style: TextStyle(fontSize: 14, color: Colors.black),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Center(
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: const Text(
-                'Rp 5.000.000',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  // /// Widget untuk menampilkan informasi saldo (Dompet Anda)
+  // Widget _buildWalletBalance() {
+  //   return Container(
+  //     width: double.infinity,
+  //     padding: const EdgeInsets.all(16),
+  //     decoration: BoxDecoration(
+  //       color: Colors.white,
+  //       borderRadius: BorderRadius.circular(16),
+  //       boxShadow: const [
+  //         BoxShadow(
+  //           color: Colors.black12,
+  //           blurRadius: 8,
+  //           offset: Offset(0, 4),
+  //         ),
+  //       ],
+  //     ),
+  //     child: Column(
+  //       crossAxisAlignment: CrossAxisAlignment.start,
+  //       children: [
+  //         Row(
+  //           children: [
+  //             const Icon(Icons.account_balance_wallet, color: Colors.black),
+  //             const SizedBox(width: 8),
+  //             Flexible(
+  //               child: FittedBox(
+  //                 fit: BoxFit.scaleDown,
+  //                 child: const Text(
+  //                   'Dompet Anda',
+  //                   style: TextStyle(fontSize: 14, color: Colors.black),
+  //                   maxLines: 1,
+  //                   overflow: TextOverflow.ellipsis,
+  //                 ),
+  //               ),
+  //             ),
+  //           ],
+  //         ),
+  //         const SizedBox(height: 8),
+  //         Center(
+  //           child: FittedBox(
+  //             fit: BoxFit.scaleDown,
+  //             child: const Text(
+  //               'Rp 5.000.000',
+  //               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+  //               maxLines: 1,
+  //               overflow: TextOverflow.ellipsis,
+  //             ),
+  //           ),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 }
