@@ -605,7 +605,7 @@ class _EWalletScreenState extends State<EWalletScreen> {
         Expanded(
           child: _buildBoxMenu(
             'assets/pensiunkuplus/e_wallet/wallet-02.png',
-            "Total Pendapatan", // Mengganti "Total Pencairan" menjadi "Total Pendapatan"
+            "Total Pencairan", // Mengganti "Total Pencairan" menjadi "Total Pendapatan"
             value: _totalIncome, // Data dinamis
           ),
         ),

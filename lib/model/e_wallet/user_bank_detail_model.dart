@@ -1,53 +1,54 @@
+import 'package:flutter/material.dart';
+
 class UserBankDetail {
-  // Properti 'id' yang baru ditambahkan dan sangat penting.
-  // Ini akan digunakan sebagai 'id_rekening' untuk API pengajuanWithdraw.
   final String id;
   final String bankName;
-  final String
-      accountNumber; // Menggunakan 'id' dari API sebagai nomor rekening
+  final String accountNumber; // Ini akan diisi dengan nomor rekening aktual
   final String accountHolderName;
-  final String? bankLogoUrl; // URL logo bank, bisa null
+  final String? bankLogoUrl;
 
   UserBankDetail({
-    required this.id, // Pastikan 'id' ada dan required di konstruktor
+    required this.id,
     required this.bankName,
-    required this.accountNumber,
+    required this.accountNumber, // Pastikan ini diisi dengan nomor rekening aktual
     required this.accountHolderName,
     this.bankLogoUrl,
   });
 
-  // Factory constructor untuk membuat UserBankDetail dari JSON
   factory UserBankDetail.fromJson(Map<String, dynamic> json) {
-    // Log untuk debugging, Anda bisa menghapusnya setelah yakin berfungsi
-    // debugPrint('Parsing UserBankDetail from JSON: $json');
+    debugPrint('Parsing UserBankDetail from JSON: $json');
 
-    // Menggunakan kunci yang sesuai dengan respons API getUserRekening
-    // 'bank' untuk nama bank, 'id' untuk ID (yang kita gunakan sebagai accountNumber),
-    // 'account_holder_name' untuk nama pemilik rekening.
     String bankName = json['bank'] ?? 'Nama Bank Tidak Diketahui';
-    String idFromApi = json['id']?.toString() ?? ''; // Ambil 'id' dari JSON
-    String accountNumber =
-        idFromApi; // Gunakan 'id' dari API sebagai nomor rekening
+    String idFromApi = json['id']?.toString() ?? '';
 
-    String accountHolderName =
-        json['account_holder_name'] ?? 'Nama Pemilik Tidak Diketahui';
-    String? bankLogoUrl = json['logo_bank']; // Ambil URL logo jika ada
+    // PENTING: Perbaikan ini mengasumsikan API akan mengembalikan 'account_number' atau 'norek'.
+    // Ini akan mencoba mengambil data dari 'account_number' terlebih dahulu,
+    // lalu dari 'norek', dan terakhir dari 'id' jika keduanya tidak ada.
+    String actualAccountNumber = json['account_number']?.toString() ?? json['norek']?.toString() ?? idFromApi;
+
+    String accountHolderName = json['account_holder_name'] ?? 'Nama Pemilik Tidak Diketahui';
+    String? bankLogoUrl = json['bankLogoUrl']?.toString();
 
     return UserBankDetail(
-      id: idFromApi, // Set properti 'id' dari JSON
+      id: idFromApi,
       bankName: bankName,
-      accountNumber:
-          accountNumber, // Set properti 'accountNumber' dari 'id' JSON
+      accountNumber: actualAccountNumber, // Sekarang menggunakan nomor rekening aktual
       accountHolderName: accountHolderName,
       bankLogoUrl: bankLogoUrl,
     );
   }
 
-  // Metode untuk membuat representasi string yang cocok untuk DropdownButtonFormField
+  // Getter baru untuk menampilkan nomor rekening yang sebagian tersembunyi
+  String get maskedAccountNumber {
+    if (accountNumber.length <= 4) {
+      return accountNumber; // Jika terlalu pendek, tampilkan saja semua
+    }
+    // Sembunyikan semua kecuali 4 digit terakhir
+    return 'xxxxxxxxxx${accountNumber.substring(accountNumber.length - 4)}';
+  }
+
   @override
   String toString() {
-    return '$bankName - Rek: ${accountNumber} (Pemilik: $accountHolderName)';
-    // Atau jika Anda ingin menampilkan ID:
-    // return '$bankName - ID: $id (Pemilik: $accountHolderName)';
+    return '$bankName - Rek: $accountNumber (Pemilik: $accountHolderName)';
   }
 }

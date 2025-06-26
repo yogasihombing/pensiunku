@@ -4,8 +4,9 @@ import 'dart:io';
 
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
-import 'package:pensiunku/data/api/user_api.dart';
 import 'package:pensiunku/model/e_wallet/bank_model.dart';
+import 'package:pensiunku/model/e_wallet/user_bank_detail_model.dart';
+
 
 class FormDaftarBankScreen extends StatefulWidget {
   static const String ROUTE_NAME = '/form-daftar-bank';
@@ -49,6 +50,7 @@ class _FormDaftarBankScreenState extends State<FormDaftarBankScreen> {
     super.dispose();
   }
 
+  /// Fungsi untuk memuat data pengguna dan mengambil daftar bank master
   Future<void> _loadUserDataAndFetchBanks() async {
     debugPrint('Memulai _loadUserDataAndFetchBanks...');
     setState(() {
@@ -58,7 +60,7 @@ class _FormDaftarBankScreenState extends State<FormDaftarBankScreen> {
       debugPrint('Token dari widget di FormDaftarBankScreen: $_token');
       debugPrint('User ID dari widget di FormDaftarBankScreen: $_userId');
 
-      await _fetchBankMaster();
+      await _fetchBankMaster(); // Panggil fungsi untuk mengambil daftar bank
     } catch (e) {
       debugPrint('Error loading user data or fetching banks: $e');
       _showAlertDialog('Error', 'Gagal memuat data: ${e.toString()}');
@@ -69,6 +71,7 @@ class _FormDaftarBankScreenState extends State<FormDaftarBankScreen> {
     }
   }
 
+  /// Mengambil daftar bank master dari API
   Future<void> _fetchBankMaster() async {
     debugPrint('Memulai _fetchBankMaster...');
     const String baseUrl = 'https://api.pensiunku.id/new.php/getBankMaster';
@@ -111,6 +114,7 @@ class _FormDaftarBankScreenState extends State<FormDaftarBankScreen> {
     }
   }
 
+  /// Menyimpan detail bank yang dimasukkan pengguna ke API
   Future<void> _saveUserBank() async {
     debugPrint('Memulai _saveUserBank...');
     if (!_formKey.currentState!.validate()) {
@@ -133,6 +137,7 @@ class _FormDaftarBankScreenState extends State<FormDaftarBankScreen> {
       return;
     }
 
+    // Tampilkan dialog konfirmasi sebelum menyimpan
     _showAlertDialog(
       'Perhatian!',
       'Pastikan Nomor Rekening dan Nama Pemilik Rekening sudah benar sebelum menyimpan.',
@@ -170,14 +175,14 @@ class _FormDaftarBankScreenState extends State<FormDaftarBankScreen> {
           if (response.statusCode == 200) {
             final Map<String, dynamic> responseBody =
                 json.decode(response.body);
-            // Perbaiki pengecekan status sukses
+            // Perbaiki pengecekan status sukses berdasarkan struktur respons API Anda
             if (responseBody.containsKey('text') &&
                 responseBody['text'].containsKey('message') &&
                 responseBody['text']['message'] == 'success') {
               _showAlertDialog(
                   'Berhasil', 'Data rekening bank berhasil ditambahkan!',
                   onClose: () {
-                Navigator.pop(context, true); // Pop dengan hasil true
+                Navigator.pop(context, true); // Pop dengan hasil true untuk memberitahu EWalletBankTujuan untuk refresh
               });
             } else {
               _showAlertDialog('Gagal',
@@ -209,6 +214,7 @@ class _FormDaftarBankScreenState extends State<FormDaftarBankScreen> {
     );
   }
 
+  /// Menampilkan AlertDialog kustom
   void _showAlertDialog(String title, String message,
       {VoidCallback? onClose, VoidCallback? onConfirm}) {
     showDialog(
@@ -218,7 +224,7 @@ class _FormDaftarBankScreenState extends State<FormDaftarBankScreen> {
           title: Text(title),
           content: Text(message),
           actions: <Widget>[
-            if (onConfirm != null)
+            if (onConfirm != null) // Tampilkan tombol 'Batal' hanya jika ada onConfirm (konfirmasi)
               TextButton(
                 child: const Text("Batal"),
                 onPressed: () {
@@ -227,12 +233,12 @@ class _FormDaftarBankScreenState extends State<FormDaftarBankScreen> {
                 },
               ),
             TextButton(
-              child: Text(onConfirm != null ? "Lanjut" : "OK"),
+              child: Text(onConfirm != null ? "Lanjut" : "OK"), // Ubah teks tombol sesuai kebutuhan
               onPressed: () {
-                Navigator.of(context).pop();
+                Navigator.of(context).pop(); // Tutup dialog
                 debugPrint('Dialog Peringatan ditutup/dikonfirmasi.');
-                onConfirm?.call();
-                onClose?.call();
+                onConfirm?.call(); // Panggil onConfirm jika ada
+                onClose?.call(); // Panggil onClose jika ada
               },
             ),
           ],
@@ -251,6 +257,7 @@ class _FormDaftarBankScreenState extends State<FormDaftarBankScreen> {
     return Scaffold(
       body: Stack(
         children: [
+          // Background gradient
           Container(
             width: screenWidth,
             height: screenHeight,
@@ -279,7 +286,7 @@ class _FormDaftarBankScreenState extends State<FormDaftarBankScreen> {
                     SizedBox(height: screenHeight * 0.001),
                     _buildAppBar(context, screenWidth),
                     SizedBox(height: screenHeight * 0.04),
-                    _isLoading
+                    _isLoading // Tampilkan loading indicator jika sedang memuat
                         ? Center(
                             child: CircularProgressIndicator(
                                 color: Color(0xFF017964)))
@@ -304,6 +311,7 @@ class _FormDaftarBankScreenState extends State<FormDaftarBankScreen> {
     );
   }
 
+  /// AppBar kustom untuk form
   Widget _buildAppBar(BuildContext context, double screenWidth) {
     return SizedBox(
       height: kToolbarHeight,
@@ -318,14 +326,14 @@ class _FormDaftarBankScreenState extends State<FormDaftarBankScreen> {
                 color: const Color(0xFF017964),
                 size: screenWidth * 0.06,
               ),
-              onPressed: () => Navigator.pop(context),
+              onPressed: () => Navigator.pop(context, false), // Pop dengan hasil false jika kembali
             ),
           ),
           Center(
             child: FittedBox(
               fit: BoxFit.scaleDown,
               child: const Text(
-                "Bank Tujuan",
+                "Daftar Bank Baru", // Judul AppBar untuk form
                 style: TextStyle(
                   color: Color(0xFF017964),
                   fontSize: 18,
@@ -339,6 +347,7 @@ class _FormDaftarBankScreenState extends State<FormDaftarBankScreen> {
     );
   }
 
+  /// Field Dropdown untuk memilih Nama Bank
   Widget _buildBankNameField(double screenWidth) {
     return Container(
       padding:
@@ -381,6 +390,7 @@ class _FormDaftarBankScreenState extends State<FormDaftarBankScreen> {
     );
   }
 
+  /// Field input untuk Nomor Rekening
   Widget _buildAccountNumberField(double screenWidth) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
@@ -413,6 +423,7 @@ class _FormDaftarBankScreenState extends State<FormDaftarBankScreen> {
     );
   }
 
+  /// Field input untuk Nama Pemilik Rekening
   Widget _buildAccountHolderNameField(double screenWidth) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
@@ -442,6 +453,7 @@ class _FormDaftarBankScreenState extends State<FormDaftarBankScreen> {
     );
   }
 
+  /// Tombol "Tambah Rekening Baru" untuk menyimpan data
   Widget _buildSubmitButton(double screenWidth) {
     return SizedBox(
       width: double.infinity,
@@ -456,7 +468,7 @@ class _FormDaftarBankScreenState extends State<FormDaftarBankScreen> {
             borderRadius: BorderRadius.circular(22),
           ),
         ),
-        onPressed: _isLoading ? null : _saveUserBank,
+        onPressed: _isLoading ? null : _saveUserBank, // Nonaktifkan tombol saat loading
         child: _isLoading
             ? const SizedBox(
                 width: 24,

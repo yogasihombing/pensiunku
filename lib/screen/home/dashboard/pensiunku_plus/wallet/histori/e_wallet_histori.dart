@@ -607,7 +607,8 @@ class _EWalletHistoriState extends State<EWalletHistori> {
             itemBuilder: (context, index) {
               final transaction = _transactionHistory![index];
               Color amountColor;
-              String amountPrefix;
+              String
+                  amountPrefix; // This variable is not used but kept for clarity if future changes require it.
 
               if (transaction.type == TransactionType.pencairan) {
                 amountColor = Colors.red;
@@ -671,8 +672,9 @@ class _EWalletHistoriState extends State<EWalletHistori> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            // Mengubah ini untuk menampilkan tipe transaksi
                             Text(
-                              transaction.description,
+                              transaction.displayTypeName, // Tampilkan "Pencairan" atau "Insentif"
                               style: TextStyle(
                                 fontSize: screenWidth * 0.035,
                                 fontWeight: FontWeight.w600,
@@ -682,11 +684,11 @@ class _EWalletHistoriState extends State<EWalletHistori> {
                               overflow: TextOverflow.ellipsis,
                             ),
                             SizedBox(height: screenHeight * 0.005),
+                            // Menampilkan deskripsi asli (Rekening BCA...) sebagai detail
                             Text(
-                              transaction.transactionDetail ??
-                                  '', // Tampilkan detail transaksi
+                              transaction.description, // Menampilkan detail rekening bank
                               style: TextStyle(
-                                fontSize: screenWidth * 0.03,
+                                fontSize: screenWidth * 0.025,
                                 color: Colors.grey,
                               ),
                               maxLines: 1,
@@ -702,7 +704,7 @@ class _EWalletHistoriState extends State<EWalletHistori> {
                           child: Text(
                             transaction.formattedAmount,
                             style: TextStyle(
-                              fontSize: screenWidth * 0.035,
+                              fontSize: screenWidth * 0.030,
                               fontWeight: FontWeight.bold,
                               color: amountColor,
                             ),
@@ -757,3 +759,4 @@ class _EWalletHistoriState extends State<EWalletHistori> {
     }
   }
 }
+

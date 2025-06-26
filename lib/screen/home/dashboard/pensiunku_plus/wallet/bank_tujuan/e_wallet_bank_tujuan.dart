@@ -18,6 +18,7 @@ class EWalletBankTujuan extends StatefulWidget {
 }
 
 class _EWalletBankTujuanState extends State<EWalletBankTujuan> {
+  // State untuk data pengguna, saldo, dan daftar rekening bank
   UserModel? _userModel;
   late Future<String> _futureGreeting;
   String _userBalance = 'Rp 0';
@@ -33,8 +34,9 @@ class _EWalletBankTujuanState extends State<EWalletBankTujuan> {
   void initState() {
     super.initState();
     debugPrint('EWalletBankTujuan initialized');
+    // Pastikan SharedPreferencesUtil diinisialisasi sebelum digunakan
     SharedPreferencesUtil().init().then((_) {
-      _refreshData(); // Panggil refresh data awal
+      _refreshData(); // Panggil refresh data awal setelah SharedPreferences siap
     });
     _futureGreeting = fetchGreeting();
   }
@@ -59,15 +61,17 @@ class _EWalletBankTujuanState extends State<EWalletBankTujuan> {
     String? token = prefs.getString(SharedPreferencesUtil.SP_KEY_TOKEN);
     debugPrint('Token dari SP: $token');
 
+    // Untuk tujuan demo/pengujian, set token jika null (Hapus ini di produksi)
     if (token == null || token.isEmpty) {
       token = "valid_token_123";
       await prefs.setString(SharedPreferencesUtil.SP_KEY_TOKEN, token);
-      debugPrint('Token disimpan ke SP: $token');
+      debugPrint('Token disimpan ke SP (demo): $token');
     }
 
     if (token != null && token.isNotEmpty) {
       try {
-        debugPrint('--- HTTP GET Request Dijalankan ---');
+        debugPrint('--- HTTP GET Request (User Data) Dijalankan ---');
+        // Log URL dan headers untuk debugging
         debugPrint('URL Lengkap: https://pensiunku.id/mobileapi/user');
         debugPrint('Opsi GET (Header dll): {Authorization: $token}');
 
@@ -76,14 +80,15 @@ class _EWalletBankTujuanState extends State<EWalletBankTujuan> {
           if (userResult.isSuccess && userResult.data != null) {
             setState(() {
               _userModel = userResult.data;
-              debugPrint('--- HTTP GET Response Diterima ---');
+              debugPrint('--- HTTP GET Response (User Data) Diterima ---');
               debugPrint('URL: https://pensiunku.id/mobileapi/user');
               debugPrint('Status Kode: 200');
               debugPrint('Data Respons: ${_userModel?.toJson()}');
-              debugPrint('--- Selesai GET Request ---');
+              debugPrint('--- Selesai GET Request (User Data) ---');
               debugPrint(
                   'Data Pengguna Diterima: ${_userModel?.username}, ID: ${_userModel?.id}');
             });
+            // Setelah userModel tersedia, panggil fetch saldo dan detail bank
             if (_userModel?.id != null) {
               await _fetchBalance(_userModel!.id.toString());
               await _fetchUserBankDetails(
@@ -102,6 +107,7 @@ class _EWalletBankTujuanState extends State<EWalletBankTujuan> {
     }
   }
 
+  /// Mengambil greeting dari API eksternal
   Future<String> fetchGreeting() async {
     debugPrint('Memulai fetchGreeting...');
     const String baseUrl = 'https://api.pensiunku.id/new.php/greeting';
@@ -135,6 +141,7 @@ class _EWalletBankTujuanState extends State<EWalletBankTujuan> {
     }
   }
 
+  /// Mengambil saldo pengguna dari API
   Future<void> _fetchBalance(String userId) async {
     debugPrint('Memulai _fetchBalance untuk userId: $userId');
     if (!mounted) return;
@@ -207,7 +214,7 @@ class _EWalletBankTujuanState extends State<EWalletBankTujuan> {
     if (!mounted) return;
     setState(() {
       _isLoadingBankDetail = true;
-      _userBankDetails = null; // Clear previous data
+      _userBankDetails = null; // Clear previous data to show loading
     });
 
     try {
@@ -231,11 +238,11 @@ class _EWalletBankTujuanState extends State<EWalletBankTujuan> {
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
-        // KOREKSI UTAMA DI SINI: Akses 'data' di dalam 'text'
+        // Penting: Akses 'data' di dalam 'text' sesuai struktur JSON Anda
         if (responseData['text'] != null &&
+            responseData['text'].containsKey('data') &&
             responseData['text']['data'] is List) {
-          List<dynamic> rawData =
-              responseData['text']['data']; // Akses yang benar
+          List<dynamic> rawData = responseData['text']['data'];
           List<UserBankDetail> fetchedDetails =
               rawData.map((item) => UserBankDetail.fromJson(item)).toList();
           if (mounted) {
@@ -247,10 +254,10 @@ class _EWalletBankTujuanState extends State<EWalletBankTujuan> {
           }
         } else {
           debugPrint(
-              "Error: Field 'text' atau 'data' di dalam 'text' bukan list dalam respons rekening bank: ${response.body}");
+              "Error: Field 'text' atau 'data' di dalam 'text' tidak ditemukan atau bukan list dalam respons rekening bank: ${response.body}");
           if (mounted) {
             setState(() {
-              _userBankDetails = []; // Set list kosong jika data bukan list
+              _userBankDetails = []; // Set list kosong jika data tidak sesuai
             });
           }
         }
@@ -305,6 +312,7 @@ class _EWalletBankTujuanState extends State<EWalletBankTujuan> {
     return Scaffold(
       body: Stack(
         children: [
+          // Background gradient full screen
           Container(
             width: screenWidth,
             height: screenHeight,
@@ -322,6 +330,7 @@ class _EWalletBankTujuanState extends State<EWalletBankTujuan> {
               ),
             ),
           ),
+          // Header background (kuning) dengan ketinggian 28% dari tinggi layar
           Positioned(
             top: 0,
             left: 0,
@@ -341,7 +350,6 @@ class _EWalletBankTujuanState extends State<EWalletBankTujuan> {
           ),
           SafeArea(
             child: RefreshIndicator(
-              // <--- RefreshIndicator di sini
               onRefresh: _refreshData, // Panggil _refreshData saat direfresh
               child: SingleChildScrollView(
                 physics:
@@ -371,6 +379,7 @@ class _EWalletBankTujuanState extends State<EWalletBankTujuan> {
     );
   }
 
+  /// AppBar Custom: Tombol kembali dan judul "Bank Tujuan"
   Widget _buildAppBar(
       BuildContext context, double screenHeight, double screenWidth) {
     return SizedBox(
@@ -407,6 +416,7 @@ class _EWalletBankTujuanState extends State<EWalletBankTujuan> {
     );
   }
 
+  /// Widget Profil dan Ucapan Selamat Datang
   Widget _buildProfileGreeting(double screenWidth) {
     final avatarRadius = screenWidth * 0.10;
     const TextStyle greetingStyle = TextStyle(
@@ -482,6 +492,7 @@ class _EWalletBankTujuanState extends State<EWalletBankTujuan> {
     );
   }
 
+  /// Widget Kartu Dompet
   Widget _buildWalletCard(
       double screenWidth, double screenHeight, double cardPadding) {
     return Container(
@@ -583,7 +594,7 @@ class _EWalletBankTujuanState extends State<EWalletBankTujuan> {
             shrinkWrap:
                 true, // Penting agar ListView tidak memakan ruang tak terbatas
             physics:
-                const NeverScrollableScrollPhysics(), // Nonaktifkan scroll karena SingleChildScrollView
+                const NeverScrollableScrollPhysics(), // Nonaktifkan scroll karena SingleChildScrollView sudah ada di atas
             itemCount: _userBankDetails!.length,
             itemBuilder: (context, index) {
               final bankDetail = _userBankDetails![index];
@@ -606,6 +617,7 @@ class _EWalletBankTujuanState extends State<EWalletBankTujuan> {
                   ),
                   child: Row(
                     children: [
+                      // Area logo bank
                       Container(
                         width: logoSize,
                         height: logoSize,
@@ -613,16 +625,17 @@ class _EWalletBankTujuanState extends State<EWalletBankTujuan> {
                           borderRadius: BorderRadius.circular(8),
                           image: DecorationImage(
                             image: NetworkImage(bankDetail.bankLogoUrl ??
+                                // Placeholder image jika URL logo null atau error
                                 'https://placehold.co/${logoSize.toInt()}x${logoSize.toInt()}/000000/FFFFFF?text=BANK'),
                             fit: BoxFit.contain,
                             onError: (exception, stackTrace) {
                               debugPrint('Error loading image: $exception');
-                              // Handle image loading error, e.g., show a placeholder
                             },
                           ),
                         ),
                       ),
                       SizedBox(width: screenWidth * 0.03),
+                      // Detail bank (nama bank, nomor rekening, nama pemilik)
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -639,7 +652,7 @@ class _EWalletBankTujuanState extends State<EWalletBankTujuan> {
                             ),
                             SizedBox(height: 4),
                             Text(
-                              "No. Rekening: ${bankDetail.accountNumber}", // Menggunakan accountNumber yang diambil dari 'id'
+                              "No. Rekening: ${bankDetail.accountNumber}",
                               style: const TextStyle(
                                 fontSize: 14,
                                 color: Colors.black87,
@@ -669,6 +682,7 @@ class _EWalletBankTujuanState extends State<EWalletBankTujuan> {
         ],
       );
     } else {
+      // Tampilan jika tidak ada detail bank atau sedang tidak loading
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -707,55 +721,59 @@ class _EWalletBankTujuanState extends State<EWalletBankTujuan> {
     }
   }
 
+  /// Widget Tombol "Tambah Rekening Baru"
   Widget _buildAddBank(BuildContext context, double screenWidth) {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFFFFC950),
-          padding: EdgeInsets.symmetric(
-            horizontal: screenWidth * 0.08,
-            vertical: screenWidth * 0.035,
+    return Center(
+      child: SizedBox(
+        // width: double.infinity,
+        child: ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFFFFC950),
+            padding: EdgeInsets.symmetric(
+              horizontal: screenWidth * 0.07,
+              vertical: screenWidth * 0.025,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(22),
+            ),
           ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(22),
-          ),
-        ),
-        onPressed: () async {
-          debugPrint('Tombol "Tambah Rekening Baru" ditekan.');
-          final bool? result = await Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => FormDaftarBankScreen(
-                userId: _userModel?.id,
-                token: SharedPreferencesUtil()
-                    .sharedPreferences
-                    .getString(SharedPreferencesUtil.SP_KEY_TOKEN),
+          onPressed: () async {
+            debugPrint('Tombol "Tambah Rekening Baru" ditekan.');
+            // Navigasi ke FormDaftarBankScreen dan tunggu hasilnya
+            final bool? result = await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => FormDaftarBankScreen(
+                  userId: _userModel?.id,
+                  token: SharedPreferencesUtil()
+                      .sharedPreferences
+                      .getString(SharedPreferencesUtil.SP_KEY_TOKEN),
+                ),
               ),
-            ),
-          );
+            );
 
-          if (result == true) {
-            debugPrint(
-                'Kembali dari FormDaftarBankScreen dengan sukses, me-refresh detail bank.');
-            // Memanggil _refreshData untuk memuat ulang data bank setelah kembali
-            _refreshData();
-          } else if (result == false) {
-            debugPrint(
-                'Kembali dari FormDaftarBankScreen tanpa penambahan rekening.');
-          }
-        },
-        child: FittedBox(
-          fit: BoxFit.scaleDown,
-          child: const Text(
-            'Tambah Rekening Baru',
-            style: TextStyle(
-              color: Colors.black,
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
+            // Jika result adalah true, berarti rekening baru berhasil ditambahkan, refresh data
+            if (result == true) {
+              debugPrint(
+                  'Kembali dari FormDaftarBankScreen dengan sukses, me-refresh detail bank.');
+              _refreshData(); // Memanggil _refreshData untuk memuat ulang data bank
+            } else if (result == false) {
+              debugPrint(
+                  'Kembali dari FormDaftarBankScreen tanpa penambahan rekening.');
+            }
+          },
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: const Text(
+              'Tambah Rekening Baru',
+              style: TextStyle(
+                color: Colors.black,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
           ),
         ),
       ),

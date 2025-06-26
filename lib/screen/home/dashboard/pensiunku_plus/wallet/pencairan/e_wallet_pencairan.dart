@@ -10,6 +10,8 @@ import 'package:pensiunku/model/user_model.dart';
 import 'package:pensiunku/repository/user_repository.dart';
 import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/wallet/bank_tujuan/e_wallet_bank_tujuan.dart';
 import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/wallet/pencairan/konfirmasi_pin_e_wallet_screen.dart';
+import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/wallet/pencairan/pencairan_berhasil.dart';
+import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/wallet/pencairan/pencairan_diproses.dart';
 import 'package:pensiunku/util/shared_preferences_util.dart';
 
 class EWalletPencairan extends StatefulWidget {
@@ -752,8 +754,9 @@ class _EWalletPencairanState extends State<EWalletPencairan> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFFFC950),
                         padding: EdgeInsets.symmetric(
-                                // vertical: buttonPaddingVertical, // Gunakan padding vertikal responsif
-                                horizontal: screenWidth * 0.1), // Sesuaikan horizontal padding untuk mengatur lebar
+                            // vertical: buttonPaddingVertical, // Gunakan padding vertikal responsif
+                            horizontal: screenWidth *
+                                0.1), // Sesuaikan horizontal padding untuk mengatur lebar
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(22),
                         ),
@@ -813,8 +816,9 @@ class _EWalletPencairanState extends State<EWalletPencairan> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFFFC950),
                         padding: EdgeInsets.symmetric(
-                                // vertical: buttonPaddingVertical, // Gunakan padding vertikal responsif
-                                horizontal: screenWidth * 0.1), // Sesuaikan horizontal padding untuk mengatur lebar
+                            // vertical: buttonPaddingVertical, // Gunakan padding vertikal responsif
+                            horizontal: screenWidth *
+                                0.1), // Sesuaikan horizontal padding untuk mengatur lebar
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(22),
                         ),
@@ -844,6 +848,69 @@ class _EWalletPencairanState extends State<EWalletPencairan> {
                       ),
                     ),
                   ),
+                ),
+                Text(
+                  'Tombol Demo (Hapus di Produksi):',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                SizedBox(height: 8),
+
+// Tombol Demo: Ke Pencairan Diproses Screen
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => PencairanDiprosesScreen(
+                          // Memberikan data dummy yang relevan untuk demo
+                          bankDetail: UserBankDetail(
+                            bankName: 'Bank Demo Proses',
+                            accountNumber: '1122334455', // Nomor rekening dummy
+                            accountHolderName: 'Pengguna Demo Proses',
+                            id: 'dummy_id_proses',
+                          ),
+                          referenceNumber:
+                              'DEMO-PROC-${DateTime.now().millisecondsSinceEpoch}', // Nomor referensi dummy
+                          transactionDate:
+                              DateTime.now(), // Tanggal transaksi saat ini
+                        ),
+                      ),
+                    );
+                  },
+                  // Pastikan child berisi Text widget
+                  child: Text('Demo: Ke Pencairan Diproses'),
+                ),
+                SizedBox(height: 8),
+
+// Tombol Demo: Ke Pencairan Berhasil Screen
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => PencairanBerhasilScreen(
+                          transactionDate:
+                              DateTime.now(), // Tanggal transaksi saat ini
+                          referenceNumber:
+                              'DEMO-DONE-${DateTime.now().millisecondsSinceEpoch}', // Nomor referensi dummy
+                          bankDetail: _selectedWithdrawalAccount ??
+                              UserBankDetail(
+                                // Menggunakan _selectedWithdrawalAccount jika tersedia, atau dummy jika belum ada yang terpilih
+                                bankName: 'Bank Demo Sukses',
+                                accountNumber:
+                                    '9876543210', // Nomor rekening dummy
+                                accountHolderName: 'Pengguna Demo Sukses',
+                                id: 'dummy_id_sukses',
+                              ),
+                          // Mengambil nominal dari controller, jika null default ke 0.0
+                          amount:
+                              double.tryParse(_jumlahController.text) ?? 0.0,
+                        ),
+                      ),
+                    );
+                  },
+                  // Pastikan child berisi Text widget
+                  child: Text('Demo: Ke Pencairan Berhasil'),
                 ),
               ],
             ),
