@@ -33,11 +33,44 @@ class _RiwayatPengajuanAndaScreenState
         .sharedPreferences
         .getString(SharedPreferencesUtil.SP_KEY_TOKEN);
 
-    UserRepository().getOne(token!).then((value) {
+    if (token == null || token.isEmpty) {
+      setState(() {
+        isLoading = false;
+      });
+      // Tampilkan pesan error atau arahkan ke login jika token tidak ada
+      DialogHelper.showErrorDialog(
+        context,
+        "Autentikasi Gagal",
+        "Token autentikasi tidak ditemukan. Harap login kembali.",
+        onOk: () {
+          Navigator.pop(context); // Tutup dialog
+          // Contoh: Navigator.pushReplacementNamed(context, '/login');
+        },
+      );
+      return;
+    }
+
+    // Menggunakan try-catch untuk menangani error dari UserRepository().getOne
+    try {
+      final value = await UserRepository().getOne(token);
+      if (value.error != null) {
+        DialogHelper.showErrorDialog(context, "Error", value.error.toString());
+        setState(() {
+          isLoading = false;
+        });
+        return;
+      }
       telepon = value.data?.phone ?? '';
-      print(value.data);
+      debugPrint('Telepon dari profil: $telepon'); // Menggunakan debugPrint
       fetchPengajuanAndaData(telepon);
-    });
+    } catch (e) {
+      debugPrint('Error fetching profile: $e'); // Menggunakan debugPrint
+      DialogHelper.showErrorDialog(
+          context, "Error", "Gagal memuat profil: ${e.toString()}");
+      setState(() {
+        isLoading = false;
+      });
+    }
   }
 
   @override
@@ -49,9 +82,11 @@ class _RiwayatPengajuanAndaScreenState
   Future<void> fetchPengajuanAndaData(String telepon) async {
     setState(() => isLoading = true);
     try {
-      print('UI: Memulai fetch data untuk telepon $telepon');
+      debugPrint(
+          'UI: Memulai fetch data untuk telepon $telepon'); // Menggunakan debugPrint
       final data = await _repository.getRiwayatPengajuanAnda(telepon);
-      print('UI: Data diterima dari repository: $data');
+      debugPrint(
+          'UI: Data diterima dari repository: $data'); // Menggunakan debugPrint
 
       setState(() {
         pengajuanAndaData = data;
@@ -62,35 +97,40 @@ class _RiwayatPengajuanAndaScreenState
         showDialog(
           context: context,
           builder: (context) => DialogHelper(
-            title: "Gagal Memuat Data",
+            title: "Informasi",
             description:
                 "Tidak ada riwayat pengajuan Anda. Ajukan permohonan sekarang.",
-            buttonText: "Ajukan Sekarang",
+            buttonText: "Ajukan Sekarang", // Pastikan buttonText disediakan
             onButtonPress: () {
-              print("Ajukan Sekarang");
+              Navigator.of(context).pop(); // Tutup dialog
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => PengajuanAndaScreen(),
+                ),
+              );
             },
-            dialogType: DialogType.error,
-            nextPage: PengajuanAndaScreen(),
+            dialogType: DialogType.info, // Diubah menjadi info
           ),
         );
       }
     } catch (e, stackTrace) {
-      print('UI: Error saat fetch data - $e');
-      print('UI: StackTrace - $stackTrace');
+      debugPrint('UI: Error saat fetch data - $e'); // Menggunakan debugPrint
+      debugPrint('UI: StackTrace - $stackTrace'); // Menggunakan debugPrint
 
       setState(() => isLoading = false);
       showDialog(
         context: context,
         builder: (context) => DialogHelper(
-          title: "Informasi",
+          title: "Error Memuat Data",
           description:
-              "Tidak ada riwayat pengajuan Anda. Ajukan permohonan sekarang.",
-          buttonText: "Ajukan Sekarang",
+              "Terjadi kesalahan saat memuat riwayat pengajuan Anda: ${e.toString()}",
+          buttonText: "Coba Lagi", // Pastikan buttonText disediakan
           onButtonPress: () {
-            print("Ajukan Sekarang");
+            Navigator.of(context).pop(); // Tutup dialog
+            fetchPengajuanAndaData(telepon); // Coba lagi
           },
           dialogType: DialogType.error,
-          nextPage: PengajuanAndaScreen(),
         ),
       );
     }
@@ -149,7 +189,7 @@ class _RiwayatPengajuanAndaScreenState
           ),
           body: RefreshIndicator(
             onRefresh: () async {
-              fetchPengajuanAndaData(telepon);
+              await fetchPengajuanAndaData(telepon);
             },
             child: isLoading
                 ? const Center(child: CircularProgressIndicator())
@@ -266,11 +306,13 @@ class _RiwayatPengajuanAndaScreenState
                                       child: Row(
                                         mainAxisAlignment:
                                             MainAxisAlignment.end,
-                                        children: const [
+                                        children: [
                                           Text(
-                                            'Lihat Detail',
+                                            'Status: ${pengajuanAnda.statusPengajuan}', // Menampilkan status pengajuan
                                             style: TextStyle(
-                                              color: Color(0xFF017964),
+                                              color: _getStatusColor(
+                                                  pengajuanAnda
+                                                      .statusPengajuan),
                                               fontSize: 12,
                                               fontWeight: FontWeight.w500,
                                             ),
@@ -295,6 +337,20 @@ class _RiwayatPengajuanAndaScreenState
         ),
       ],
     );
+  }
+
+  // Helper function to get status color
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'pending':
+        return Colors.orange;
+      case 'approved':
+        return Colors.green;
+      case 'rejected':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
   }
 }
 

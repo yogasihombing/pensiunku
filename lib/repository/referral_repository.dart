@@ -65,7 +65,7 @@ class ReferralRepository extends BaseRepository {
             );
           }
         }
-        if (e.message.contains('SocketException')) {
+        if (e.message?.contains('SocketException') ?? false) {
           return ResultModel(
             isSuccess: false,
             error: finalErrorMessage,
@@ -136,7 +136,7 @@ class ReferralRepository extends BaseRepository {
             );
           }
         }
-        if (e.message.contains('SocketException')) {
+        if (e.message?.contains('SocketException') ?? false) {
           return ResultModel(
             isSuccess: false,
             error: finalErrorMessage,

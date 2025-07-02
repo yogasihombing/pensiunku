@@ -491,7 +491,7 @@ class _BarangScreenState extends State<BarangScreen> {
                     ),
                     items: barang.gallery.map<Widget>((e) {
                       String imageUrl =
-                          e.path ?? ''; // Pastikan path tidak null
+                          e.path; // Pastikan path tidak null
                       return Builder(
                         builder: (BuildContext context) {
                           return Container(

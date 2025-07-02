@@ -1,16 +1,21 @@
+import 'package:flutter/foundation.dart';
 import 'package:pensiunku/data/api/riwayat_pengajuan_anda_api.dart';
+import 'package:pensiunku/model/riwayat_pengajuan_anda_model.dart';
 
 class RiwayatPengajuanAndaDao {
-  final RiwayatPengajuanAndaApi api = RiwayatPengajuanAndaApi();
+  final RiwayatPengajuanAndaApi _api = RiwayatPengajuanAndaApi();
 
-  Future<List<Map<String, dynamic>>> getPengajuanAndaData(String telepon) async {
-    print('DAO: Mangambil data dari API untuk telepon: $telepon');
+  Future<List<RiwayatPengajuanAndaModel>> getPengajuanAndaData(
+      String telepon) async {
+    debugPrint(
+        'DAO: Mengambil data dari API untuk telepon: $telepon'); // Typo "Mangambil" diperbaiki
     try {
-      final data = await api.fetchPengajuanAnda(telepon);
-      print('DAO: Data diterima dari API: $data');
-      return data.cast<Map<String, dynamic>>();
+      final List<RiwayatPengajuanAndaModel> data =
+          await _api.fetchPengajuanAnda(telepon);
+      debugPrint('DAO: Data berhasil diambil. Jumlah item: ${data.length}');
+      return data;
     } catch (e) {
-      print('DAO: Error saat mengambil data - $e');
+      debugPrint('DAO: Error saat mengambil data - $e');
       rethrow;
     }
   }

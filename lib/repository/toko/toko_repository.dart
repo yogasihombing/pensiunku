@@ -45,7 +45,7 @@ class TokoRepository extends BaseRepository {
       }
     } catch (e) {
       log(e.toString(), name: tag, error: e);
-      if (e is DioError) {
+      if (e is DioException) {
         int? statusCode = e.response?.statusCode;
         if (statusCode != null) {
           if (statusCode >= 400 && statusCode < 500) {
@@ -62,7 +62,7 @@ class TokoRepository extends BaseRepository {
             );
           }
         }
-        if (e.message.contains('SocketException')) {
+        if (e.message?.contains('SocketException') ?? false) {
           return ResultModel(
             isSuccess: false,
             error: finalErrorMessage,
@@ -105,7 +105,7 @@ class TokoRepository extends BaseRepository {
       }
     } catch (e) {
       log(e.toString(), name: tag, error: e);
-      if (e is DioError) {
+      if (e is DioException) {
         int? statusCode = e.response?.statusCode;
         if (statusCode != null) {
           if (statusCode >= 400 && statusCode < 500) {
@@ -122,7 +122,7 @@ class TokoRepository extends BaseRepository {
             );
           }
         }
-        if (e.message.contains('SocketException')) {
+        if (e.message?.contains('SocketException')?? false) {
           return ResultModel(
             isSuccess: false,
             error: finalErrorMessage,
@@ -175,7 +175,7 @@ class TokoRepository extends BaseRepository {
       }
     } catch (e) {
       log(e.toString(), name: tag, error: e);
-      if (e is DioError) {
+      if (e is DioException) {
         int? statusCode = e.response?.statusCode;
         if (statusCode != null) {
           if (statusCode >= 400 && statusCode < 500) {
@@ -192,7 +192,7 @@ class TokoRepository extends BaseRepository {
             );
           }
         }
-        if (e.message.contains('SocketException')) {
+        if (e.message?.contains('SocketException') ?? false) {
           return ResultModel(
             isSuccess: false,
             error: finalErrorMessage,
@@ -236,7 +236,7 @@ class TokoRepository extends BaseRepository {
       }
     } catch (e) {
       log(e.toString(), name: tag, error: e);
-      if (e is DioError) {
+      if (e is DioException) {
         int? statusCode = e.response?.statusCode;
         if (statusCode != null) {
           if (statusCode >= 400 && statusCode < 500) {
@@ -255,7 +255,7 @@ class TokoRepository extends BaseRepository {
             );
           }
         }
-        if (e.message.contains('SocketException')) {
+        if (e.message?.contains('SocketException') ?? false) {
           return ResultModel(
             isSuccess: false,
             error: finalErrorMessage,
@@ -299,7 +299,7 @@ class TokoRepository extends BaseRepository {
       }
     } catch (e) {
       log(e.toString(), name: tag, error: e);
-      if (e is DioError) {
+      if (e is DioException) {
         int? statusCode = e.response?.statusCode;
         if (statusCode != null) {
           if (statusCode >= 400 && statusCode < 500) {
@@ -318,7 +318,7 @@ class TokoRepository extends BaseRepository {
             );
           }
         }
-        if (e.message.contains('SocketException')) {
+        if (e.message?.contains('SocketException') ?? false) {
           return ResultModel(
             isSuccess: false,
             error: finalErrorMessage,
@@ -360,7 +360,7 @@ class TokoRepository extends BaseRepository {
       }
     } catch (e) {
       log(e.toString(), name: tag, error: e);
-      if (e is DioError) {
+      if (e is DioException) {
         int? statusCode = e.response?.statusCode;
         if (statusCode != null) {
           if (statusCode >= 400 && statusCode < 500) {
@@ -379,7 +379,7 @@ class TokoRepository extends BaseRepository {
             );
           }
         }
-        if (e.message.contains('SocketException')) {
+        if (e.message?.contains('SocketException') ?? false) {
           return ResultModel(
             isSuccess: false,
             error: finalErrorMessage,
@@ -434,7 +434,7 @@ class TokoRepository extends BaseRepository {
       }
     } catch (e) {
       log(e.toString(), name: tag, error: e);
-      if (e is DioError) {
+      if (e is DioException) {
         int? statusCode = e.response?.statusCode;
         if (statusCode != null) {
           if (statusCode >= 400 && statusCode < 500) {
@@ -451,7 +451,7 @@ class TokoRepository extends BaseRepository {
             );
           }
         }
-        if (e.message.contains('SocketException')) {
+        if (e.message?.contains('SocketException') ?? false) {
           return ResultModel(
             isSuccess: false,
             error: finalErrorMessage,
@@ -506,7 +506,7 @@ class TokoRepository extends BaseRepository {
       }
     } catch (e) {
       log(e.toString(), name: tag, error: e);
-      if (e is DioError) {
+      if (e is DioException) {
         int? statusCode = e.response?.statusCode;
         if (statusCode != null) {
           if (statusCode >= 400 && statusCode < 500) {
@@ -523,7 +523,7 @@ class TokoRepository extends BaseRepository {
             );
           }
         }
-        if (e.message.contains('SocketException')) {
+        if (e.message?.contains('SocketException') ?? false) {
           return ResultModel(
             isSuccess: false,
             error: finalErrorMessage,
@@ -589,7 +589,7 @@ class TokoRepository extends BaseRepository {
       }
     } catch (e) {
       log(e.toString(), name: tag, error: e);
-      if (e is DioError) {
+      if (e is DioException) {
         int? statusCode = e.response?.statusCode;
         if (statusCode != null) {
           if (statusCode >= 400 && statusCode < 500) {
@@ -606,7 +606,7 @@ class TokoRepository extends BaseRepository {
             );
           }
         }
-        if (e.message.contains('SocketException')) {
+        if (e.message?.contains('SocketException') ?? false) {
           return ResultModel(
             isSuccess: false,
             error: finalErrorMessage,
@@ -640,7 +640,7 @@ class TokoRepository extends BaseRepository {
       }
     } catch (e) {
       log(e.toString(), name: tag, error: e);
-      if (e is DioError) {
+      if (e is DioException) {
         int? statusCode = e.response?.statusCode;
         if (statusCode != null) {
           if (statusCode >= 400 && statusCode < 500) {
@@ -659,7 +659,7 @@ class TokoRepository extends BaseRepository {
             );
           }
         }
-        if (e.message.contains('SocketException')) {
+        if (e.message?.contains('SocketException') ?? false) {
           return ResultModel(
             isSuccess: false,
             error: finalErrorMessage,
@@ -694,7 +694,7 @@ class TokoRepository extends BaseRepository {
       }
     } catch (e) {
       log(e.toString(), name: tag, error: e);
-      if (e is DioError) {
+      if (e is DioException) {
         int? statusCode = e.response?.statusCode;
         if (statusCode != null) {
           if (statusCode >= 400 && statusCode < 500) {
@@ -713,7 +713,7 @@ class TokoRepository extends BaseRepository {
             );
           }
         }
-        if (e.message.contains('SocketException')) {
+        if (e.message?.contains('SocketException') ?? false) {
           return ResultModel(
             isSuccess: false,
             error: finalErrorMessage,
@@ -748,7 +748,7 @@ class TokoRepository extends BaseRepository {
       }
     } catch (e) {
       log(e.toString(), name: tag, error: e);
-      if (e is DioError) {
+      if (e is DioException) {
         int? statusCode = e.response?.statusCode;
         if (statusCode != null) {
           if (statusCode >= 400 && statusCode < 500) {
@@ -767,7 +767,7 @@ class TokoRepository extends BaseRepository {
             );
           }
         }
-        if (e.message.contains('SocketException')) {
+        if (e.message?.contains('SocketException') ?? false) {
           return ResultModel(
             isSuccess: false,
             error: finalErrorMessage,
@@ -810,7 +810,7 @@ class TokoRepository extends BaseRepository {
       }
     } catch (e) {
       log(e.toString(), name: tag, error: e);
-      if (e is DioError) {
+      if (e is DioException) {
         int? statusCode = e.response?.statusCode;
         if (statusCode != null) {
           if (statusCode >= 400 && statusCode < 500) {
@@ -829,7 +829,7 @@ class TokoRepository extends BaseRepository {
             );
           }
         }
-        if (e.message.contains('SocketException')) {
+        if (e.message?.contains('SocketException') ?? false) {
           return ResultModel(
             isSuccess: false,
             error: finalErrorMessage,
@@ -872,7 +872,7 @@ class TokoRepository extends BaseRepository {
       }
     } catch (e) {
       log(e.toString(), name: tag, error: e);
-      if (e is DioError) {
+      if (e is DioException) {
         int? statusCode = e.response?.statusCode;
         if (statusCode != null) {
           if (statusCode >= 400 && statusCode < 500) {
@@ -891,7 +891,7 @@ class TokoRepository extends BaseRepository {
             );
           }
         }
-        if (e.message.contains('SocketException')) {
+        if (e.message?.contains('SocketException') ?? false) {
           return ResultModel(
             isSuccess: false,
             error: finalErrorMessage,
@@ -934,7 +934,7 @@ class TokoRepository extends BaseRepository {
       }
     } catch (e) {
       log(e.toString(), name: tag, error: e);
-      if (e is DioError) {
+      if (e is DioException) {
         int? statusCode = e.response?.statusCode;
         if (statusCode != null) {
           if (statusCode >= 400 && statusCode < 500) {
@@ -953,7 +953,7 @@ class TokoRepository extends BaseRepository {
             );
           }
         }
-        if (e.message.contains('SocketException')) {
+        if (e.message?.contains('SocketException') ?? false) {
           return ResultModel(
             isSuccess: false,
             error: finalErrorMessage,
@@ -997,7 +997,7 @@ class TokoRepository extends BaseRepository {
       }
     } catch (e) {
       log(e.toString(), name: tag, error: e);
-      if (e is DioError) {
+      if (e is DioException) {
         int? statusCode = e.response?.statusCode;
         if (statusCode != null) {
           if (statusCode >= 400 && statusCode < 500) {
@@ -1014,7 +1014,7 @@ class TokoRepository extends BaseRepository {
             );
           }
         }
-        if (e.message.contains('SocketException')) {
+        if (e.message?.contains('SocketException') ?? false) {
           return ResultModel(
             isSuccess: false,
             error: finalErrorMessage,
@@ -1061,7 +1061,7 @@ class TokoRepository extends BaseRepository {
       }
     } catch (e) {
       log(e.toString(), name: tag, error: e);
-      if (e is DioError) {
+      if (e is DioException) {
         int? statusCode = e.response?.statusCode;
         if (statusCode != null) {
           if (statusCode >= 400 && statusCode < 500) {
@@ -1078,7 +1078,7 @@ class TokoRepository extends BaseRepository {
             );
           }
         }
-        if (e.message.contains('SocketException')) {
+        if (e.message?.contains('SocketException')?? false) {
           return ResultModel(
             isSuccess: false,
             error: finalErrorMessage,
@@ -1131,7 +1131,7 @@ class TokoRepository extends BaseRepository {
       }
     } catch (e) {
       log(e.toString(), name: tag, error: e);
-      if (e is DioError) {
+      if (e is DioException) {
         int? statusCode = e.response?.statusCode;
         if (statusCode != null) {
           if (statusCode >= 400 && statusCode < 500) {
@@ -1148,7 +1148,7 @@ class TokoRepository extends BaseRepository {
             );
           }
         }
-        if (e.message.contains('SocketException')) {
+        if (e.message?.contains('SocketException')?? false) {
           return ResultModel(
             isSuccess: false,
             error: finalErrorMessage,
@@ -1194,7 +1194,7 @@ class TokoRepository extends BaseRepository {
       }
     } catch (e) {
       log(e.toString(), name: tag, error: e);
-      if (e is DioError) {
+      if (e is DioException) {
         int? statusCode = e.response?.statusCode;
         if (statusCode != null) {
           if (statusCode >= 400 && statusCode < 500) {
@@ -1211,7 +1211,7 @@ class TokoRepository extends BaseRepository {
             );
           }
         }
-        if (e.message.contains('SocketException')) {
+        if (e.message?.contains('SocketException')?? false) {
           return ResultModel(
             isSuccess: false,
             error: finalErrorMessage,

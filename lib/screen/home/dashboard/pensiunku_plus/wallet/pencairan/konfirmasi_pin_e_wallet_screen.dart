@@ -32,6 +32,8 @@ class _KonfirmasiPinEWalletScreenState
     extends State<KonfirmasiPinEWalletScreen> {
   final List<TextEditingController> pinControllers =
       List.generate(6, (index) => TextEditingController());
+  final List<FocusNode> pinFocusNodes =
+      List.generate(6, (index) => FocusNode());
   bool _isLoadingOverlay = false;
   UserModel? _userModel; // Untuk menyimpan data user dari _refreshData
 
@@ -43,24 +45,15 @@ class _KonfirmasiPinEWalletScreenState
     SharedPreferencesUtil().init().then((_) {
       _refreshData();
     });
-
-    // Listener untuk fokus otomatis dan penggabungan PIN
-    for (int i = 0; i < pinControllers.length; i++) {
-      pinControllers[i].addListener(() {
-        if (pinControllers[i].text.length == 1 &&
-            i < pinControllers.length - 1) {
-          FocusScope.of(context).nextFocus();
-        } else if (pinControllers[i].text.isEmpty && i > 0) {
-          FocusScope.of(context).previousFocus();
-        }
-      });
-    }
   }
 
   @override
   void dispose() {
     for (var controller in pinControllers) {
       controller.dispose();
+    }
+    for (var node in pinFocusNodes) {
+      node.dispose();
     }
     super.dispose();
   }
@@ -386,6 +379,7 @@ class _KonfirmasiPinEWalletScreenState
                                     height: pinFieldHeight,
                                     child: TextFormField(
                                       controller: pinControllers[index],
+                                      focusNode: pinFocusNodes[index],
                                       textAlign: TextAlign.center,
                                       decoration: InputDecoration(
                                         border: OutlineInputBorder(
@@ -405,6 +399,14 @@ class _KonfirmasiPinEWalletScreenState
                                           return '';
                                         }
                                         return null;
+                                      },
+                                      onChanged: (value) {
+                                        // Pindah fokus ke field berikutnya jika digit dimasukkan
+                                        if (value.isNotEmpty && index < pinControllers.length - 1) {
+                                          pinFocusNodes[index + 1].requestFocus();
+                                        } else if (value.isEmpty && index > 0) { // Pindah fokus ke field sebelumnya jika digit dihapus
+                                          pinFocusNodes[index - 1].requestFocus();
+                                        }
                                       },
                                     ),
                                   ),

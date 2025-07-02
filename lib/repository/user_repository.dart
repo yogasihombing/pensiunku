@@ -5,12 +5,9 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:pensiunku/data/api/user_api.dart';
 import 'package:pensiunku/data/db/app_database.dart';
-import 'package:pensiunku/model/e_wallet/transaction_history_model.dart';
-import 'package:pensiunku/model/e_wallet/user_bank_detail_model.dart';
 import 'package:pensiunku/model/user_model.dart';
 import 'package:pensiunku/repository/base_repository.dart';
 import 'package:pensiunku/model/result_model.dart';
-import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/wallet/histori/e_wallet_histori.dart';
 import 'package:pensiunku/util/shared_preferences_util.dart';
 
 class UserRepository extends BaseRepository {
@@ -30,7 +27,7 @@ class UserRepository extends BaseRepository {
   Future<Response> _retryRequest(
       Future<Response> Function() requestFunction) async {
     int attempts = 0;
-    DioError? lastError;
+    DioException? lastError;
 
     while (attempts <= MAX_RETRY_ATTEMPTS) {
       try {
@@ -42,20 +39,20 @@ class UserRepository extends BaseRepository {
         return await requestFunction().timeout(
           Duration(milliseconds: DEFAULT_TIMEOUT),
           onTimeout: () {
-            throw DioError(
+            throw DioException(
               requestOptions: RequestOptions(path: ''),
-              type: DioErrorType.connectTimeout,
+              type: DioExceptionType.connectionTimeout, // Corrected: Use DioExceptionType.connectionTimeout
               error: 'Koneksi timeout',
             );
           },
         );
-      } on DioError catch (e) {
+      } on DioException catch (e) {
         lastError = e;
         attempts++;
 
-        if (e.type != DioErrorType.connectTimeout &&
-            e.type != DioErrorType.receiveTimeout &&
-            e.type != DioErrorType.sendTimeout &&
+        if (e.type != DioExceptionType.connectionTimeout &&
+            e.type != DioExceptionType.receiveTimeout &&
+            e.type != DioExceptionType.sendTimeout &&
             e.message != null && !e.message!.contains('SocketException')) {
           rethrow;
         }
@@ -66,17 +63,17 @@ class UserRepository extends BaseRepository {
   }
 
   String _getSpecificErrorMessage(dynamic error) {
-    if (error is DioError) {
+    if (error is DioException) {
       switch (error.type) {
-        case DioErrorType.connectTimeout:
-        case DioErrorType.sendTimeout:
+        case DioExceptionType.connectionTimeout:
+        case DioExceptionType.sendTimeout:
           return 'Waktu koneksi habis. Periksa kecepatan internet Anda.';
-        case DioErrorType.receiveTimeout:
+        case DioExceptionType.receiveTimeout:
           return 'Server membutuhkan waktu terlalu lama untuk merespons.';
-        case DioErrorType.response:
+        case DioExceptionType.badResponse:
           int? statusCode = error.response?.statusCode;
           if (statusCode != null) {
-            if (statusCode == 401 || statusCode == 403) {
+            if (statusCode == 401 || statusCode == 403) { // Unauthorized or Forbidden
               return 'Anda tidak memiliki akses ke layanan ini.';
             } else if (statusCode == 404) {
               return 'Layanan tidak ditemukan.';
@@ -85,9 +82,9 @@ class UserRepository extends BaseRepository {
             }
           }
           return 'Terjadi kesalahan pada jaringan.';
-        case DioErrorType.cancel:
+        case DioExceptionType.cancel:
           return 'Permintaan dibatalkan.';
-        case DioErrorType.other:
+        case DioExceptionType.unknown:
           if (error.message != null && error.message!.contains('SocketException')) {
             return 'Tidak dapat terhubung ke server. Periksa koneksi internet Anda.';
           }

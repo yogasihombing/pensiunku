@@ -1,13 +1,13 @@
 import 'dart:developer';
 import 'dart:io';
-import 'package:dio/adapter.dart';
 import 'package:dio/dio.dart';
+import 'package:dio/io.dart';
 
 class OngkirApi {
   static String tag = 'OngkirApi';
   static String? baseUrl = 'https://api.rajaongkir.com/starter/';
-  static int connectTimeout = 10000;
-  static int receiveTimeout = 5000;
+  static Duration connectTimeout = const Duration(milliseconds: 10000);
+  static Duration receiveTimeout = const Duration(milliseconds: 5000);
   static String token = '23bc37900459a8ccc0ba4396896a5795';
 
   Future<Response> costHttpPost(
@@ -35,7 +35,8 @@ class OngkirApi {
     };
 
     var dio = Dio();
-    (dio.httpClientAdapter as DefaultHttpClientAdapter).onHttpClientCreate =
+    // ignore: deprecated_member_use
+    (dio.httpClientAdapter as  IOHttpClientAdapter).onHttpClientCreate =
         (HttpClient client) {
       client.badCertificateCallback =
           (X509Certificate cert, String host, int port) => true;

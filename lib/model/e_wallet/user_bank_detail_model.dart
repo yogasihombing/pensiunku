@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 
 class UserBankDetail {
@@ -18,23 +20,28 @@ class UserBankDetail {
   factory UserBankDetail.fromJson(Map<String, dynamic> json) {
     debugPrint('Parsing UserBankDetail from JSON: $json');
 
-    String bankName = json['bank'] ?? 'Nama Bank Tidak Diketahui';
-    String idFromApi = json['id']?.toString() ?? '';
+    final String idFromApi = json['id']?.toString() ?? '';
+    if (idFromApi.isEmpty) {
+      // It's better to throw an error if the ID is missing, as it's crucial.
+      throw ArgumentError('UserBankDetail requires a non-empty id from JSON.');
+    }
 
-    // PENTING: Perbaikan ini mengasumsikan API akan mengembalikan 'account_number' atau 'norek'.
-    // Ini akan mencoba mengambil data dari 'account_number' terlebih dahulu,
-    // lalu dari 'norek', dan terakhir dari 'id' jika keduanya tidak ada.
-    String actualAccountNumber = json['account_number']?.toString() ?? json['norek']?.toString() ?? idFromApi;
+    // Safely parse the account number. Using the record 'id' as a fallback is incorrect.
+    // It's better to have an empty string if the account number is not provided.
+    final String actualAccountNumber =
+        json['account_number']?.toString() ?? json['norek']?.toString() ?? '';
 
-    String accountHolderName = json['account_holder_name'] ?? 'Nama Pemilik Tidak Diketahui';
-    String? bankLogoUrl = json['bankLogoUrl']?.toString();
+    // Handle potential inconsistencies in the key for the account holder's name.
+    final String accountHolderName = json['account_holder_name']?.toString() ??
+        json['nama']?.toString() ??
+        'Nama Pemilik Tidak Diketahui';
 
     return UserBankDetail(
       id: idFromApi,
-      bankName: bankName,
-      accountNumber: actualAccountNumber, // Sekarang menggunakan nomor rekening aktual
+      bankName: json['bank']?.toString() ?? 'Nama Bank Tidak Diketahui',
+      accountNumber: actualAccountNumber,
       accountHolderName: accountHolderName,
-      bankLogoUrl: bankLogoUrl,
+      bankLogoUrl: json['bankLogoUrl']?.toString(),
     );
   }
 

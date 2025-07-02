@@ -1,10 +1,13 @@
 
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:pensiunku/model/e_wallet/user_bank_detail_model.dart';
 import 'package:pensiunku/screen/home/dashboard/dashboard_screen.dart';
 
-class PencairanDiprosesScreen extends StatelessWidget {
+class PencairanDiprosesScreen extends StatefulWidget {
   static const String ROUTE_NAME = '/pencairan-diproses';
 
   final DateTime transactionDate;
@@ -19,6 +22,81 @@ class PencairanDiprosesScreen extends StatelessWidget {
   }) : super(key: key);
 
   @override
+  State<PencairanDiprosesScreen> createState() => _PencairanDiprosesScreenState();
+}
+
+class _PencairanDiprosesScreenState extends State<PencairanDiprosesScreen> {
+  UserBankDetail? _bankDetail;
+  bool _isLoading = true;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    // Jika detail bank sudah disediakan melalui konstruktor, gunakan itu.
+    // Jika tidak, panggil API untuk mengambilnya.
+    if (widget.bankDetail != null) {
+      _bankDetail = widget.bankDetail;
+      _isLoading = false;
+    } else {
+      _fetchBankDetail();
+    }
+  }
+
+  // Fungsi untuk memanggil API dan mengambil detail bank
+  Future<void> _fetchBankDetail() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    const String apiUrl = 'https://api.pensiunku.id/new.php/getDetailWithdraw';
+    const Map<String, String> requestBody = {
+      'id': '3'
+    }; // ID hardcode sesuai permintaan
+
+    try {
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode(requestBody),
+      );
+
+      debugPrint('API Response Status Code: ${response.statusCode}');
+      debugPrint('API Response Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseData = json.decode(response.body);
+        // Asumsi struktur respons API:
+        // { "success": true, "data": { ...data bank... } }
+        if (responseData['success'] == true && responseData['data'] != null) {
+          setState(() {
+            _bankDetail = UserBankDetail.fromJson(responseData['data']);
+            _isLoading = false;
+          });
+        } else {
+          setState(() {
+            _errorMessage = responseData['message'] ??
+                'Gagal mengambil detail bank. Data tidak valid.';
+            _isLoading = false;
+          });
+        }
+      } else {
+        setState(() {
+          _errorMessage =
+              'Gagal terhubung ke server: Status ${response.statusCode}';
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Terjadi kesalahan jaringan: $e';
+        _isLoading = false;
+      });
+      debugPrint('Error fetching bank detail: $e');
+    }
+  }
+  @override
   Widget build(BuildContext context) {
     final mediaQuery = MediaQuery.of(context);
     final screenHeight = mediaQuery.size.height;
@@ -26,7 +104,7 @@ class PencairanDiprosesScreen extends StatelessWidget {
 
     // Format tanggal dan waktu
     final dateTimeFormatter = DateFormat('dd MMMM yyyy • HH:mm:ss \'WIB\'', 'id_ID'); // Menggunakan id_ID untuk bulan
-    final formattedDateTime = dateTimeFormatter.format(transactionDate);
+    final formattedDateTime = dateTimeFormatter.format(widget.transactionDate);
 
     return Scaffold(
       body: Stack(
@@ -55,7 +133,7 @@ class PencairanDiprosesScreen extends StatelessWidget {
             top: 0,
             left: 0,
             right: 0,
-            height: screenHeight * 0.28,
+            height: screenHeight * 0.45,
             child: Container(
               decoration: BoxDecoration(
                 color: const Color(0xFFFFC950),
@@ -74,18 +152,18 @@ class PencairanDiprosesScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  SizedBox(height: screenHeight * 0.02),
+                  SizedBox(height: screenHeight * 0.03),
                   // AppBar (back button dan judul)
                   Align(
                     alignment: Alignment.centerLeft,
-                    child: IconButton(
-                      icon: Icon(
-                        Icons.arrow_back,
-                        color: const Color(0xFF017964),
-                        size: screenWidth * 0.06,
-                      ),
-                      onPressed: () => Navigator.pop(context),
-                    ),
+                    // child: IconButton(
+                    //   icon: Icon(
+                    //     Icons.arrow_back,
+                    //     color: Color.transparent,
+                    //     size: screenWidth * 0.06,
+                    //   ),
+                    //   onPressed: () => Navigator.pop(context),
+                    // ),
                   ),
                   SizedBox(height: screenHeight * 0.02),
 
@@ -94,16 +172,11 @@ class PencairanDiprosesScreen extends StatelessWidget {
                   // Contoh: assets/images/pencairan_diproses_illustration.png
                   // Untuk demo, menggunakan placeholder dari NetworkImage
                   Container(
-                    width: screenWidth * 0.6, // Ukuran responsif untuk ilustrasi
-                    height: screenHeight * 0.2,
-                    child: Image.network(
-                      'https://placehold.co/300x200/FFD700/000000?text=Pencairan%20Diproses', // Placeholder
-                      errorBuilder: (context, error, stackTrace) => Icon(
-                        Icons.hourglass_empty,
-                        color: Color(0xFF017964),
-                        size: screenWidth * 0.3,
-                      ),
-                    ),
+                    width: screenWidth * 0.8, // Ukuran responsif untuk ilustrasi
+                    height: screenHeight * 0.27,
+                    child: Image.asset('assets/pensiunkuplus/e_wallet/pencairan_diproses.png')
+                  
+                    
                   ),
                   SizedBox(height: screenHeight * 0.03),
 
@@ -127,9 +200,9 @@ class PencairanDiprosesScreen extends StatelessWidget {
                         Text(
                           "Mohon Ditunggu",
                           style: TextStyle(
-                            fontSize: screenWidth * 0.05,
+                            fontSize: screenWidth * 0.045,
                             fontWeight: FontWeight.bold,
-                            color: const Color(0xFF017964),
+                            color: const Color(0xFF3F3F3F),
                           ),
                           textAlign: TextAlign.center,
                         ),
@@ -137,9 +210,9 @@ class PencairanDiprosesScreen extends StatelessWidget {
                         Text(
                           "Pencairan Diproses",
                           style: TextStyle(
-                            fontSize: screenWidth * 0.08,
+                            fontSize: screenWidth * 0.07,
                             fontWeight: FontWeight.bold,
-                            color: const Color(0xFF017964),
+                            color: const Color(0xFF3F3F3F),
                           ),
                           textAlign: TextAlign.center,
                         ),
@@ -157,7 +230,7 @@ class PencairanDiprosesScreen extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    "Ref: $referenceNumber",
+                    "Ref: ${widget.referenceNumber}",
                     style: TextStyle(
                       fontSize: screenWidth * 0.035,
                       color: Colors.black87,
@@ -167,7 +240,7 @@ class PencairanDiprosesScreen extends StatelessWidget {
 
                   // Rekening Pencairan Card
                   Align(
-                    alignment: Alignment.centerLeft,
+                    alignment: Alignment.center,
                     child: Padding(
                       padding: EdgeInsets.only(left: screenWidth * 0.02, bottom: screenHeight * 0.01),
                       child: Text(
@@ -203,7 +276,7 @@ class PencairanDiprosesScreen extends StatelessWidget {
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(8),
                             image: DecorationImage(
-                              image: NetworkImage(bankDetail.bankLogoUrl ??
+                              image: NetworkImage(widget.bankDetail.bankLogoUrl ??
                                   'https://placehold.co/${(screenWidth * 0.15).toInt()}x${(screenWidth * 0.15).toInt()}/000000/FFFFFF?text=BANK'),
                               fit: BoxFit.contain,
                               // onError: (context, error, stackTrace) {
@@ -219,7 +292,7 @@ class PencairanDiprosesScreen extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                bankDetail.bankName,
+                                widget.bankDetail.bankName,
                                 style: TextStyle(
                                   fontSize: screenWidth * 0.04,
                                   fontWeight: FontWeight.bold,
@@ -231,7 +304,7 @@ class PencairanDiprosesScreen extends StatelessWidget {
                               SizedBox(height: screenHeight * 0.005),
                               Text(
                                 // Menggunakan getter maskedAccountNumber yang akan kita tambahkan
-                                '${bankDetail.maskedAccountNumber} - ${bankDetail.accountHolderName}',
+                                '${widget.bankDetail.maskedAccountNumber} - ${widget.bankDetail.accountHolderName}',
                                 style: TextStyle(
                                   fontSize: screenWidth * 0.035,
                                   color: Colors.grey[700],
@@ -249,12 +322,13 @@ class PencairanDiprosesScreen extends StatelessWidget {
 
                   // Tombol "Kembali ke Beranda"
                   SizedBox(
-                    width: double.infinity,
+                    
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFFFC950),
                         padding: EdgeInsets.symmetric(
-                          vertical: screenHeight * 0.02,
+                          vertical: screenHeight * 0.015,
+                          horizontal: screenHeight * 0.02,
                         ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(22),
@@ -272,7 +346,7 @@ class PencairanDiprosesScreen extends StatelessWidget {
                       child: Text(
                         'Kembali ke Beranda',
                         style: TextStyle(
-                          color: Colors.black,
+                          color: Color(0xFF3F3F3F),
                           fontSize: screenWidth * 0.045,
                           fontWeight: FontWeight.bold,
                         ),

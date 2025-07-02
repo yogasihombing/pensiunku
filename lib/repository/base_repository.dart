@@ -1,6 +1,5 @@
-import 'dart:developer';
-
 import 'package:dio/dio.dart';
+
 import 'package:pensiunku/model/result_model.dart';
 
 class BaseRepository {
@@ -9,101 +8,90 @@ class BaseRepository {
     required Future<T?> Function() getFromDb,
     required Future<Response> Function() getFromApi,
     required T Function(dynamic responseJson) getDataFromApiResponse,
-    required Future<void> Function(T dataApi)
-        removeFromDb, // Sesuai dengan permintaan Anda
-    required Future<void> Function(T dataApi)
-        insertToDb, // Sesuai dengan permintaan Anda
+    required Future<void> Function(T dataApi) removeFromDb,
+    required Future<void> Function(T dataApi) insertToDb,
     required String errorMessage,
   }) async {
-    String finalErrorMessage = errorMessage;
-    T? dataDb = await getFromDb(); // Mengambil data dari DB di awal
-
-    // Log ini akan selalu muncul di konsol
-    print('$tag: getResultModel dipanggil.');
-    print('$tag: Data awal dari DB: ${dataDb != null ? 'Ada' : 'Tidak ada'}.');
+    T? dataDb = await getFromDb();
+    print('$tag: getResultModel dipanggil');
 
     try {
-      // Coba ambil dari API
       print('$tag: Mencoba ambil data dari API...');
       Response response = await getFromApi();
-      var responseJson = response.data;
-
-      // Log ini akan selalu muncul di konsol
+      
       print('$tag: Respons API diterima. Status Kode: ${response.statusCode}');
-      print('$tag: Data respons mentah API: $responseJson');
-
+      
+      // Validasi response
+      if (response.statusCode != 200) {
+        throw DioException(
+          response: response,
+          requestOptions: response.requestOptions,
+          type: DioErrorType.badResponse,
+          error: 'Invalid status code: ${response.statusCode}',
+        );
+      }
+      
+      if (response.data == null) {
+        throw FormatException('Response data is null');
+      }
+      
+      // Deteksi Cloudflare HTML response
+      if (response.data is String && 
+          (response.data as String).contains('One moment, please')) {
+        throw FormatException('Cloudflare challenge detected');
+      }
+      
+      if (response.data is! Map) {
+        throw FormatException('Invalid response type: Expected Map');
+      }
+      
+      final Map<String, dynamic> responseJson = response.data;
+      
+      if (!responseJson.containsKey('status')) {
+        throw FormatException('Missing "status" field in response');
+      }
+      
       if (responseJson['status'] == 'success') {
-        print('$tag: Status API adalah sukses. Memproses data...');
         T dataApi = getDataFromApiResponse(responseJson);
-
-        print('$tag: Menghapus data lama dari DB...');
-        await removeFromDb(
-            dataApi); // Menggunakan dataApi sesuai permintaan Anda
-
-        print('$tag: Memasukkan data baru ke DB...');
-        await insertToDb(dataApi); // Menggunakan dataApi sesuai permintaan Anda
-
-        // PENTING: Mengambil ulang data dari DB setelah insert, sesuai logika asli Anda.
-        // Jika data dari DB ini null, ini bisa menyebabkan masalah "artikel tidak muncul".
+        
+        await removeFromDb(dataApi);
+        await insertToDb(dataApi);
+        
+        // Ambil data terbaru dari DB
         dataDb = await getFromDb();
-
-        print(
-            '$tag: Data baru berhasil disimpan ke DB dan diambil ulang. Mengembalikan ResultModel sukses.');
+        
         return ResultModel(
           isSuccess: true,
-          data: dataDb, // Menggunakan data yang diambil ulang dari DB
+          data: dataDb,
         );
       } else {
-        // Jika status API bukan 'success'
-        print(
-            '$tag: Status API bukan sukses: ${responseJson['status']}. Pesan: ${responseJson['msg'] ?? 'Tidak ada pesan spesifik.'}');
+        String serverMessage = responseJson['msg'] ?? 'Unknown server error';
         return ResultModel(
           isSuccess: false,
-          error: finalErrorMessage,
-          data: dataDb, // Menggunakan data dari DB yang diambil di awal
+          error: serverMessage,
+          data: dataDb,
         );
       }
-    } catch (e) {
-      // Log ini akan selalu muncul di konsol
-      print('$tag: Terjadi error: $e'); // Menggunakan print()
-      if (e is DioError) {
-        print('$tag: DioError terjadi: ${e.message}. Tipe: ${e.type}');
-        if (e.response != null) {
-          print(
-              '$tag: Respons error Dio: ${e.response?.data}. Status: ${e.response?.statusCode}');
-        }
-        int? statusCode = e.response?.statusCode;
-        if (statusCode != null) {
-          if (statusCode >= 400 && statusCode < 500) {
-            // Client error
-            return ResultModel(
-              isSuccess: false,
-              error: finalErrorMessage,
-              data: dataDb, // Menggunakan data dari DB yang diambil di awal
-            );
-          } else if (statusCode >= 500 && statusCode < 600) {
-            // Server error
-            return ResultModel(
-              isSuccess: false,
-              error: finalErrorMessage,
-              data: dataDb, // Menggunakan data dari DB yang diambil di awal
-            );
-          }
-        }
-        if (e.message?.contains('SocketException') ?? false) {
-          print('$tag: SocketException (masalah koneksi internet).');
-          return ResultModel(
-            isSuccess: false,
-            error: finalErrorMessage,
-            data: dataDb, // Menggunakan data dari DB yang diambil di awal
-          );
-        }
-      }
-      print('$tag: Error lain yang tidak tertangani: $e');
+    } on DioError catch (e) {
+      print('$tag: DioError: ${e.message}');
       return ResultModel(
         isSuccess: false,
-        error: finalErrorMessage,
-        data: dataDb, // Menggunakan data dari DB yang diambil di awal
+        error: errorMessage,
+        data: dataDb,
+      );
+    } on FormatException catch (e) {
+      print('$tag: FormatException: ${e.message}');
+      return ResultModel(
+        isSuccess: false,
+        error: 'Invalid server response: ${e.message}',
+        data: dataDb,
+      );
+    } catch (e) {
+      print('$tag: Unknown error: $e');
+      return ResultModel(
+        isSuccess: false,
+        error: errorMessage,
+        data: dataDb,
       );
     }
   }

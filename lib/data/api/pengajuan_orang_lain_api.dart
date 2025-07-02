@@ -1,7 +1,9 @@
+// ignore_for_file: deprecated_member_use
+
 import 'dart:convert';
 import 'dart:io'; // Import the dart:io package
-import 'package:dio/adapter.dart';
 import 'package:dio/dio.dart';
+import 'package:dio/io.dart';
 import 'package:pensiunku/model/user_model.dart';
 
 class PengajuanOrangLainApi {
@@ -10,8 +12,8 @@ class PengajuanOrangLainApi {
 
   PengajuanOrangLainApi()
       : _dio = Dio(BaseOptions(
-          connectTimeout: 10000, // 10 detik
-          receiveTimeout: 10000, // 10 detik
+          connectTimeout: const Duration(milliseconds: 10000), // 10 detik
+          receiveTimeout: const Duration(milliseconds: 10000), // 10 detik
         )) {
     // Konfigurasi SSL (Hanya untuk debugging)
     (_dio.httpClientAdapter as DefaultHttpClientAdapter).onHttpClientCreate =

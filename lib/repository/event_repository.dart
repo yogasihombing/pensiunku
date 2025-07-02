@@ -6,10 +6,6 @@ import 'package:pensiunku/model/event_model.dart';
 import 'package:pensiunku/repository/base_repository.dart';
 import 'package:pensiunku/model/result_model.dart';
 
-// class EventRepository extends BaseRepository {
-//   static String tag = 'Point Repository';
-//   EventApi api = EventApi();
-
 class EventRepository extends BaseRepository {
   // Perbedaan 1: Nama tag disesuaikan agar lebih spesifik dan konsisten.
   static String tag = 'Event Repository';
@@ -57,7 +53,7 @@ class EventRepository extends BaseRepository {
       // Perbedaan 3: Blok catch diseragamkan sepenuhnya.
       // Ini adalah bagian paling penting untuk konsistensi penanganan error.
       log(e.toString(), name: tag, error: e);
-      if (e is DioError) {
+      if (e is DioException) {
         int? statusCode = e.response?.statusCode;
         if (statusCode != null) {
           if (statusCode >= 400 && statusCode < 500) {

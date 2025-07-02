@@ -24,7 +24,7 @@ class ProductCard extends StatelessWidget {
     // Perbaikan: Pengecekan null safety untuk properti gambar
     String imageUrl = '';
     if (product.gallery != null && product.gallery.isNotEmpty) {
-      imageUrl = product.gallery[0].path ?? ''; // Gunakan path jika tidak null, atau string kosong
+      imageUrl = product.gallery[0].path; // Gunakan path jika tidak null, atau string kosong
     }
 
     return GestureDetector(

@@ -1,4 +1,3 @@
-import 'dart:developer';
 
 import 'package:dio/dio.dart';
 import 'package:pensiunku/data/api/article_api.dart';
@@ -26,7 +25,7 @@ class ArticleRepository extends BaseRepository {
         List<ArticleModel>? articlesDb =
             await database.articleDao.getAll(articleCategory.name);
         print(
-            'ArticleRepository: Data artikel dari DB: ${articlesDb?.length ?? 0} item.');
+            'ArticleRepository: Data artikel dari DB: ${articlesDb.length ?? 0} item.');
         return articlesDb;
       },
       getFromApi: () async {
@@ -37,7 +36,7 @@ class ArticleRepository extends BaseRepository {
           print(
               'ArticleRepository: API getAll respons mentah: ${response.data}');
           return response;
-        } on DioError catch (e) {
+        } on DioException catch (e) {
           print(
               'ArticleRepository: Error Dio saat ambil dari API (getAll): ${e.message}');
           rethrow;
@@ -91,7 +90,7 @@ class ArticleRepository extends BaseRepository {
       },
       insertToDb: (articles) async {
         print(
-            'ArticleRepository: Memasukkan data artikel baru ke DB untuk kategori: ${articleCategory.name}. Jumlah: ${articles?.length ?? 0}');
+            'ArticleRepository: Memasukkan data artikel baru ke DB untuk kategori: ${articleCategory.name}. Jumlah: ${articles.length}');
         // Asumsi database.articleDao.insert() menerima List<ArticleModel>
         await database.articleDao.insert(articles);
       },
@@ -110,7 +109,7 @@ class ArticleRepository extends BaseRepository {
         List<ArticleCategoryModel>? itemsDb =
             await database.articleDao.getAllCategories();
         print(
-            'ArticleRepository: Kategori dari DB: ${itemsDb?.length ?? 0} item.');
+            'ArticleRepository: Kategori dari DB: ${itemsDb.length} item.');
         return itemsDb;
       },
       getFromApi: () async {
@@ -120,7 +119,7 @@ class ArticleRepository extends BaseRepository {
           print(
               'ArticleRepository: API getAllCategories respons mentah: ${response.data}');
           return response;
-        } on DioError catch (e) {
+        } on DioException catch (e) {
           print(
               'ArticleRepository: Error Dio saat ambil dari API (getAllCategories): ${e.message}');
           rethrow;
@@ -159,7 +158,7 @@ class ArticleRepository extends BaseRepository {
       },
       insertToDb: (items) async {
         print(
-            'ArticleRepository: Memasukkan kategori baru ke DB. Jumlah: ${items?.length ?? 0}');
+            'ArticleRepository: Memasukkan kategori baru ke DB. Jumlah: ${items.length}');
         await database.articleDao.insertCategories(items);
       },
       errorMessage:
@@ -217,7 +216,7 @@ class ArticleRepository extends BaseRepository {
           error: responseJson['msg'] ?? finalErrorMessage,
         );
       }
-    } on DioError catch (e) {
+    } on DioException catch (e) {
       // Tangkap DioError
       print(
           'ArticleRepository: DioError saat getMobileAll: ${e.message}. Tipe: ${e.type}');
@@ -303,7 +302,7 @@ class ArticleRepository extends BaseRepository {
           error: responseJson['msg'] ?? finalErrorMessage,
         );
       }
-    } on DioError catch (e) {
+    } on DioException catch (e) {
       print(
           'ArticleRepository: DioError saat getMobileArticle: ${e.message}. Tipe: ${e.type}');
       if (e.response != null) {

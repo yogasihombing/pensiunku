@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:pensiunku/data/db/pengajuan_anda_dao.dart';
 import 'package:pensiunku/model/option_model.dart';
 import 'package:pensiunku/model/user_model.dart';
@@ -143,35 +144,39 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
   TextEditingController namaController = TextEditingController();
   TextEditingController teleponController = TextEditingController();
   TextEditingController domisiliController = TextEditingController();
+  TextEditingController tanggalLahirController = TextEditingController();
+  TextEditingController pekerjaanController = TextEditingController();
 
-  final TextEditingController _searchController = TextEditingController();
-  List<OptionModel> _filteredCities = List.from(LocationRepository.cities);
+  // _searchController tidak digunakan di sini, bisa dihapus jika tidak ada search bar di luar dialog
+  // final TextEditingController _searchController = TextEditingController();
+  // List<OptionModel> _filteredCities = List.from(LocationRepository.cities);
 
   late Future<ResultModel<UserModel>> _futureData;
+
+  DateTime? _selectedDate;
+  late OptionModel _selectedCity; // Deklarasi _selectedCity di sini
 
   @override
   void initState() {
     super.initState();
     _isLoadingOverlay = true;
+    _selectedCity = OptionModel(id: 0, text: ''); // Inisialisasi awal
     _refreshData();
   }
-
-  late OptionModel _selectedCity = OptionModel(id: 0, text: '');
 
   Future<void> _showCitySelectionDialog() async {
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
 
-    // Create a filtered list that will be updated with search
+    // Gunakan StatefulBuilder untuk mengelola state di dalam dialog
     List<OptionModel> filteredCities = List.from(LocationRepository.cities);
     TextEditingController searchController = TextEditingController();
 
-    showDialog(
+    await showDialog(
       context: context,
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
-            // Handle search function
             void handleSearch(String query) {
               setDialogState(() {
                 if (query.isEmpty) {
@@ -210,7 +215,6 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
                       ),
                     ),
                     SizedBox(height: screenHeight * 0.02),
-                    // Search field
                     Container(
                       decoration: BoxDecoration(
                         color: Colors.grey[100],
@@ -233,7 +237,6 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
                       ),
                     ),
                     SizedBox(height: screenHeight * 0.02),
-                    // List of cities
                     Expanded(
                       child: filteredCities.isEmpty
                           ? Center(
@@ -277,7 +280,6 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
                             ),
                     ),
                     SizedBox(height: screenHeight * 0.02),
-                    // Cancel button
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
@@ -303,6 +305,36 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
     );
   }
 
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate ??
+          DateTime.now()
+              .subtract(const Duration(days: 365 * 20)), // Usia awal 20 tahun
+      firstDate: DateTime(1900),
+      lastDate: DateTime.now(),
+      builder: (BuildContext context, Widget? child) {
+        return Theme(
+          data: ThemeData.light().copyWith(
+            primaryColor: const Color(0xFF017964), // Warna header date picker
+            colorScheme: const ColorScheme.light(
+                primary: Color(0xFF017964)), // Warna elemen date picker
+            buttonTheme:
+                const ButtonThemeData(textTheme: ButtonTextTheme.primary),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null && picked != _selectedDate) {
+      setState(() {
+        _selectedDate = picked;
+        tanggalLahirController.text =
+            DateFormat('yyyy-MM-dd').format(picked); // Format YYYY-MM-DD
+      });
+    }
+  }
+
   Future<void> _submitPengajuanAnda() async {
     if (!_formKey.currentState!.validate()) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -324,6 +356,25 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
       return;
     }
 
+    if (_selectedDate == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Harap masukkan tanggal lahir Anda'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    if (pekerjaanController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Harap masukkan pekerjaan Anda'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     setState(() {
       _isSubmitting = true;
     });
@@ -333,6 +384,8 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
         nama: namaController.text,
         telepon: teleponController.text,
         domisili: domisiliController.text,
+        tanggalLahir: tanggalLahirController.text,
+        pekerjaan: pekerjaanController.text,
       );
 
       if (success) {
@@ -340,24 +393,25 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
           context: context,
           title: 'Sukses',
           message: 'Pengajuan Anda Berhasil Dikirim.',
-          color: Color(0XFFF017964),
+          color: Color(0xFF017964),
           isSuccess: true,
         );
       } else {
         _showCustomDialog(
           context: context,
           title: 'Gagal',
-          message: 'Anda sudah pernah melakukan pengajuan!',
+          message:
+              'Anda sudah pernah melakukan pengajuan atau terjadi kesalahan!',
           color: Colors.red,
           isSuccess: false,
         );
       }
     } catch (e) {
-      print('Error submitting pengajuan: $e');
+      debugPrint('Error submitting pengajuan: $e');
       _showCustomDialog(
         context: context,
         title: 'Error',
-        message: 'Terjadi kesalahan saat mengirim pengajuan',
+        message: 'Terjadi kesalahan saat mengirim pengajuan: ${e.toString()}',
         color: Colors.red,
         isSuccess: false,
       );
@@ -401,14 +455,6 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // // Optional icon for success/failure
-                  // Icon(
-                  //   isSuccess ? Icons.check_circle : Icons.error,
-                  //   color: Colors.white,
-                  //   size: screenWidth * 0.15,
-                  // ),
-                  // SizedBox(height: screenHeight * 0.02),
-                  // Title
                   Text(
                     title,
                     style: TextStyle(
@@ -418,7 +464,6 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
                     ),
                   ),
                   SizedBox(height: screenHeight * 0.015),
-                  // Message
                   Text(
                     message,
                     textAlign: TextAlign.center,
@@ -428,7 +473,6 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
                     ),
                   ),
                   SizedBox(height: screenHeight * 0.03),
-                  // Button
                   Container(
                     width: screenWidth * 0.3,
                     child: ElevatedButton(
@@ -480,7 +524,14 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
         .sharedPreferences
         .getString(SharedPreferencesUtil.SP_KEY_TOKEN);
 
-    _futureData = UserRepository().getOne(token!).then((value) {
+    if (token == null || token.isEmpty) {
+      setState(() {
+        _isLoadingOverlay = false;
+      });
+      return;
+    }
+
+    _futureData = UserRepository().getOne(token).then((value) {
       if (value.error != null) {
         showDialog(
             context: context,
@@ -497,6 +548,39 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
       setState(() {
         namaController.text = value.data?.username ?? '';
         teleponController.text = value.data?.phone ?? '';
+        // Inisialisasi tanggal lahir dan pekerjaan jika ada di data user
+        // ASUMSI: UserModel memiliki properti 'birthDate' dan 'job'
+        tanggalLahirController.text = value.data?.birthDate ?? '';
+        pekerjaanController.text = value.data?.job ?? '';
+
+        // Inisialisasi domisili dan _selectedCity
+        // ASUMSI: UserModel memiliki properti 'kecamatan'
+        if (value.data?.kecamatan != null &&
+            value.data!.kecamatan!.isNotEmpty) {
+          domisiliController.text = value.data!.kecamatan!;
+          // Cari OptionModel yang sesuai
+          _selectedCity = LocationRepository.cities.firstWhere(
+            (city) => city.text == value.data!.kecamatan,
+            orElse: () =>
+                OptionModel(id: 0, text: ''), // Default jika tidak ditemukan
+          );
+        } else {
+          domisiliController.text = '';
+          _selectedCity = OptionModel(id: 0, text: '');
+        }
+
+        // Set _selectedDate jika tanggalLahir ada
+        if (tanggalLahirController.text.isNotEmpty) {
+          try {
+            _selectedDate = DateTime.parse(tanggalLahirController.text);
+          } catch (e) {
+            debugPrint('Error parsing tanggalLahir: $e');
+            _selectedDate = null;
+          }
+        } else {
+          _selectedDate = null;
+        }
+
         _isLoadingOverlay = false;
       });
 
@@ -533,9 +617,7 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
           appBar: AppBar(
             backgroundColor: Colors.transparent,
             elevation: 0,
-            // 1. Atur total tinggi toolbar (toolbarHeight) lebih besar dari default
             toolbarHeight: kToolbarHeight + screenHeight * 0.02,
-            // 2. Padding di leading agar ikon back juga turun
             leading: Padding(
               padding: EdgeInsets.only(top: screenHeight * 0.02),
               child: IconButton(
@@ -543,7 +625,6 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
                 onPressed: () => Navigator.pop(context),
               ),
             ),
-            // 3. Hapus flexibleSpace, pakai title dengan Padding
             title: Padding(
               padding: EdgeInsets.only(top: screenHeight * 0.02),
               child: Text(
@@ -555,8 +636,7 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
                 ),
               ),
             ),
-            centerTitle:
-                true, // opsional: agar teks berada di tengah horizontal
+            centerTitle: true,
           ),
           body: SafeArea(
             child: Stack(
@@ -581,15 +661,6 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
                                 children: <Widget>[
                                   SizedBox(height: screenHeight * 0.02),
                                   // Nama field
-                                  // Text(
-                                  //   'Nama',
-                                  //   style: TextStyle(
-                                  //     fontSize: screenWidth * 0.035,
-                                  //     color: Colors.grey[700],
-                                  //     fontWeight: FontWeight.w500,
-                                  //   ),
-                                  // ),
-                                  // SizedBox(height: screenHeight * 0.01),
                                   Container(
                                     decoration: BoxDecoration(
                                       borderRadius: BorderRadius.circular(
@@ -615,15 +686,6 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
                                   SizedBox(height: screenHeight * 0.02),
 
                                   // Telepon field
-                                  // Text(
-                                  //   'No. Telepon',
-                                  //   style: TextStyle(
-                                  //     fontSize: screenWidth * 0.035,
-                                  //     color: Colors.grey[700],
-                                  //     fontWeight: FontWeight.w500,
-                                  //   ),
-                                  // ),
-                                  // SizedBox(height: screenHeight * 0.01),
                                   Container(
                                     decoration: BoxDecoration(
                                       borderRadius: BorderRadius.circular(
@@ -653,6 +715,7 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
                                   ),
                                   SizedBox(height: screenHeight * 0.02),
 
+                                  // Domisili / Kota/Kabupaten field
                                   GestureDetector(
                                     onTap: _showCitySelectionDialog,
                                     child: InputDecorator(
@@ -663,9 +726,7 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
                                       child: Container(
                                         width: double.infinity,
                                         padding: EdgeInsets.symmetric(
-                                          horizontal: screenWidth *
-                                              0.02, // disesuaikan agar tidak dobel padding
-                                          // vertical: screenHeight * 0.015,
+                                          horizontal: screenWidth * 0.02,
                                         ),
                                         child: Row(
                                           mainAxisAlignment:
@@ -695,6 +756,57 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
                                       ),
                                     ),
                                   ),
+                                  SizedBox(height: screenHeight * 0.02),
+
+                                  // New: Tanggal Lahir field
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(
+                                          screenWidth * 0.02),
+                                      border:
+                                          Border.all(color: Colors.grey[300]!),
+                                    ),
+                                    child: TextFormField(
+                                      controller: tanggalLahirController,
+                                      readOnly: true,
+                                      onTap: () => _selectDate(
+                                          context), // Panggil pemilih tanggal
+                                      decoration: InputDecoration(
+                                        labelText: 'Tanggal Lahir (YYYY-MM-DD)',
+                                        border: OutlineInputBorder(),
+                                        suffixIcon: Icon(Icons.calendar_today),
+                                      ),
+                                      validator: (value) =>
+                                          (value == null || value.isEmpty)
+                                              ? 'Harap masukkan tanggal lahir'
+                                              : null,
+                                      style: TextStyle(
+                                          fontSize: screenWidth * 0.04),
+                                    ),
+                                  ),
+                                  SizedBox(height: screenHeight * 0.02),
+
+                                  // New: Pekerjaan field
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(
+                                          screenWidth * 0.02),
+                                      border:
+                                          Border.all(color: Colors.grey[300]!),
+                                    ),
+                                    child: TextFormField(
+                                      controller: pekerjaanController,
+                                      decoration: InputDecoration(
+                                          labelText: 'Pekerjaan',
+                                          border: OutlineInputBorder()),
+                                      validator: (value) =>
+                                          (value == null || value.isEmpty)
+                                              ? 'Harap masukkan pekerjaan'
+                                              : null,
+                                      style: TextStyle(
+                                          fontSize: screenWidth * 0.04),
+                                    ),
+                                  ),
                                   SizedBox(height: screenHeight * 0.04),
 
                                   // Submit button
@@ -705,6 +817,13 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
                                       onPressed: _isSubmitting
                                           ? null
                                           : _submitPengajuanAnda,
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Color(0xFF017964),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                              screenWidth * 0.02),
+                                        ),
+                                      ),
                                       child: _isSubmitting
                                           ? SizedBox(
                                               height: screenHeight * 0.025,
@@ -719,17 +838,15 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
                                           : Text(
                                               'Ajukan Sekarang',
                                               style: TextStyle(
+                                                  color: Colors
+                                                      .white, // Tambahkan warna teks putih
                                                   fontSize: screenWidth * 0.04),
                                             ),
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Color(0xFF017964),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                              screenWidth * 0.02),
-                                        ),
-                                      ),
                                     ),
                                   ),
+                                  SizedBox(
+                                      height:
+                                          screenHeight * 0.04), // Padding bawah
                                 ],
                               ),
                             ),
@@ -789,6 +906,10 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
     namaController.dispose();
     teleponController.dispose();
     domisiliController.dispose();
+    tanggalLahirController.dispose();
+    pekerjaanController.dispose();
+    // Jika _searchController tidak digunakan di sini, bisa dihapus
+    // _searchController.dispose();
     super.dispose();
   }
 }

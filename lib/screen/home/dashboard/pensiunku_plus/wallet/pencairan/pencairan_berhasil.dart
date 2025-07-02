@@ -1,23 +1,103 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:pensiunku/model/e_wallet/user_bank_detail_model.dart';
 import 'package:pensiunku/screen/home/dashboard/dashboard_screen.dart';
+import 'package:http/http.dart' as http;
 
-class PencairanBerhasilScreen extends StatelessWidget {
+class PencairanBerhasilScreen extends StatefulWidget {
   static const String ROUTE_NAME = '/pencairan-berhasil';
 
   final double amount;
   final DateTime transactionDate;
   final String referenceNumber;
-  final UserBankDetail bankDetail;
+  final UserBankDetail? bankDetail; // Sekarang opsional
 
   const PencairanBerhasilScreen({
     Key? key,
     required this.amount,
     required this.transactionDate,
     required this.referenceNumber,
-    required this.bankDetail,
+    this.bankDetail, // Detail bank bisa diberikan atau akan diambil via API
   }) : super(key: key);
+
+  @override
+  State<PencairanBerhasilScreen> createState() =>
+      _PencairanBerhasilScreenState();
+}
+
+class _PencairanBerhasilScreenState extends State<PencairanBerhasilScreen> {
+  UserBankDetail? _bankDetail;
+  bool _isLoading = true;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    // Jika detail bank sudah disediakan melalui konstruktor, gunakan itu.
+    // Jika tidak, panggil API untuk mengambilnya.
+    if (widget.bankDetail != null) {
+      _bankDetail = widget.bankDetail;
+      _isLoading = false;
+    } else {
+      _fetchBankDetail();
+    }
+  }
+
+  // Fungsi untuk memanggil API dan mengambil detail bank
+  Future<void> _fetchBankDetail() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    const String apiUrl = 'https://api.pensiunku.id/new.php/getDetailWithdraw';
+    const Map<String, String> requestBody = {
+      'id': '3'
+    }; // ID hardcode sesuai permintaan
+
+    try {
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode(requestBody),
+      );
+
+      debugPrint('API Response Status Code: ${response.statusCode}');
+      debugPrint('API Response Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseData = json.decode(response.body);
+        // Asumsi struktur respons API:
+        // { "success": true, "data": { ...data bank... } }
+        if (responseData['success'] == true && responseData['data'] != null) {
+          setState(() {
+            _bankDetail = UserBankDetail.fromJson(responseData['data']);
+            _isLoading = false;
+          });
+        } else {
+          setState(() {
+            _errorMessage = responseData['message'] ??
+                'Gagal mengambil detail bank. Data tidak valid.';
+            _isLoading = false;
+          });
+        }
+      } else {
+        setState(() {
+          _errorMessage =
+              'Gagal terhubung ke server: Status ${response.statusCode}';
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Terjadi kesalahan jaringan: $e';
+        _isLoading = false;
+      });
+      debugPrint('Error fetching bank detail: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,11 +111,12 @@ class PencairanBerhasilScreen extends StatelessWidget {
       symbol: 'Rp ',
       decimalDigits: 0,
     );
-    final formattedAmount = amountFormatter.format(amount);
+    final formattedAmount = amountFormatter.format(widget.amount);
 
     // Format tanggal dan waktu
-    final dateTimeFormatter = DateFormat('dd MMMM yyyy • HH:mm:ss \'WIB\'', 'id_ID'); // Menggunakan id_ID untuk bulan
-    final formattedDateTime = dateTimeFormatter.format(transactionDate);
+    final dateTimeFormatter = DateFormat(
+        'dd MMMM HH:mm:ss \'WIB\'', 'id_ID'); // Menggunakan id_ID untuk bulan
+    final formattedDateTime = dateTimeFormatter.format(widget.transactionDate);
 
     return Scaffold(
       body: Stack(
@@ -64,7 +145,7 @@ class PencairanBerhasilScreen extends StatelessWidget {
             top: 0,
             left: 0,
             right: 0,
-            height: screenHeight * 0.28,
+            height: screenHeight * 0.45,
             child: Container(
               decoration: BoxDecoration(
                 color: const Color(0xFFFFC950),
@@ -83,38 +164,29 @@ class PencairanBerhasilScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  SizedBox(height: screenHeight * 0.02),
-                  // AppBar (back button dan judul)
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: IconButton(
-                      icon: Icon(
-                        Icons.arrow_back,
-                        color: const Color(0xFF017964),
-                        size: screenWidth * 0.06,
-                      ),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ),
-                  SizedBox(height: screenHeight * 0.02),
-
-                  // Ilustrasi (Ganti dengan aset PNG/SVG Anda)
-                  // Pastikan Anda menambahkan aset gambar ini ke pubspec.yaml
-                  // Contoh: assets/images/pencairan_berhasil_illustration.png
-                  // Untuk demo, menggunakan placeholder dari NetworkImage
-                  Container(
-                    width: screenWidth * 0.6, // Ukuran responsif untuk ilustrasi
-                    height: screenHeight * 0.2,
-                    child: Image.network(
-                      'https://placehold.co/300x200/FFD700/000000?text=Pencairan%20Berhasil', // Placeholder
-                      errorBuilder: (context, error, stackTrace) => Icon(
-                        Icons.check_circle_outline,
-                        color: Color(0xFF017964),
-                        size: screenWidth * 0.3,
-                      ),
-                    ),
-                  ),
+                  SizedBox(height: screenHeight * 0.04),
+                  // // AppBar (back button)
+                  // Align(
+                  //   alignment: Alignment.centerLeft,
+                  //   child: IconButton(
+                  //     icon: Icon(
+                  //       Icons.arrow_back,
+                  //       color: const Color(0xFF017964),
+                  //       size: screenWidth * 0.06,
+                  //     ),
+                  //     onPressed: () => Navigator.pop(context),
+                  //   ),
+                  // ),
                   SizedBox(height: screenHeight * 0.03),
+
+                  // Ilustrasi
+                  Container(
+                    width: screenWidth * 0.6,
+                    height: screenHeight * 0.25,
+                    child: Image.asset(
+                        'assets/pensiunkuplus/e_wallet/pencairan_berhasil.png'),
+                  ),
+                  SizedBox(height: screenHeight * 0.02),
 
                   // Card "Pencairan Berhasil"
                   Container(
@@ -136,9 +208,9 @@ class PencairanBerhasilScreen extends StatelessWidget {
                         Text(
                           "Pencairan Berhasil",
                           style: TextStyle(
-                            fontSize: screenWidth * 0.05,
+                            fontSize: screenWidth * 0.04,
                             fontWeight: FontWeight.bold,
-                            color: const Color(0xFF017964),
+                            color: const Color(0xFF3F3F3F),
                           ),
                           textAlign: TextAlign.center,
                         ),
@@ -146,9 +218,9 @@ class PencairanBerhasilScreen extends StatelessWidget {
                         Text(
                           formattedAmount,
                           style: TextStyle(
-                            fontSize: screenWidth * 0.08,
+                            fontSize: screenWidth * 0.07,
                             fontWeight: FontWeight.bold,
-                            color: const Color(0xFF017964),
+                            color: const Color(0xFF3F3F3F),
                           ),
                           textAlign: TextAlign.center,
                         ),
@@ -166,7 +238,7 @@ class PencairanBerhasilScreen extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    "Ref: $referenceNumber",
+                    "Ref: ${widget.referenceNumber}",
                     style: TextStyle(
                       fontSize: screenWidth * 0.035,
                       color: Colors.black87,
@@ -174,97 +246,124 @@ class PencairanBerhasilScreen extends StatelessWidget {
                   ),
                   SizedBox(height: screenHeight * 0.04),
 
-                  // Rekening Pencairan Card
+                  // Rekening Pencairan Card - Menampilkan berdasarkan status loading/error/data
                   Align(
-                    alignment: Alignment.centerLeft,
+                    alignment: Alignment.center,
                     child: Padding(
-                      padding: EdgeInsets.only(left: screenWidth * 0.02, bottom: screenHeight * 0.01),
+                      padding: EdgeInsets.only(
+                          left: screenWidth * 0.02,
+                          bottom: screenHeight * 0.01),
                       child: Text(
                         "Rekening Pencairan",
                         style: TextStyle(
-                          fontSize: screenWidth * 0.045,
+                          fontSize: screenWidth * 0.040,
                           fontWeight: FontWeight.bold,
                           color: Colors.black,
                         ),
                       ),
                     ),
                   ),
-                  Container(
-                    width: double.infinity,
-                    padding: EdgeInsets.all(screenWidth * 0.04),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(screenWidth * 0.04),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Colors.black12,
-                          blurRadius: 8,
-                          offset: Offset(0, 4),
+                  _isLoading
+                      ? const Padding(
+                          padding: EdgeInsets.all(16.0),
+                          child: CircularProgressIndicator(
+                              color: Color(0xFFFFC950)),
                         )
-                      ],
-                    ),
-                    child: Row(
-                      children: [
-                        // Logo Bank
-                        Container(
-                          width: screenWidth * 0.15,
-                          height: screenWidth * 0.15,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(8),
-                            image: DecorationImage(
-                              image: NetworkImage(bankDetail.bankLogoUrl ??
-                                  'https://placehold.co/${(screenWidth * 0.15).toInt()}x${(screenWidth * 0.15).toInt()}/000000/FFFFFF?text=BANK'),
-                              fit: BoxFit.contain,
-                              onError: (exception, stackTrace) {
-                                debugPrint('Error loading bank logo: $exception');
-                              },
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: screenWidth * 0.03),
-                        // Detail Bank
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                bankDetail.bankName,
-                                style: TextStyle(
-                                  fontSize: screenWidth * 0.04,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              SizedBox(height: screenHeight * 0.005),
-                              Text(
-                                // Menggunakan getter maskedAccountNumber yang akan kita tambahkan
-                                '${bankDetail.maskedAccountNumber} - ${bankDetail.accountHolderName}',
+                      : _errorMessage != null
+                          ? Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Text(
+                                _errorMessage!,
                                 style: TextStyle(
                                   fontSize: screenWidth * 0.035,
-                                  color: Colors.grey[700],
+                                  color: Colors.red,
                                 ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.center,
                               ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                            )
+                          : _bankDetail != null
+                              ? Container(
+                                  width: double.infinity,
+                                  padding: EdgeInsets.all(screenWidth * 0.04),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(
+                                        screenWidth * 0.04),
+                                    boxShadow: const [
+                                      BoxShadow(
+                                        color: Colors.black12,
+                                        blurRadius: 8,
+                                        offset: Offset(0, 4),
+                                      )
+                                    ],
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      // Logo Bank
+                                      Container(
+                                        width: screenWidth * 0.15,
+                                        height: screenWidth * 0.15,
+                                        decoration: BoxDecoration(
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                          image: DecorationImage(
+                                            image: NetworkImage(_bankDetail!
+                                                    .bankLogoUrl ??
+                                                'https://placehold.co/${(screenWidth * 0.15).toInt()}x${(screenWidth * 0.15).toInt()}/000000/FFFFFF?text=BANK'),
+                                            fit: BoxFit.contain,
+                                            onError: (exception, stackTrace) {
+                                              debugPrint(
+                                                  'Error loading bank logo: $exception');
+                                            },
+                                          ),
+                                        ),
+                                      ),
+                                      SizedBox(width: screenWidth * 0.03),
+                                      // Detail Bank
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              _bankDetail!.bankName,
+                                              style: TextStyle(
+                                                fontSize: screenWidth * 0.04,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.black,
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                            SizedBox(
+                                                height: screenHeight * 0.005),
+                                            Text(
+                                              '${_bankDetail!.maskedAccountNumber} - ${_bankDetail!.accountHolderName}',
+                                              style: TextStyle(
+                                                fontSize: screenWidth * 0.035,
+                                                color: Colors.grey[700],
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                )
+                              : const SizedBox
+                                  .shrink(), // Jika tidak ada data atau error, sembunyikan card
                   SizedBox(height: screenHeight * 0.05),
 
                   // Tombol "Kembali ke Beranda"
                   SizedBox(
-                    width: double.infinity,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFFFC950),
                         padding: EdgeInsets.symmetric(
-                          vertical: screenHeight * 0.02,
-                        ),
+                            vertical: screenHeight * 0.015,
+                            horizontal: screenHeight * 0.02),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(22),
                         ),
@@ -274,8 +373,10 @@ class PencairanBerhasilScreen extends StatelessWidget {
                         // Navigasi ke halaman dashboard utama atau root
                         Navigator.pushNamedAndRemoveUntil(
                           context,
-                          DashboardScreen.ROUTE_NAME, // Ganti dengan route ke Dashboard utama Anda
-                          (Route<dynamic> route) => false, // Hapus semua route sebelumnya
+                          DashboardScreen
+                              .ROUTE_NAME, // Ganti dengan route ke Dashboard utama Anda
+                          (Route<dynamic> route) =>
+                              false, // Hapus semua route sebelumnya
                         );
                       },
                       child: Text(

@@ -35,6 +35,7 @@ class KesehatanRepository extends BaseRepository {
       }
     } catch (e) {
       log(e.toString(), name: tag, error: e);
+      // ignore: deprecated_member_use
       if (e is DioError) {
         int? statusCode = e.response?.statusCode;
         if (statusCode != null) {
@@ -52,7 +53,7 @@ class KesehatanRepository extends BaseRepository {
             );
           }
         }
-        if (e.message.contains('SocketException')) {
+        if (e.message?.contains('SocketException') ?? false) {
           return ResultModel(
             isSuccess: false,
             error: finalErrorMessage,
@@ -108,7 +109,7 @@ class KesehatanRepository extends BaseRepository {
             );
           }
         }
-        if (e.message.contains('SocketException')) {
+        if (e.message?.contains('SocketException') ?? false) {
           return ResultModel(
             isSuccess: false,
             error: finalErrorMessage,

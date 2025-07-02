@@ -43,7 +43,7 @@ dependencies:
   google_ml_kit: ^0.7.3 # Keeping current version due to large breaking changes in newer versions
   google_mlkit_face_detection: ^0.2.0 # Keeping current version due to large breaking changes in newer versions
   google_mlkit_text_recognition: ^0.5.0 # Keeping current version due to large breaking changes in newer versions
-  dio: ^4.0.0
+  dio: ^5.8.0+1
   sqflite: ^2.0.0+4
   image: ^3.0.2
   image_gallery_saver: ^2.0.1 # Keeping current version
@@ -87,6 +87,8 @@ dependencies:
   rflutter_alert: ^2.0.4 # Keeping current version
   lazy_load_scrollview: ^1.3.0 # Keeping current version
   webview_flutter_android: ^2.10.4 # Kept explicitly for webview_flutter 3.x.x
+  cookie_jar: ^4.0.8
+  dio_cookie_manager: ^3.2.0
 
 dev_dependencies:
   flutter_test:
@@ -239,6 +241,8 @@ flutter:
     - assets/pensiunkuplus/e_wallet/wallet-02.png
     - assets/pensiunkuplus/e_wallet/wallet-03.png
     - assets/pensiunkuplus/e_wallet/wallet-04.png
+    - assets/pensiunkuplus/e_wallet/pencairan_berhasil.png
+    - assets/pensiunkuplus/e_wallet/pencairan_diproses.png
     - assets/poster/show_poster1.png
 
   # An image asset can refer to one or more resolution-specific "variants", see

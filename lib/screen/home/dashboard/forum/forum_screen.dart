@@ -87,8 +87,8 @@ class _ForumScreenState extends State<ForumScreen> {
 
     try {
       int userId = await UserRepository().getOneDb(token).then((value) {
-        if (value.data != null && value.data!.id != null) {
-          return value.data!.id!;
+        if (value.data != null) {
+          return value.data!.id;
         }
         print('ForumScreen: User ID tidak ditemukan atau null dari DB.');
         throw Exception('User ID tidak tersedia');

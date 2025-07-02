@@ -26,6 +26,23 @@ class DialogHelper extends StatelessWidget {
     this.nextPage,
   }) : super(key: key);
 
+  // Menambahkan kembali static showErrorDialog agar kompatibel dengan konstruktor baru
+  static void showErrorDialog(
+      BuildContext context, String title, String message,
+      {String buttonText = "OK", VoidCallback? onOk}) {
+    showDialog(
+      context: context,
+      builder: (context) => DialogHelper(
+        title: title,
+        description: message,
+        dialogType: DialogType.error,
+        buttonText:
+            buttonText, // Explicitly pass buttonText, now nullable in constructor
+        onButtonPress: onOk ?? () => Navigator.of(context).pop(),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // Menentukan skema warna berdasarkan dialogType
@@ -140,7 +157,6 @@ class DialogHelper extends StatelessWidget {
     );
   }
 }
-
 // // Fungsi untuk menampilkan dialog sesuai kasus
 //   void _showCaseDialog(BuildContext context, int caseNumber) {
 //     switch (caseNumber) {

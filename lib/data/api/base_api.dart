@@ -1,203 +1,314 @@
-import 'package:dio/dio.dart'; // Pustaka Dio untuk melakukan HTTP request
-import 'package:pensiunku/config.dart'
-    show apiHost; // Mengimpor apiHost dari file config.dart
+import 'package:dio/dio.dart';
+import 'package:pensiunku/config.dart' show apiHost, defaultApiOptions;
 
 class BaseApi {
-  static String tag = 'BaseApi'; // Tag untuk identifikasi log dari kelas ini
-  static String? baseUrl = apiHost; // URL dasar untuk semua permintaan API
-  // Menggunakan int untuk timeout, sesuai dengan perilaku Dio versi 3.x.x
-  static int connectTimeout = 10000; // Waktu tunggu koneksi dalam milidetik
-  static int receiveTimeout =
-      5000; // Waktu tunggu penerimaan data dalam milidetik
+  static String tag = 'BaseApi';
+  static String? baseUrl = apiHost;
+  // Perbaikan: Gunakan Duration secara langsung
+  static Duration connectTimeout =
+      const Duration(milliseconds: 10000); // Waktu tunggu koneksi
+  static Duration receiveTimeout =
+      const Duration(milliseconds: 5000); // Waktu tunggu penerimaan data
 
-  /// Fungsi helper pribadi untuk menginisialisasi Dio dengan opsi umum
   Dio _createDio() {
     var dio = Dio();
-    // Penting: Mengatur batas waktu koneksi dan penerimaan data.
-    // Untuk Dio 3.x.x, ini adalah int dalam milidetik, bukan Duration.
+    // Perbaikan: Tetapkan Duration langsung ke dio.options
     dio.options.connectTimeout = connectTimeout;
     dio.options.receiveTimeout = receiveTimeout;
     return dio;
   }
 
-  /// Melakukan permintaan HTTP GET
+  bool _isCloudflareChallenge(Response response) {
+    // Memastikan response.data adalah String sebelum memanggil contains
+    return response.statusCode == 200 &&
+        response.data != null &&
+        response.data is String && // Tambahkan cek tipe data
+        response.data.toString().contains('One moment, please...');
+  }
+
   Future<Response> httpGet(
     String url, {
     Options? options,
+    bool bypassCloudflare = true,
+    int maxRetry = 3,
   }) async {
     String fullUrl = '$baseUrl$url';
-    // Log ini akan selalu muncul di konsol
-    print('--- HTTP GET Request Dijalankan ---');
+    print('--- Permintaan HTTP GET Dijalankan ---');
     print('URL Lengkap: $fullUrl');
-    if (options != null) {
-      print('Opsi GET (Header dll): ${options.headers}');
+
+    Options finalOptions = options ?? defaultApiOptions;
+    if (finalOptions.headers != null) {
+      print('Opsi GET (Header): ${finalOptions.headers}');
     }
 
-    try {
-      var dio = _createDio();
-      Response response = await dio.get(fullUrl, options: options);
-      // Log respons sukses, akan selalu muncul di konsol
-      print('--- HTTP GET Response Diterima ---');
-      print('URL: $fullUrl');
-      print('Status Kode: ${response.statusCode}');
-      print('Data Respons: ${response.data}');
-      print('--- Selesai GET Request ---');
-      return response;
-    } on DioError catch (e) {
-      // Penting: Menangkap DioError untuk Dio versi 3.x.x
-      // Log error, akan selalu muncul di konsol
-      print('!!! HTTP GET Error Ditemukan !!!');
-      print('URL Gagal: $fullUrl');
-      if (e.response != null) {
-        print('Data Respons Error: ${e.response?.data}');
-        print('Header Respons Error: ${e.response?.headers}');
-        print('Status Kode Respons Error: ${e.response?.statusCode}');
+    Dio dio = _createDio();
+    Response? response;
+    DioException? lastError; // Perbaikan: Gunakan DioException untuk Dio 5+
+
+    // Buat opsi dasar untuk permintaan
+    final baseRequestOptions = RequestOptions(
+      path: fullUrl,
+      method: 'GET',
+      headers: finalOptions.headers,
+      contentType: finalOptions.contentType,
+      responseType: finalOptions.responseType,
+      // Perbaikan: Gunakan Duration langsung
+      connectTimeout: connectTimeout,
+      receiveTimeout: receiveTimeout,
+    );
+
+    for (int percobaan = 1; percobaan <= maxRetry; percobaan++) {
+      try {
+        print('$tag: Percobaan $percobaan/$maxRetry');
+        response = await dio.get(fullUrl, options: finalOptions);
+
+        if (bypassCloudflare && _isCloudflareChallenge(response)) {
+          print('$tag: Tantangan Cloudflare terdeteksi');
+
+          // Ambil cookie dari respons
+          // Pastikan headers['set-cookie'] tidak null dan memiliki elemen pertama
+          final String? cookie = response.headers['set-cookie']?.first;
+
+          if (cookie != null) {
+            print('$tag: Mendapatkan cookie Cloudflare: $cookie');
+
+            // Perbarui header dengan cookie
+            Map<String, dynamic> headerBaru =
+                Map.from(finalOptions.headers ?? {});
+            headerBaru['cookie'] = cookie;
+
+            // Buat opsi baru dengan cookie
+            finalOptions = finalOptions.copyWith(
+                headers:
+                    headerBaru); // Gunakan copyWith untuk mempertahankan properti lain
+
+            // Tunggu sebelum mencoba lagi
+            await Future.delayed(const Duration(seconds: 2));
+            continue; // Lanjutkan ke percobaan berikutnya
+          }
+        }
+
+        // Jika bukan tantangan, kembalikan respons
+        print('--- Respons HTTP GET Diterima ---');
+        print('URL: $fullUrl');
+        print('Status Kode: ${response.statusCode}');
+        print('--- Permintaan GET Selesai ---');
+        return response;
+      } on DioException catch (e) {
+        // Perbaikan: Tangkap DioException
+        lastError = e;
+        print('!!! Error HTTP GET Ditemukan !!!');
+        print('URL Gagal: $fullUrl');
+        print('Tipe Error: ${e.type}');
+        print('Pesan Error: ${e.message}');
+
+        if (e.response != null) {
+          print('Status Kode: ${e.response?.statusCode}');
+          print('Data Error: ${e.response?.data}');
+        }
+
+        // Tunggu sebelum mencoba lagi
+        await Future.delayed(const Duration(seconds: 2));
+      } catch (e, stackTrace) {
+        // Tangkap error umum dan stack trace
+        print('!!! Kesalahan tidak diketahui saat HTTP GET !!!');
+        print('URL Gagal: $fullUrl');
+        print('Pesan Error: $e');
+        print('Stack Trace: $stackTrace'); // Cetak stack trace untuk debugging
+        lastError = DioException(
+          requestOptions: baseRequestOptions,
+          error: 'Kesalahan tidak diketahui: $e',
+          type: DioExceptionType
+              .unknown, // Perbaikan: Gunakan DioExceptionType.unknown
+        );
+        await Future.delayed(const Duration(seconds: 2));
       }
-      print('Tipe Error Dio: ${e.type}');
-      print('Pesan Error Dio: ${e.message}');
-      print('!!! Selesai GET Error Log ---');
-      rethrow; // Melemparkan kembali error agar bisa ditangani lebih lanjut
-    } catch (e) {
-      // Menangkap error umum lainnya
-      // Log error tak terduga, akan selalu muncul di konsol
-      print('!!! HTTP GET Error Tak Terduga Ditemukan !!!');
-      print('URL Gagal: $fullUrl');
-      print('Detail Error: $e');
-      print('!!! Selesai GET Unexpected Error Log ---');
-      rethrow;
+    }
+
+    print('!!! Semua percobaan gagal !!!');
+    print('URL Gagal: $fullUrl');
+
+    // Tangani error dengan benar
+    if (lastError != null) {
+      throw lastError;
+    } else {
+      // Ini seharusnya tidak tercapai jika lastError selalu diatur, tapi sebagai fallback
+      throw DioException(
+        // Perbaikan: Gunakan DioException
+        requestOptions: baseRequestOptions,
+        error: 'Kesalahan tidak diketahui setelah $maxRetry percobaan',
+        type: DioExceptionType
+            .unknown, // Perbaikan: Gunakan DioExceptionType.unknown
+      );
     }
   }
 
-  /// Melakukan permintaan HTTP POST
+  // Metode HTTP POST
   Future<Response> httpPost(
     String url, {
     dynamic data,
     Options? options,
   }) async {
     String fullUrl = '$baseUrl$url';
-    print('--- HTTP POST Request Dijalankan ---');
+    print('--- Permintaan HTTP POST Dijalankan ---');
     print('URL Lengkap: $fullUrl');
     print('Data POST: $data');
-    if (options != null) {
-      print('Opsi POST (Header dll): ${options.headers}');
-    }
+
+    final baseRequestOptions = RequestOptions(
+      path: fullUrl,
+      method: 'POST',
+      headers: options?.headers,
+      contentType: options?.contentType,
+      responseType: options?.responseType,
+      // Perbaikan: Gunakan Duration langsung
+      connectTimeout: connectTimeout,
+      receiveTimeout: receiveTimeout,
+    );
 
     try {
       var dio = _createDio();
       Response response = await dio.post(fullUrl, data: data, options: options);
-      print('--- HTTP POST Response Diterima ---');
+      print('--- Respons HTTP POST Diterima ---');
       print('URL: $fullUrl');
       print('Status Kode: ${response.statusCode}');
-      print('Data Respons: ${response.data}');
-      print('--- Selesai POST Request ---');
+      print('--- Permintaan POST Selesai ---');
       return response;
-    } on DioError catch (e) {
-      // Penting: Menggunakan DioError
-      print('!!! HTTP POST Error Ditemukan !!!');
+    } on DioException catch (e) {
+      // Perbaikan: Tangkap DioException
+      print('!!! Error HTTP POST Ditemukan !!!');
       print('URL Gagal: $fullUrl');
+      print('Tipe Error: ${e.type}');
+      print('Pesan Error: ${e.message}');
       if (e.response != null) {
-        print('Data Respons Error: ${e.response?.data}');
-        print('Header Respons Error: ${e.response?.headers}');
-        print('Status Kode Respons Error: ${e.response?.statusCode}');
+        print('Status Kode: ${e.response?.statusCode}');
+        print('Data Error: ${e.response?.data}');
       }
-      print('Tipe Error Dio: ${e.type}');
-      print('Pesan Error Dio: ${e.message}');
-      print('!!! Selesai POST Error Log ---');
       rethrow;
-    } catch (e) {
-      print('!!! HTTP POST Error Tak Terduga Ditemukan !!!');
+    } catch (e, stackTrace) {
+      // Tangkap error umum dan stack trace
+      print('!!! Kesalahan POST tidak diketahui !!!');
       print('URL Gagal: $fullUrl');
-      print('Detail Error: $e');
-      print('!!! Selesai POST Unexpected Error Log ---');
-      rethrow;
+      print('Pesan Error: $e');
+      print('Stack Trace: $stackTrace');
+      throw DioException(
+        // Perbaikan: Gunakan DioException
+        requestOptions: baseRequestOptions,
+        error: 'Kesalahan POST tidak diketahui: $e',
+        type: DioExceptionType
+            .unknown, // Perbaikan: Gunakan DioExceptionType.unknown
+      );
     }
   }
 
-  /// Melakukan permintaan HTTP DELETE
+  // Metode HTTP DELETE
   Future<Response> httpDelete(
     String url, {
     Options? options,
   }) async {
     String fullUrl = '$baseUrl$url';
-    print('--- HTTP DELETE Request Dijalankan ---');
+    print('--- Permintaan HTTP DELETE Dijalankan ---');
     print('URL Lengkap: $fullUrl');
-    if (options != null) {
-      print('Opsi DELETE (Header dll): ${options.headers}');
-    }
+
+    final baseRequestOptions = RequestOptions(
+      path: fullUrl,
+      method: 'DELETE',
+      headers: options?.headers,
+      contentType: options?.contentType,
+      responseType: options?.responseType,
+      // Perbaikan: Gunakan Duration langsung
+      connectTimeout: connectTimeout,
+      receiveTimeout: receiveTimeout,
+    );
 
     try {
       var dio = _createDio();
       Response response = await dio.delete(fullUrl, options: options);
-      print('--- HTTP DELETE Response Diterima ---');
+      print('--- Respons HTTP DELETE Diterima ---');
       print('URL: $fullUrl');
       print('Status Kode: ${response.statusCode}');
-      print('Data Respons: ${response.data}');
-      print('--- Selesai DELETE Request ---');
+      print('--- Permintaan DELETE Selesai ---');
       return response;
-    } on DioError catch (e) {
-      // Penting: Menggunakan DioError
-      print('!!! HTTP DELETE Error Ditemukan !!!');
+    } on DioException catch (e) {
+      // Perbaikan: Tangkap DioException
+      print('!!! Error HTTP DELETE Ditemukan !!!');
       print('URL Gagal: $fullUrl');
+      print('Tipe Error: ${e.type}');
+      print('Pesan Error: ${e.message}');
       if (e.response != null) {
-        print('Data Respons Error: ${e.response?.data}');
-        print('Header Respons Error: ${e.response?.headers}');
-        print('Status Kode Respons Error: ${e.response?.statusCode}');
+        print('Status Kode: ${e.response?.statusCode}');
+        print('Data Error: ${e.response?.data}');
       }
-      print('Tipe Error Dio: ${e.type}');
-      print('Pesan Error Dio: ${e.message}');
-      print('!!! Selesai DELETE Error Log ---');
       rethrow;
-    } catch (e) {
-      print('!!! HTTP DELETE Error Tak Terduga Ditemukan !!!');
+    } catch (e, stackTrace) {
+      // Tangkap error umum dan stack trace
+      print('!!! Kesalahan DELETE tidak diketahui !!!');
       print('URL Gagal: $fullUrl');
-      print('Detail Error: $e');
-      print('!!! Selesai DELETE Unexpected Error Log ---');
-      rethrow;
+      print('Pesan Error: $e');
+      print('Stack Trace: $stackTrace');
+      throw DioException(
+        // Perbaikan: Gunakan DioException
+        requestOptions: baseRequestOptions,
+        error: 'Kesalahan DELETE tidak diketahui: $e',
+        type: DioExceptionType
+            .unknown, // Perbaikan: Gunakan DioExceptionType.unknown
+      );
     }
   }
 
-  /// Melakukan permintaan HTTP PUT
+  // Metode HTTP PUT
   Future<Response> httpPut(
     String url, {
     dynamic data,
     Options? options,
   }) async {
     String fullUrl = '$baseUrl$url';
-    print('--- HTTP PUT Request Dijalankan ---');
+    print('--- Permintaan HTTP PUT Dijalankan ---');
     print('URL Lengkap: $fullUrl');
     print('Data PUT: $data');
-    if (options != null) {
-      print('Opsi PUT (Header dll): ${options.headers}');
-    }
+
+    final baseRequestOptions = RequestOptions(
+      path: fullUrl,
+      method: 'PUT',
+      headers: options?.headers,
+      contentType: options?.contentType,
+      responseType: options?.responseType,
+      // Perbaikan: Gunakan Duration langsung
+      connectTimeout: connectTimeout,
+      receiveTimeout: receiveTimeout,
+    );
 
     try {
       var dio = _createDio();
       Response response = await dio.put(fullUrl, data: data, options: options);
-      print('--- HTTP PUT Response Diterima ---');
+      print('--- Respons HTTP PUT Diterima ---');
       print('URL: $fullUrl');
       print('Status Kode: ${response.statusCode}');
-      print('Data Respons: ${response.data}');
-      print('--- Selesai PUT Request ---');
+      print('--- Permintaan PUT Selesai ---');
       return response;
-    } on DioError catch (e) {
-      // Penting: Menggunakan DioError
-      print('!!! HTTP PUT Error Ditemukan !!!');
+    } on DioException catch (e) {
+      // Perbaikan: Tangkap DioException
+      print('!!! Error HTTP PUT Ditemukan !!!');
       print('URL Gagal: $fullUrl');
+      print('Tipe Error: ${e.type}');
+      print('Pesan Error: ${e.message}');
       if (e.response != null) {
-        print('Data Respons Error: ${e.response?.data}');
-        print('Header Respons Error: ${e.response?.headers}');
-        print('Status Kode Respons Error: ${e.response?.statusCode}');
+        print('Status Kode: ${e.response?.statusCode}');
+        print('Data Error: ${e.response?.data}');
       }
-      print('Tipe Error Dio: ${e.type}');
-      print('Pesan Error Dio: ${e.message}');
-      print('!!! Selesai PUT Error Log ---');
       rethrow;
-    } catch (e) {
-      print('!!! HTTP PUT Error Tak Terduga Ditemukan !!!');
+    } catch (e, stackTrace) {
+      // Tangkap error umum dan stack trace
+      print('!!! Kesalahan PUT tidak diketahui !!!');
       print('URL Gagal: $fullUrl');
-      print('Detail Error: $e');
-      print('!!! Selesai PUT Unexpected Error Log ---');
-      rethrow;
+      print('Pesan Error: $e');
+      print('Stack Trace: $stackTrace');
+      throw DioException(
+        // Perbaikan: Gunakan DioException
+        requestOptions: baseRequestOptions,
+        error: 'Kesalahan PUT tidak diketahui: $e',
+        type: DioExceptionType
+            .unknown, // Perbaikan: Gunakan DioExceptionType.unknown
+      );
     }
   }
 }
