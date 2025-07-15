@@ -1,13 +1,21 @@
-import 'package:dio/dio.dart';
-import 'package:pensiunku/data/api/base_api.dart';
-import 'package:pensiunku/util/api_util.dart';
+import 'dart:convert';
 
-class CustomerSupportApi extends BaseApi {
-  Future<Response> sendQuestion(String token, dynamic data) {
-    return httpPost(
-      '/contact',
-      data: data,
-      options: ApiUtil.getTokenOptions(token),
+import 'package:http/http.dart' as http;
+import 'package:pensiunku/util/api_util.dart';
+import 'package:pensiunku/config.dart'; // untuk apiHost
+
+class CustomerSupportApi {
+  final String _baseUrl;
+
+  CustomerSupportApi() : _baseUrl = apiHost;
+
+  /// Mengirim pertanyaan ke endpoint contact
+  Future<http.Response> sendQuestion(String token, dynamic data) async {
+    final uri = Uri.parse('$_baseUrl/contact');
+    return await http.post(
+      uri,
+      headers: ApiUtil.getTokenHeaders(token),
+      body: jsonEncode(data),
     );
   }
 }

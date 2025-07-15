@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'dart:developer';
+import 'dart:io';
 
-import 'package:dio/dio.dart';
+import 'package:http/http.dart' as http;
 import 'package:pensiunku/data/api/toko/toko_api.dart';
 import 'package:pensiunku/data/db/app_database.dart';
 
@@ -13,6 +15,90 @@ class TokoRepository extends BaseRepository {
   TokoApi api = TokoApi();
   AppDatabase database = AppDatabase();
 
+  // Helper method to handle HTTP exceptions
+  ResultModel<T> _handleHttpError<T>(dynamic error, String fallbackMessage) {
+    log(error.toString(), name: tag, error: error);
+    
+    if (error is SocketException) {
+      return ResultModel(
+        isSuccess: false,
+        error: fallbackMessage,
+      );
+    }
+    
+    if (error is http.ClientException) {
+      return ResultModel(
+        isSuccess: false,
+        error: fallbackMessage,
+      );
+    }
+    
+    if (error is HttpException) {
+      return ResultModel(
+        isSuccess: false,
+        error: fallbackMessage,
+      );
+    }
+    
+    return ResultModel(
+      isSuccess: false,
+      error: fallbackMessage,
+    );
+  }
+
+  // Helper method to handle HTTP response
+  ResultModel<T> _handleHttpResponse<T>(http.Response response, String fallbackMessage, T Function(Map<String, dynamic>) onSuccess) {
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      try {
+        final responseJson = jsonDecode(response.body) as Map<String, dynamic>;
+        return ResultModel(
+          isSuccess: true,
+          data: onSuccess(responseJson),
+        );
+      } catch (e) {
+        return ResultModel(
+          isSuccess: false,
+          error: fallbackMessage,
+        );
+      }
+    } else if (response.statusCode >= 400 && response.statusCode < 500) {
+      // Client error
+      try {
+        final responseJson = jsonDecode(response.body) as Map<String, dynamic>;
+        String message = responseJson['message'] ?? fallbackMessage;
+        return ResultModel(
+          isSuccess: false,
+          error: message,
+        );
+      } catch (e) {
+        return ResultModel(
+          isSuccess: false,
+          error: fallbackMessage,
+        );
+      }
+    } else if (response.statusCode >= 500 && response.statusCode < 600) {
+      // Server error
+      try {
+        final responseJson = jsonDecode(response.body) as Map<String, dynamic>;
+        String message = responseJson['message'] ?? fallbackMessage;
+        return ResultModel(
+          isSuccess: false,
+          error: message,
+        );
+      } catch (e) {
+        return ResultModel(
+          isSuccess: false,
+          error: fallbackMessage,
+        );
+      }
+    } else {
+      return ResultModel(
+        isSuccess: false,
+        error: fallbackMessage,
+      );
+    }
+  }
+
   Future<ResultModel<List<ProductModel>>> getAllProduct(
       int page, String token) async {
     assert(() {
@@ -22,57 +108,27 @@ class TokoRepository extends BaseRepository {
     String finalErrorMessage =
         'Tidak dapat mendapatkan list product. Tolong periksa Internet Anda.';
     try {
-      Response response = await api.getAllProduct(page, token);
-      var responseJson = response.data;
-      log(responseJson['products'].toString());
-
-      if (responseJson['products'] != null) {
-        // transform format
-        TokoModel tokoModel = TokoModel.fromJson(responseJson['products']);
-        List<ProductModel> products = tokoModel.products.data.map((product) {
-          return ProductModel.fromProductModel(product);
-        }).toList();
-
-        return ResultModel(
-          isSuccess: true,
-          data: products,
-        );
-      } else {
-        return ResultModel(
-          isSuccess: false,
-          error: finalErrorMessage,
-        );
-      }
-    } catch (e) {
-      log(e.toString(), name: tag, error: e);
-      if (e is DioException) {
-        int? statusCode = e.response?.statusCode;
-        if (statusCode != null) {
-          if (statusCode >= 400 && statusCode < 500) {
-            // Client error
-            return ResultModel(
-              isSuccess: false,
-              error: finalErrorMessage,
-            );
-          } else if (statusCode >= 500 && statusCode < 600) {
-            // Server error
-            return ResultModel(
-              isSuccess: false,
-              error: finalErrorMessage,
-            );
+      http.Response response = await api.getAllProduct(page, token);
+      
+      return _handleHttpResponse<List<ProductModel>>(
+        response,
+        finalErrorMessage,
+        (responseJson) {
+          if (responseJson['products'] != null) {
+            log(responseJson['products'].toString());
+            // transform format
+            TokoModel tokoModel = TokoModel.fromJson(responseJson['products']);
+            List<ProductModel> products = tokoModel.products.data.map((product) {
+              return ProductModel.fromProductModel(product);
+            }).toList();
+            return products;
+          } else {
+            throw Exception('Products is null');
           }
-        }
-        if (e.message?.contains('SocketException') ?? false) {
-          return ResultModel(
-            isSuccess: false,
-            error: finalErrorMessage,
-          );
-        }
-      }
-      return ResultModel(
-        isSuccess: false,
-        error: finalErrorMessage,
+        },
       );
+    } catch (e) {
+      return _handleHttpError(e, finalErrorMessage);
     }
   }
 
@@ -85,54 +141,23 @@ class TokoRepository extends BaseRepository {
     String finalErrorMessage =
         'Tidak dapat mendapatkan list product. Tolong periksa Internet Anda.';
     try {
-      Response response = await api.getAllProduct(page, token);
-      var responseJson = response.data;
-      log(responseJson['products'].toString());
-
-      if (responseJson['products'] != null) {
-        TokoModel tokoModel = TokoModel.fromJson(responseJson);
-        // List<Product> products = tokoModel.data;
-
-        return ResultModel(
-          isSuccess: true,
-          data: tokoModel,
-        );
-      } else {
-        return ResultModel(
-          isSuccess: false,
-          error: finalErrorMessage,
-        );
-      }
-    } catch (e) {
-      log(e.toString(), name: tag, error: e);
-      if (e is DioException) {
-        int? statusCode = e.response?.statusCode;
-        if (statusCode != null) {
-          if (statusCode >= 400 && statusCode < 500) {
-            // Client error
-            return ResultModel(
-              isSuccess: false,
-              error: finalErrorMessage,
-            );
-          } else if (statusCode >= 500 && statusCode < 600) {
-            // Server error
-            return ResultModel(
-              isSuccess: false,
-              error: finalErrorMessage,
-            );
+      http.Response response = await api.getAllProduct(page, token);
+      
+      return _handleHttpResponse<TokoModel>(
+        response,
+        finalErrorMessage,
+        (responseJson) {
+          if (responseJson['products'] != null) {
+            log(responseJson['products'].toString());
+            TokoModel tokoModel = TokoModel.fromJson(responseJson);
+            return tokoModel;
+          } else {
+            throw Exception('Products is null');
           }
-        }
-        if (e.message?.contains('SocketException')?? false) {
-          return ResultModel(
-            isSuccess: false,
-            error: finalErrorMessage,
-          );
-        }
-      }
-      return ResultModel(
-        isSuccess: false,
-        error: finalErrorMessage,
+        },
       );
+    } catch (e) {
+      return _handleHttpError(e, finalErrorMessage);
     }
   }
 
@@ -144,65 +169,31 @@ class TokoRepository extends BaseRepository {
     String finalErrorMessage =
         'Tidak dapat mendapatkan list shopping cart. Tolong periksa Internet Anda.';
     try {
-      Response response = await api.getShoppingCart(token);
-      var responseJson = response.data;
-      log(responseJson['cart'].toString());
+      http.Response response = await api.getShoppingCart(token);
+      
+      return _handleHttpResponse<List<Cart>>(
+        response,
+        finalErrorMessage,
+        (responseJson) {
+          if (responseJson['cart'] != null) {
+            log(responseJson['cart'].toString());
+            List<dynamic> cartsJson = responseJson['cart'] ?? [];
+            List<Cart> carts = [];
 
-      if (responseJson['cart'] != null) {
-        List<dynamic> cartsJson = responseJson['cart'] ?? [];
-        List<Cart> carts = [];
-
-        if (cartsJson.length > 0) {
-          cartsJson.forEach((value) {
-            carts.add(Cart.fromJson(value));
-          });
-          log('cart total' + carts.length.toString());
-          return ResultModel(
-            isSuccess: true,
-            data: carts,
-          );
-        } else {
-          return ResultModel(
-            isSuccess: true,
-            data: [],
-          );
-        }
-      } else {
-        return ResultModel(
-          isSuccess: false,
-          error: finalErrorMessage,
-        );
-      }
-    } catch (e) {
-      log(e.toString(), name: tag, error: e);
-      if (e is DioException) {
-        int? statusCode = e.response?.statusCode;
-        if (statusCode != null) {
-          if (statusCode >= 400 && statusCode < 500) {
-            // Client error
-            return ResultModel(
-              isSuccess: false,
-              error: finalErrorMessage,
-            );
-          } else if (statusCode >= 500 && statusCode < 600) {
-            // Server error
-            return ResultModel(
-              isSuccess: false,
-              error: finalErrorMessage,
-            );
+            if (cartsJson.length > 0) {
+              cartsJson.forEach((value) {
+                carts.add(Cart.fromJson(value));
+              });
+              log('cart total' + carts.length.toString());
+            }
+            return carts;
+          } else {
+            throw Exception('Cart is null');
           }
-        }
-        if (e.message?.contains('SocketException') ?? false) {
-          return ResultModel(
-            isSuccess: false,
-            error: finalErrorMessage,
-          );
-        }
-      }
-      return ResultModel(
-        isSuccess: false,
-        error: finalErrorMessage,
+        },
       );
+    } catch (e) {
+      return _handleHttpError(e, finalErrorMessage);
     }
   }
 
@@ -215,57 +206,34 @@ class TokoRepository extends BaseRepository {
     String finalErrorMessage =
         'Tidak dapat melakukan penambahan barang ke keranjang. Tolong periksa Internet Anda.';
     try {
-      Response response =
+      http.Response response =
           await api.postToShoppingCart(token, pushToShoppingCart);
-      var responseJson = response.data;
+      
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final responseJson = jsonDecode(response.body) as Map<String, dynamic>;
+        
+        if (responseJson['success'] == 1) {
+          dynamic itemsJson = responseJson['item'];
+          Cart cart = Cart.fromJson(itemsJson);
 
-      if (responseJson['success'] == 1) {
-        dynamic itemsJson = responseJson['item'];
-        Cart cart = Cart.fromJson(itemsJson);
-
-        return ResultModel(
-          isSuccess: true,
-          data: cart,
-        );
-      } else {
-        String message = responseJson['message'] ?? finalErrorMessage;
-        return ResultModel(
-          isSuccess: false,
-          error: message,
-        );
-      }
-    } catch (e) {
-      log(e.toString(), name: tag, error: e);
-      if (e is DioException) {
-        int? statusCode = e.response?.statusCode;
-        if (statusCode != null) {
-          if (statusCode >= 400 && statusCode < 500) {
-            // Client error
-            return ResultModel(
-              isSuccess: false,
-              error: finalErrorMessage,
-            );
-          } else if (statusCode >= 500 && statusCode < 600) {
-            // Server error
-            var responseJson = e.response!.data;
-            String message = responseJson['message'] ?? finalErrorMessage;
-            return ResultModel(
-              isSuccess: false,
-              error: message,
-            );
-          }
-        }
-        if (e.message?.contains('SocketException') ?? false) {
+          return ResultModel(
+            isSuccess: true,
+            data: cart,
+          );
+        } else {
+          String message = responseJson['message'] ?? finalErrorMessage;
           return ResultModel(
             isSuccess: false,
-            error: finalErrorMessage,
+            error: message,
           );
         }
+      } else {
+        return _handleHttpResponse<Cart>(response, finalErrorMessage, (responseJson) {
+          throw Exception('Failed to post to shopping cart');
+        });
       }
-      return ResultModel(
-        isSuccess: false,
-        error: finalErrorMessage,
-      );
+    } catch (e) {
+      return _handleHttpError(e, finalErrorMessage);
     }
   }
 
@@ -278,57 +246,34 @@ class TokoRepository extends BaseRepository {
     String finalErrorMessage =
         'Tidak dapat melakukan perubahan jumlah barang ke keranjang. Tolong periksa Internet Anda.';
     try {
-      Response response =
+      http.Response response =
           await api.putToShoppingCart(token, pushToShoppingCart);
-      var responseJson = response.data;
+      
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final responseJson = jsonDecode(response.body) as Map<String, dynamic>;
+        
+        if (responseJson['success'] == 1) {
+          dynamic itemsJson = responseJson['item'];
+          Cart cart = Cart.fromJson(itemsJson);
 
-      if (responseJson['success'] == 1) {
-        dynamic itemsJson = responseJson['item'];
-        Cart cart = Cart.fromJson(itemsJson);
-
-        return ResultModel(
-          isSuccess: true,
-          data: cart,
-        );
-      } else {
-        String message = responseJson['message'] ?? finalErrorMessage;
-        return ResultModel(
-          isSuccess: false,
-          error: message,
-        );
-      }
-    } catch (e) {
-      log(e.toString(), name: tag, error: e);
-      if (e is DioException) {
-        int? statusCode = e.response?.statusCode;
-        if (statusCode != null) {
-          if (statusCode >= 400 && statusCode < 500) {
-            // Client error
-            return ResultModel(
-              isSuccess: false,
-              error: finalErrorMessage,
-            );
-          } else if (statusCode >= 500 && statusCode < 600) {
-            // Server error
-            var responseJson = e.response!.data;
-            String message = responseJson['message'] ?? finalErrorMessage;
-            return ResultModel(
-              isSuccess: false,
-              error: message,
-            );
-          }
-        }
-        if (e.message?.contains('SocketException') ?? false) {
+          return ResultModel(
+            isSuccess: true,
+            data: cart,
+          );
+        } else {
+          String message = responseJson['message'] ?? finalErrorMessage;
           return ResultModel(
             isSuccess: false,
-            error: finalErrorMessage,
+            error: message,
           );
         }
+      } else {
+        return _handleHttpResponse<Cart>(response, finalErrorMessage, (responseJson) {
+          throw Exception('Failed to put to shopping cart');
+        });
       }
-      return ResultModel(
-        isSuccess: false,
-        error: finalErrorMessage,
-      );
+    } catch (e) {
+      return _handleHttpError(e, finalErrorMessage);
     }
   }
 
@@ -341,55 +286,31 @@ class TokoRepository extends BaseRepository {
     String finalErrorMessage =
         'Tidak dapat melakukan penghapusan barang dari keranjang. Tolong periksa Internet Anda.';
     try {
-      Response response = await api.deleteShoppingCart(token, idCart);
-      var responseJson = response.data;
-
-      if (responseJson['success'] == 1) {
-        String message = responseJson['message'];
-
-        return ResultModel(
-          isSuccess: true,
-          data: message,
-        );
-      } else {
-        String message = responseJson['message'] ?? finalErrorMessage;
-        return ResultModel(
-          isSuccess: false,
-          error: message,
-        );
-      }
-    } catch (e) {
-      log(e.toString(), name: tag, error: e);
-      if (e is DioException) {
-        int? statusCode = e.response?.statusCode;
-        if (statusCode != null) {
-          if (statusCode >= 400 && statusCode < 500) {
-            // Client error
-            return ResultModel(
-              isSuccess: false,
-              error: finalErrorMessage,
-            );
-          } else if (statusCode >= 500 && statusCode < 600) {
-            // Server error
-            var responseJson = e.response!.data;
-            String message = responseJson['message'] ?? finalErrorMessage;
-            return ResultModel(
-              isSuccess: false,
-              error: message,
-            );
-          }
-        }
-        if (e.message?.contains('SocketException') ?? false) {
+      http.Response response = await api.deleteShoppingCart(token, idCart);
+      
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final responseJson = jsonDecode(response.body) as Map<String, dynamic>;
+        
+        if (responseJson['success'] == 1) {
+          String message = responseJson['message'];
+          return ResultModel(
+            isSuccess: true,
+            data: message,
+          );
+        } else {
+          String message = responseJson['message'] ?? finalErrorMessage;
           return ResultModel(
             isSuccess: false,
-            error: finalErrorMessage,
+            error: message,
           );
         }
+      } else {
+        return _handleHttpResponse<String>(response, finalErrorMessage, (responseJson) {
+          throw Exception('Failed to delete shopping cart');
+        });
       }
-      return ResultModel(
-        isSuccess: false,
-        error: finalErrorMessage,
-      );
+    } catch (e) {
+      return _handleHttpError(e, finalErrorMessage);
     }
   }
 
@@ -402,66 +323,32 @@ class TokoRepository extends BaseRepository {
     String finalErrorMessage =
         'Tidak dapat mendapatkan list alamat pengiriman. Tolong periksa Internet Anda.';
     try {
-      Response response = await api.getShippingAddress(token);
-      var responseJson = response.data;
-      log(responseJson['shipping_addresses'].toString());
+      http.Response response = await api.getShippingAddress(token);
+      
+      return _handleHttpResponse<List<ShippingAddress>>(
+        response,
+        finalErrorMessage,
+        (responseJson) {
+          if (responseJson['shipping_addresses'] != null) {
+            log(responseJson['shipping_addresses'].toString());
+            List<dynamic> shippingAddressJson =
+                responseJson['shipping_addresses'] ?? [];
+            List<ShippingAddress> shippingAddress = [];
 
-      if (responseJson['shipping_addresses'] != null) {
-        List<dynamic> shippingAddressJson =
-            responseJson['shipping_addresses'] ?? [];
-        List<ShippingAddress> shippingAddress = [];
-
-        if (shippingAddressJson.length > 0) {
-          shippingAddressJson.forEach((value) {
-            shippingAddress.add(ShippingAddress.fromJson(value));
-          });
-          log('Shipping Address total' + shippingAddress.length.toString());
-          return ResultModel(
-            isSuccess: true,
-            data: shippingAddress,
-          );
-        } else {
-          return ResultModel(
-            isSuccess: true,
-            data: [],
-          );
-        }
-      } else {
-        return ResultModel(
-          isSuccess: false,
-          error: finalErrorMessage,
-        );
-      }
-    } catch (e) {
-      log(e.toString(), name: tag, error: e);
-      if (e is DioException) {
-        int? statusCode = e.response?.statusCode;
-        if (statusCode != null) {
-          if (statusCode >= 400 && statusCode < 500) {
-            // Client error
-            return ResultModel(
-              isSuccess: false,
-              error: finalErrorMessage,
-            );
-          } else if (statusCode >= 500 && statusCode < 600) {
-            // Server error
-            return ResultModel(
-              isSuccess: false,
-              error: finalErrorMessage,
-            );
+            if (shippingAddressJson.length > 0) {
+              shippingAddressJson.forEach((value) {
+                shippingAddress.add(ShippingAddress.fromJson(value));
+              });
+              log('Shipping Address total' + shippingAddress.length.toString());
+            }
+            return shippingAddress;
+          } else {
+            throw Exception('Shipping addresses is null');
           }
-        }
-        if (e.message?.contains('SocketException') ?? false) {
-          return ResultModel(
-            isSuccess: false,
-            error: finalErrorMessage,
-          );
-        }
-      }
-      return ResultModel(
-        isSuccess: false,
-        error: finalErrorMessage,
+        },
       );
+    } catch (e) {
+      return _handleHttpError(e, finalErrorMessage);
     }
   }
 
@@ -474,66 +361,32 @@ class TokoRepository extends BaseRepository {
     String finalErrorMessage =
         'Tidak dapat mendapatkan list alamat pengiriman. Tolong periksa Internet Anda.';
     try {
-      Response response = await api.getShippingAddressPreview(token);
-      var responseJson = response.data;
-      log(responseJson['shipping_addresses'].toString());
+      http.Response response = await api.getShippingAddressPreview(token);
+      
+      return _handleHttpResponse<List<ShippingAddress>>(
+        response,
+        finalErrorMessage,
+        (responseJson) {
+          if (responseJson['shipping_addresses'] != null) {
+            log(responseJson['shipping_addresses'].toString());
+            List<dynamic> shippingAddressJson =
+                responseJson['shipping_addresses'] ?? [];
+            List<ShippingAddress> shippingAddress = [];
 
-      if (responseJson['shipping_addresses'] != null) {
-        List<dynamic> shippingAddressJson =
-            responseJson['shipping_addresses'] ?? [];
-        List<ShippingAddress> shippingAddress = [];
-
-        if (shippingAddressJson.length > 0) {
-          shippingAddressJson.forEach((value) {
-            shippingAddress.add(ShippingAddress.fromJson2(value));
-          });
-          log('Shipping Address total' + shippingAddress.length.toString());
-          return ResultModel(
-            isSuccess: true,
-            data: shippingAddress,
-          );
-        } else {
-          return ResultModel(
-            isSuccess: true,
-            data: [],
-          );
-        }
-      } else {
-        return ResultModel(
-          isSuccess: false,
-          error: finalErrorMessage,
-        );
-      }
-    } catch (e) {
-      log(e.toString(), name: tag, error: e);
-      if (e is DioException) {
-        int? statusCode = e.response?.statusCode;
-        if (statusCode != null) {
-          if (statusCode >= 400 && statusCode < 500) {
-            // Client error
-            return ResultModel(
-              isSuccess: false,
-              error: finalErrorMessage,
-            );
-          } else if (statusCode >= 500 && statusCode < 600) {
-            // Server error
-            return ResultModel(
-              isSuccess: false,
-              error: finalErrorMessage,
-            );
+            if (shippingAddressJson.length > 0) {
+              shippingAddressJson.forEach((value) {
+                shippingAddress.add(ShippingAddress.fromJson2(value));
+              });
+              log('Shipping Address total' + shippingAddress.length.toString());
+            }
+            return shippingAddress;
+          } else {
+            throw Exception('Shipping addresses is null');
           }
-        }
-        if (e.message?.contains('SocketException') ?? false) {
-          return ResultModel(
-            isSuccess: false,
-            error: finalErrorMessage,
-          );
-        }
-      }
-      return ResultModel(
-        isSuccess: false,
-        error: finalErrorMessage,
+        },
       );
+    } catch (e) {
+      return _handleHttpError(e, finalErrorMessage);
     }
   }
 
@@ -546,21 +399,36 @@ class TokoRepository extends BaseRepository {
     String finalErrorMessage =
         'Tidak dapat mendapatkan list alamat pengiriman. Tolong periksa Internet Anda.';
     try {
-      Response response = await api.getShippingAddressById(token, id);
-      var responseJson = response.data;
-      log(responseJson['shipping_address'].toString());
+      http.Response response = await api.getShippingAddressById(token, id);
+      
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final responseJson = jsonDecode(response.body) as Map<String, dynamic>;
+        
+        if (responseJson['shipping_address'] != null) {
+          log(responseJson['shipping_address'].toString());
+          dynamic shippingAddressJson = responseJson['shipping_address'];
+          late ShippingAddress shippingAddress;
 
-      if (responseJson['shipping_address'] != null) {
-        dynamic shippingAddressJson = responseJson['shipping_address'];
-        late ShippingAddress shippingAddress;
-
-        if (shippingAddressJson != null) {
-          shippingAddress = ShippingAddress.fromJson(shippingAddressJson);
-          log('Shipping Address : ' + shippingAddressJson.toString());
-          return ResultModel(
-            isSuccess: true,
-            data: shippingAddress,
-          );
+          if (shippingAddressJson != null) {
+            shippingAddress = ShippingAddress.fromJson(shippingAddressJson);
+            log('Shipping Address : ' + shippingAddressJson.toString());
+            return ResultModel(
+              isSuccess: true,
+              data: shippingAddress,
+            );
+          } else {
+            return ResultModel(
+              isSuccess: true,
+              data: ShippingAddress(
+                  address: '',
+                  mobile: '',
+                  province: null,
+                  city: null,
+                  subdistrict: null,
+                  postalCode: null,
+                  isPrimary: null),
+            );
+          }
         } else {
           return ResultModel(
             isSuccess: true,
@@ -575,48 +443,12 @@ class TokoRepository extends BaseRepository {
           );
         }
       } else {
-        return ResultModel(
-          isSuccess: true,
-          data: ShippingAddress(
-              address: '',
-              mobile: '',
-              province: null,
-              city: null,
-              subdistrict: null,
-              postalCode: null,
-              isPrimary: null),
-        );
+        return _handleHttpResponse<ShippingAddress>(response, finalErrorMessage, (responseJson) {
+          throw Exception('Failed to get shipping address');
+        });
       }
     } catch (e) {
-      log(e.toString(), name: tag, error: e);
-      if (e is DioException) {
-        int? statusCode = e.response?.statusCode;
-        if (statusCode != null) {
-          if (statusCode >= 400 && statusCode < 500) {
-            // Client error
-            return ResultModel(
-              isSuccess: false,
-              error: finalErrorMessage,
-            );
-          } else if (statusCode >= 500 && statusCode < 600) {
-            // Server error
-            return ResultModel(
-              isSuccess: false,
-              error: finalErrorMessage,
-            );
-          }
-        }
-        if (e.message?.contains('SocketException') ?? false) {
-          return ResultModel(
-            isSuccess: false,
-            error: finalErrorMessage,
-          );
-        }
-      }
-      return ResultModel(
-        isSuccess: false,
-        error: finalErrorMessage,
-      );
+      return _handleHttpError(e, finalErrorMessage);
     }
   }
 
@@ -639,37 +471,7 @@ class TokoRepository extends BaseRepository {
         );
       }
     } catch (e) {
-      log(e.toString(), name: tag, error: e);
-      if (e is DioException) {
-        int? statusCode = e.response?.statusCode;
-        if (statusCode != null) {
-          if (statusCode >= 400 && statusCode < 500) {
-            // Client error
-            return ResultModel(
-              isSuccess: false,
-              error: finalErrorMessage,
-            );
-          } else if (statusCode >= 500 && statusCode < 600) {
-            // Server error
-            var responseJson = e.response!.data;
-            String message = responseJson['message'] ?? finalErrorMessage;
-            return ResultModel(
-              isSuccess: false,
-              error: message,
-            );
-          }
-        }
-        if (e.message?.contains('SocketException') ?? false) {
-          return ResultModel(
-            isSuccess: false,
-            error: finalErrorMessage,
-          );
-        }
-      }
-      return ResultModel(
-        isSuccess: false,
-        error: finalErrorMessage,
-      );
+      return _handleHttpError(e, finalErrorMessage);
     }
   }
 
@@ -693,37 +495,7 @@ class TokoRepository extends BaseRepository {
         );
       }
     } catch (e) {
-      log(e.toString(), name: tag, error: e);
-      if (e is DioException) {
-        int? statusCode = e.response?.statusCode;
-        if (statusCode != null) {
-          if (statusCode >= 400 && statusCode < 500) {
-            // Client error
-            return ResultModel(
-              isSuccess: false,
-              error: finalErrorMessage,
-            );
-          } else if (statusCode >= 500 && statusCode < 600) {
-            // Server error
-            var responseJson = e.response!.data;
-            String message = responseJson['message'] ?? finalErrorMessage;
-            return ResultModel(
-              isSuccess: false,
-              error: message,
-            );
-          }
-        }
-        if (e.message?.contains('SocketException') ?? false) {
-          return ResultModel(
-            isSuccess: false,
-            error: finalErrorMessage,
-          );
-        }
-      }
-      return ResultModel(
-        isSuccess: false,
-        error: finalErrorMessage,
-      );
+      return _handleHttpError(e, finalErrorMessage);
     }
   }
 
@@ -747,37 +519,7 @@ class TokoRepository extends BaseRepository {
         );
       }
     } catch (e) {
-      log(e.toString(), name: tag, error: e);
-      if (e is DioException) {
-        int? statusCode = e.response?.statusCode;
-        if (statusCode != null) {
-          if (statusCode >= 400 && statusCode < 500) {
-            // Client error
-            return ResultModel(
-              isSuccess: false,
-              error: finalErrorMessage,
-            );
-          } else if (statusCode >= 500 && statusCode < 600) {
-            // Server error
-            var responseJson = e.response!.data;
-            String message = responseJson['message'] ?? finalErrorMessage;
-            return ResultModel(
-              isSuccess: false,
-              error: message,
-            );
-          }
-        }
-        if (e.message?.contains('SocketException') ?? false) {
-          return ResultModel(
-            isSuccess: false,
-            error: finalErrorMessage,
-          );
-        }
-      }
-      return ResultModel(
-        isSuccess: false,
-        error: finalErrorMessage,
-      );
+      return _handleHttpError(e, finalErrorMessage);
     }
   }
 
@@ -790,56 +532,33 @@ class TokoRepository extends BaseRepository {
     String finalErrorMessage =
         'Tidak dapat melakukan penambahan alamat pengiriman. Tolong periksa Internet Anda.';
     try {
-      Response response = await api.postShippingAddress(token, shippingAddress);
-      var responseJson = response.data;
+      http.Response response = await api.postShippingAddress(token, shippingAddress);
+      
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final responseJson = jsonDecode(response.body) as Map<String, dynamic>;
+        
+        if (responseJson['success'] == 1) {
+          dynamic itemsJson = responseJson['shipping_address'];
+          ShippingAddress shippingAddress = ShippingAddress.fromJson(itemsJson);
 
-      if (responseJson['success'] == 1) {
-        dynamic itemsJson = responseJson['shipping_address'];
-        ShippingAddress shippingAddress = ShippingAddress.fromJson(itemsJson);
-
-        return ResultModel(
-          isSuccess: true,
-          data: shippingAddress,
-        );
-      } else {
-        String message = responseJson['message'] ?? finalErrorMessage;
-        return ResultModel(
-          isSuccess: false,
-          error: message,
-        );
-      }
-    } catch (e) {
-      log(e.toString(), name: tag, error: e);
-      if (e is DioException) {
-        int? statusCode = e.response?.statusCode;
-        if (statusCode != null) {
-          if (statusCode >= 400 && statusCode < 500) {
-            // Client error
-            return ResultModel(
-              isSuccess: false,
-              error: finalErrorMessage,
-            );
-          } else if (statusCode >= 500 && statusCode < 600) {
-            // Server error
-            var responseJson = e.response!.data;
-            String message = responseJson['message'] ?? finalErrorMessage;
-            return ResultModel(
-              isSuccess: false,
-              error: message,
-            );
-          }
-        }
-        if (e.message?.contains('SocketException') ?? false) {
+          return ResultModel(
+            isSuccess: true,
+            data: shippingAddress,
+          );
+        } else {
+          String message = responseJson['message'] ?? finalErrorMessage;
           return ResultModel(
             isSuccess: false,
-            error: finalErrorMessage,
+            error: message,
           );
         }
+      } else {
+        return _handleHttpResponse<ShippingAddress>(response, finalErrorMessage, (responseJson) {
+          throw Exception('Failed to post shipping address');
+        });
       }
-      return ResultModel(
-        isSuccess: false,
-        error: finalErrorMessage,
-      );
+    } catch (e) {
+      return _handleHttpError(e, finalErrorMessage);
     }
   }
 
@@ -852,56 +571,33 @@ class TokoRepository extends BaseRepository {
     String finalErrorMessage =
         'Tidak dapat melakukan perubahan pengiriman alamat. Tolong periksa Internet Anda.';
     try {
-      Response response = await api.putShippingAddress(token, shippingAddress);
-      var responseJson = response.data;
+      http.Response response = await api.putShippingAddress(token, shippingAddress);
+      
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final responseJson = jsonDecode(response.body) as Map<String, dynamic>;
+        
+        if (responseJson['success'] == 1) {
+          dynamic itemsJson = responseJson['shipping_address'];
+          ShippingAddress shippingAddress = ShippingAddress.fromJson(itemsJson);
 
-      if (responseJson['success'] == 1) {
-        dynamic itemsJson = responseJson['shipping_address'];
-        ShippingAddress shippingAddress = ShippingAddress.fromJson(itemsJson);
-
-        return ResultModel(
-          isSuccess: true,
-          data: shippingAddress,
-        );
-      } else {
-        String message = responseJson['message'] ?? finalErrorMessage;
-        return ResultModel(
-          isSuccess: false,
-          error: message,
-        );
-      }
-    } catch (e) {
-      log(e.toString(), name: tag, error: e);
-      if (e is DioException) {
-        int? statusCode = e.response?.statusCode;
-        if (statusCode != null) {
-          if (statusCode >= 400 && statusCode < 500) {
-            // Client error
-            return ResultModel(
-              isSuccess: false,
-              error: finalErrorMessage,
-            );
-          } else if (statusCode >= 500 && statusCode < 600) {
-            // Server error
-            var responseJson = e.response!.data;
-            String message = responseJson['message'] ?? finalErrorMessage;
-            return ResultModel(
-              isSuccess: false,
-              error: message,
-            );
-          }
-        }
-        if (e.message?.contains('SocketException') ?? false) {
+          return ResultModel(
+            isSuccess: true,
+            data: shippingAddress,
+          );
+        } else {
+          String message = responseJson['message'] ?? finalErrorMessage;
           return ResultModel(
             isSuccess: false,
-            error: finalErrorMessage,
+            error: message,
           );
         }
+      } else {
+        return _handleHttpResponse<ShippingAddress>(response, finalErrorMessage, (responseJson) {
+          throw Exception('Failed to put shipping address');
+        });
       }
-      return ResultModel(
-        isSuccess: false,
-        error: finalErrorMessage,
-      );
+    } catch (e) {
+      return _handleHttpError(e, finalErrorMessage);
     }
   }
 
@@ -914,56 +610,32 @@ class TokoRepository extends BaseRepository {
     String finalErrorMessage =
         'Tidak dapat melakukan penghapusan alamat pengiriman. Tolong periksa Internet Anda.';
     try {
-      Response response =
+      http.Response response =
           await api.deleteShippingAddress(token, idShippingAddress);
-      var responseJson = response.data;
-
-      if (responseJson['success'] == 1) {
-        String message = responseJson['message'];
-
-        return ResultModel(
-          isSuccess: true,
-          data: message,
-        );
-      } else {
-        String message = responseJson['message'] ?? finalErrorMessage;
-        return ResultModel(
-          isSuccess: false,
-          error: message,
-        );
-      }
-    } catch (e) {
-      log(e.toString(), name: tag, error: e);
-      if (e is DioException) {
-        int? statusCode = e.response?.statusCode;
-        if (statusCode != null) {
-          if (statusCode >= 400 && statusCode < 500) {
-            // Client error
-            return ResultModel(
-              isSuccess: false,
-              error: finalErrorMessage,
-            );
-          } else if (statusCode >= 500 && statusCode < 600) {
-            // Server error
-            var responseJson = e.response!.data;
-            String message = responseJson['message'] ?? finalErrorMessage;
-            return ResultModel(
-              isSuccess: false,
-              error: message,
-            );
-          }
-        }
-        if (e.message?.contains('SocketException') ?? false) {
+      
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final responseJson = jsonDecode(response.body) as Map<String, dynamic>;
+        
+        if (responseJson['success'] == 1) {
+          String message = responseJson['message'];
+          return ResultModel(
+            isSuccess: true,
+            data: message,
+          );
+        } else {
+          String message = responseJson['message'] ?? finalErrorMessage;
           return ResultModel(
             isSuccess: false,
-            error: finalErrorMessage,
+            error: message,
           );
         }
+      } else {
+        return _handleHttpResponse<String>(response, finalErrorMessage, (responseJson) {
+          throw Exception('Failed to delete shipping address');
+        });
       }
-      return ResultModel(
-        isSuccess: false,
-        error: finalErrorMessage,
-      );
+    } catch (e) {
+      return _handleHttpError(e, finalErrorMessage);
     }
   }
 
@@ -976,55 +648,25 @@ class TokoRepository extends BaseRepository {
     String finalErrorMessage =
         'Tidak dapat mendapatkan list kategori. Tolong periksa Internet Anda.';
     try {
-      Response response = await api.getAllCategories(token);
-      var responseJson = response.data;
-      log(responseJson['categories'].toString());
-
-      if (responseJson['categories'] != null) {
-        // transform format
-        CategoryModel categoryModel = CategoryModel.fromJson(responseJson);
-        List<Category> categories = categoryModel.categories.data;
-
-        return ResultModel(
-          isSuccess: true,
-          data: categories,
-        );
-      } else {
-        return ResultModel(
-          isSuccess: false,
-          error: finalErrorMessage,
-        );
-      }
-    } catch (e) {
-      log(e.toString(), name: tag, error: e);
-      if (e is DioException) {
-        int? statusCode = e.response?.statusCode;
-        if (statusCode != null) {
-          if (statusCode >= 400 && statusCode < 500) {
-            // Client error
-            return ResultModel(
-              isSuccess: false,
-              error: finalErrorMessage,
-            );
-          } else if (statusCode >= 500 && statusCode < 600) {
-            // Server error
-            return ResultModel(
-              isSuccess: false,
-              error: finalErrorMessage,
-            );
+      http.Response response = await api.getAllCategories(token);
+      
+      return _handleHttpResponse<List<Category>>(
+        response,
+        finalErrorMessage,
+        (responseJson) {
+          if (responseJson['categories'] != null) {
+            log(responseJson['categories'].toString());
+            // transform format
+            CategoryModel categoryModel = CategoryModel.fromJson(responseJson);
+            List<Category> categories = categoryModel.categories.data;
+            return categories;
+          } else {
+            throw Exception('Categories is null');
           }
-        }
-        if (e.message?.contains('SocketException') ?? false) {
-          return ResultModel(
-            isSuccess: false,
-            error: finalErrorMessage,
-          );
-        }
-      }
-      return ResultModel(
-        isSuccess: false,
-        error: finalErrorMessage,
+        },
       );
+    } catch (e) {
+      return _handleHttpError(e, finalErrorMessage);
     }
   }
 
@@ -1037,58 +679,24 @@ class TokoRepository extends BaseRepository {
     String finalErrorMessage =
         'Tidak dapat mendapatkan list product terbaru. Tolong periksa Internet Anda.';
     try {
-      Response response = await api.getLatestProductByCategory(
+      http.Response response = await api.getLatestProductByCategory(
           page, token, category, searchText);
-      var responseJson = response.data;
-      // log(responseJson['products'].toString());
-
-      if (responseJson['products'] != null) {
-        // transform format
-        TokoModel tokoModel = TokoModel.fromJson(responseJson);
-        // List<ProductModel> products = tokoModel.products.data.map((product) {
-        //   return ProductModel.fromProductModel(product);
-        // }).toList();
-
-        return ResultModel(
-          isSuccess: true,
-          data: tokoModel,
-        );
-      } else {
-        return ResultModel(
-          isSuccess: false,
-          error: finalErrorMessage,
-        );
-      }
-    } catch (e) {
-      log(e.toString(), name: tag, error: e);
-      if (e is DioException) {
-        int? statusCode = e.response?.statusCode;
-        if (statusCode != null) {
-          if (statusCode >= 400 && statusCode < 500) {
-            // Client error
-            return ResultModel(
-              isSuccess: false,
-              error: finalErrorMessage,
-            );
-          } else if (statusCode >= 500 && statusCode < 600) {
-            // Server error
-            return ResultModel(
-              isSuccess: false,
-              error: finalErrorMessage,
-            );
+      
+      return _handleHttpResponse<TokoModel>(
+        response,
+        finalErrorMessage,
+        (responseJson) {
+          if (responseJson['products'] != null) {
+            // transform format
+            TokoModel tokoModel = TokoModel.fromJson(responseJson);
+            return tokoModel;
+          } else {
+            throw Exception('Products is null');
           }
-        }
-        if (e.message?.contains('SocketException')?? false) {
-          return ResultModel(
-            isSuccess: false,
-            error: finalErrorMessage,
-          );
-        }
-      }
-      return ResultModel(
-        isSuccess: false,
-        error: finalErrorMessage,
+        },
       );
+    } catch (e) {
+      return _handleHttpError(e, finalErrorMessage);
     }
   }
 
@@ -1101,64 +709,38 @@ class TokoRepository extends BaseRepository {
     String finalErrorMessage =
         'Tidak dapat mendapatkan list product terlaris. Tolong periksa Internet Anda.';
     try {
-      Response response = await api.getFeaturedProductByCategory(
+      http.Response response = await api.getFeaturedProductByCategory(
           page, token, category, searchText);
-      var responseJson = response.data;
-      // log(responseJson['products'].toString());
-
-      if (responseJson['products'] != null) {
-        // transform format
-        TokoModel tokoModel = TokoModel.fromJson(responseJson);
-        // List<ProductModel> products = tokoModel.products.data.map((product) {
-        //   return ProductModel.fromProductModel(product);
-        // }).toList();
-
-        return ResultModel(
-          isSuccess: true,
-          data: tokoModel,
-        );
-      } else if (responseJson['products'] == []) {
-        TokoModel tokoModel = TokoModel.fromJson(responseJson);
-        return ResultModel(
-          isSuccess: true,
-          data: tokoModel,
-        );
-      } else {
-        return ResultModel(
-          isSuccess: false,
-          error: finalErrorMessage,
-        );
-      }
-    } catch (e) {
-      log(e.toString(), name: tag, error: e);
-      if (e is DioException) {
-        int? statusCode = e.response?.statusCode;
-        if (statusCode != null) {
-          if (statusCode >= 400 && statusCode < 500) {
-            // Client error
-            return ResultModel(
-              isSuccess: false,
-              error: finalErrorMessage,
-            );
-          } else if (statusCode >= 500 && statusCode < 600) {
-            // Server error
-            return ResultModel(
-              isSuccess: false,
-              error: finalErrorMessage,
-            );
-          }
-        }
-        if (e.message?.contains('SocketException')?? false) {
+      
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final responseJson = jsonDecode(response.body) as Map<String, dynamic>;
+        
+        if (responseJson['products'] != null) {
+          // transform format
+          TokoModel tokoModel = TokoModel.fromJson(responseJson);
+          return ResultModel(
+            isSuccess: true,
+            data: tokoModel,
+          );
+        } else if (responseJson['products'] == []) {
+          TokoModel tokoModel = TokoModel.fromJson(responseJson);
+          return ResultModel(
+            isSuccess: true,
+            data: tokoModel,
+          );
+        } else {
           return ResultModel(
             isSuccess: false,
             error: finalErrorMessage,
           );
         }
+      } else {
+        return _handleHttpResponse<TokoModel>(response, finalErrorMessage, (responseJson) {
+          throw Exception('Failed to get featured products');
+        });
       }
-      return ResultModel(
-        isSuccess: false,
-        error: finalErrorMessage,
-      );
+    } catch (e) {
+      return _handleHttpError(e, finalErrorMessage);
     }
   }
 
@@ -1171,57 +753,27 @@ class TokoRepository extends BaseRepository {
     String finalErrorMessage =
         'Tidak dapat mendapatkan related product. Tolong periksa Internet Anda.';
     try {
-      Response response = await api.getRelatedProductById(token, productId);
-      var responseJson = response.data;
-      log(responseJson['products'].toString());
-
-      if (responseJson['products'] != null) {
-        List<dynamic> listJson = responseJson['products'];
-        List<Product> products = [];
-        listJson.forEach((value) {
-          products.add(Product.fromJson(value));
-        });
-
-        return ResultModel(
-          isSuccess: true,
-          data: products,
-        );
-      } else {
-        return ResultModel(
-          isSuccess: false,
-          error: finalErrorMessage,
-        );
-      }
-    } catch (e) {
-      log(e.toString(), name: tag, error: e);
-      if (e is DioException) {
-        int? statusCode = e.response?.statusCode;
-        if (statusCode != null) {
-          if (statusCode >= 400 && statusCode < 500) {
-            // Client error
-            return ResultModel(
-              isSuccess: false,
-              error: finalErrorMessage,
-            );
-          } else if (statusCode >= 500 && statusCode < 600) {
-            // Server error
-            return ResultModel(
-              isSuccess: false,
-              error: finalErrorMessage,
-            );
+      http.Response response = await api.getRelatedProductById(token, productId);
+      
+      return _handleHttpResponse<List<Product>>(
+        response,
+        finalErrorMessage,
+        (responseJson) {
+          if (responseJson['products'] != null) {
+            log(responseJson['products'].toString());
+            List<dynamic> listJson = responseJson['products'];
+            List<Product> products = [];
+            listJson.forEach((value) {
+              products.add(Product.fromJson(value));
+            });
+            return products;
+          } else {
+            throw Exception('Products is null');
           }
-        }
-        if (e.message?.contains('SocketException')?? false) {
-          return ResultModel(
-            isSuccess: false,
-            error: finalErrorMessage,
-          );
-        }
-      }
-      return ResultModel(
-        isSuccess: false,
-        error: finalErrorMessage,
+        },
       );
+    } catch (e) {
+      return _handleHttpError(e, finalErrorMessage);
     }
   }
 }

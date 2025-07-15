@@ -25,7 +25,8 @@ class _ArticleListState extends State<ArticleList> {
   @override
   void initState() {
     super.initState();
-    print('ArticleList: initState dipanggil untuk kategori: ${widget.articleCategory.name}');
+    print(
+        'ArticleList: initState dipanggil untuk kategori: ${widget.articleCategory.name}');
     _refreshData();
   }
 
@@ -34,13 +35,15 @@ class _ArticleListState extends State<ArticleList> {
   void didUpdateWidget(covariant ArticleList oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.articleCategory != oldWidget.articleCategory) {
-      print('ArticleList: Kategori artikel berubah dari ${oldWidget.articleCategory.name} ke ${widget.articleCategory.name}. Memuat ulang data...');
+      print(
+          'ArticleList: Kategori artikel berubah dari ${oldWidget.articleCategory.name} ke ${widget.articleCategory.name}. Memuat ulang data...');
       _refreshData();
     }
   }
 
   Future<void> _refreshData() async {
-    print('ArticleList: _refreshData dipanggil. Memulai pengambilan artikel untuk kategori: ${widget.articleCategory.name}');
+    print(
+        'ArticleList: _refreshData dipanggil. Memulai pengambilan artikel untuk kategori: ${widget.articleCategory.name}');
     setState(() {
       _futureDataArticles = ArticleRepository().getAll(widget.articleCategory);
     });
@@ -55,7 +58,8 @@ class _ArticleListState extends State<ArticleList> {
       builder: (context, snapshot) {
         // Handle loading state
         if (snapshot.connectionState == ConnectionState.waiting) {
-          print('ArticleList: FutureBuilder - ConnectionState.waiting untuk kategori: ${widget.articleCategory.name}');
+          print(
+              'ArticleList: FutureBuilder - ConnectionState.waiting untuk kategori: ${widget.articleCategory.name}');
           return Center(
             child: CircularProgressIndicator(
               color: theme.primaryColor,
@@ -65,15 +69,18 @@ class _ArticleListState extends State<ArticleList> {
 
         // --- Logging untuk Kondisi Error ---
         if (snapshot.hasError) {
-          print('ArticleList: FutureBuilder - snapshot.hasError: ${snapshot.error}');
+          print(
+              'ArticleList: FutureBuilder - snapshot.hasError: ${snapshot.error}');
           return ErrorCard(
             title: 'Tidak dapat menampilkan artikel',
-            subtitle: snapshot.error.toString(), // Gunakan snapshot.error secara langsung
+            subtitle:
+                snapshot.error.toString(), // Gunakan snapshot.error secara langsung
             iconData: Icons.warning_rounded,
           );
         }
         if (snapshot.hasData && snapshot.data?.error != null) {
-          print('ArticleList: FutureBuilder - snapshot.hasData tapi ada error di ResultModel: ${snapshot.data?.error}');
+          print(
+              'ArticleList: FutureBuilder - snapshot.hasData tapi ada error di ResultModel: ${snapshot.data?.error}');
           return ErrorCard(
             title: 'Tidak dapat menampilkan artikel',
             subtitle: snapshot.data?.error ?? 'Terjadi kesalahan pada data',
@@ -85,7 +92,8 @@ class _ArticleListState extends State<ArticleList> {
         // Handle empty state
         if (snapshot.hasData &&
             (snapshot.data?.data == null || snapshot.data!.data!.isEmpty)) {
-          print('ArticleList: FutureBuilder - Tidak ada data artikel atau data kosong untuk kategori: ${widget.articleCategory.name}');
+          print(
+              'ArticleList: FutureBuilder - Tidak ada data artikel atau data kosong untuk kategori: ${widget.articleCategory.name}');
           return Center(
             child: Text(
               'Tidak ada artikel tersedia',
@@ -96,7 +104,8 @@ class _ArticleListState extends State<ArticleList> {
 
         // Handle successful data state
         final List<ArticleModel> articles = snapshot.data!.data!;
-        print('ArticleList: FutureBuilder - Data artikel berhasil dimuat. Jumlah artikel: ${articles.length} untuk kategori: ${widget.articleCategory.name}');
+        print(
+            'ArticleList: FutureBuilder - Data artikel berhasil dimuat. Jumlah artikel: ${articles.length} untuk kategori: ${widget.articleCategory.name}');
 
         return SizedBox(
           height: widget.carouselHeight,
@@ -107,7 +116,8 @@ class _ArticleListState extends State<ArticleList> {
             separatorBuilder: (context, index) => const SizedBox(width: 16),
             itemBuilder: (context, index) {
               return SizedBox(
-                width: widget.carouselHeight * 0.7, // Sesuaikan lebar item dengan rasio 0.7
+                width: widget.carouselHeight *
+                    0.7, // Sesuaikan lebar item dengan rasio 0.7
                 child: ItemArticle(article: articles[index]),
               );
             },

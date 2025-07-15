@@ -1,69 +1,72 @@
-import 'package:dio/dio.dart';
-import 'package:pensiunku/data/api/base_api.dart';
+// data/api/user_api.dart
+import 'dart:convert';
+
+import 'package:http/http.dart' as http;
 import 'package:pensiunku/util/api_util.dart';
-import 'package:pensiunku/config.dart';
+import 'package:pensiunku/config.dart'; // berisi baseUrl, isProd, dsb.
 
-class UserApi extends BaseApi {
-  // Konstruktor memanggil super() tanpa parameter.
-  UserApi() : super();
+class UserApi {
+  final String _baseUrl;
 
-  // Endpoint yang menggunakan baseUrl dari config.dart (misal mobileapi)
-  Future<Response> getOne(String token) {
-    return httpGet(
-      '/user', // Path relatif, akan digabungkan dengan BaseApi.baseUrl
-      options: ApiUtil.getTokenOptions(token),
+  UserApi() : _baseUrl = apiHost; // misal apiHost = 'https://api.pensiunku.id'
+
+  Future<http.Response> getOne(String token) async {
+    final uri = Uri.parse('$_baseUrl/user');
+    return await http.get(
+      uri,
+      headers: ApiUtil.getTokenHeaders(token),
     );
   }
 
-  Future<Response> updateOne(String token, dynamic data) {
-    return httpPost(
-      '/user/update', // Path relatif
-      data: data,
-      options: ApiUtil.getTokenOptions(token),
+  Future<http.Response> updateOne(String token, dynamic data) async {
+    final uri = Uri.parse('$_baseUrl/user/update');
+    return await http.post(
+      uri,
+      headers: ApiUtil.getTokenHeaders(token),
+      body: jsonEncode(data),
     );
   }
 
-  Future<Response> sendOtp(String phone) {
-    return httpPost(
-      '/user/verify-phone', // Path relatif
-      data: isProd // isProd dari config.dart
-          ? {
-              'phone': phone,
-            }
-          : {
-              'phone': phone,
-              'test': 'testing',
-            },
+  Future<http.Response> sendOtp(String phone) async {
+    final uri = Uri.parse('$_baseUrl/user/verify-phone');
+    final payload = isProd
+        ? {'phone': phone}
+        : {'phone': phone, 'test': 'testing'};
+    return await http.post(
+      uri,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(payload),
     );
   }
 
-  Future<Response> verifyOtp(String phone, String otp) {
-    return httpPost(
-      '/user/verify-otp', // Path relatif
-      data: {
-        'phone': phone,
-        'otp': otp,
-      },
+  Future<http.Response> verifyOtp(String phone, String otp) async {
+    final uri = Uri.parse('$_baseUrl/user/verify-otp');
+    final payload = {'phone': phone, 'otp': otp};
+    return await http.post(
+      uri,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(payload),
     );
   }
 
-  Future<Response> saveFcmToken(String token, String fcmToken) {
-    return httpPost(
-      '/user-notification/token', // Path relatif
-      data: {
-        'token': fcmToken,
-      },
-      options: ApiUtil.getTokenOptions(token),
+  Future<http.Response> saveFcmToken(String token, String fcmToken) async {
+    final uri = Uri.parse('$_baseUrl/user-notification/token');
+    final payload = {'token': fcmToken};
+    return await http.post(
+      uri,
+      headers: ApiUtil.getTokenHeaders(token),
+      body: jsonEncode(payload),
     );
   }
 
-  // Endpoint yang menggunakan URL absolut karena berada di domain yang berbeda (new.php)
-  Future<Response> checkUserExists(String phone) {
-    return httpPost(
-      'https://api.pensiunku.id/new.php/cekNomorTelepon', // URL absolut
-      data: {
-        'telepon': phone,
-      },
+  Future<http.Response> checkUserExists(String phone) async {
+    // URL absolut di domain berbeda
+    final uri = Uri.parse('https://api.pensiunku.id/new.php/cekNomorTelepon');
+    final payload = {'telepon': phone};
+    return await http.post(
+      uri,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(payload),
     );
   }
 }

@@ -1,18 +1,22 @@
+// File: lib/repository/user_repository.dart
+
 import 'dart:developer';
-import 'dart:async';
+import 'dart:convert'; // Untuk json.decode
+import 'dart:async'; // Untuk Future.delayed dan timeout
 
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:dio/dio.dart';
-import 'package:pensiunku/data/api/user_api.dart';
+import 'package:http/http.dart' as http; // Menggunakan paket http
+import 'package:pensiunku/data/api/user_api.dart'; // Pastikan path ini benar
 import 'package:pensiunku/data/db/app_database.dart';
 import 'package:pensiunku/model/user_model.dart';
 import 'package:pensiunku/repository/base_repository.dart';
 import 'package:pensiunku/model/result_model.dart';
 import 'package:pensiunku/util/shared_preferences_util.dart';
+import 'package:pensiunku/data/api/base_api.dart'; // Import BaseApi untuk HttpException
 
 class UserRepository extends BaseRepository {
   static String tag = 'UserRepository';
-  UserApi api = UserApi();
+  UserApi api = UserApi(); // Asumsi UserApi juga menggunakan http.Client
   AppDatabase database = AppDatabase();
 
   static const int DEFAULT_TIMEOUT = 15000;
@@ -24,81 +28,98 @@ class UserRepository extends BaseRepository {
     return connectivityResult != ConnectivityResult.none;
   }
 
-  Future<Response> _retryRequest(
-      Future<Response> Function() requestFunction) async {
+  // Helper function untuk menangani kesalahan HttpException
+  ResultModel<T> _handleHttpError<T>(
+      HttpException e, String defaultErrorMessage) {
+    final statusCode = e.statusCode;
+    if (statusCode != null) {
+      if (statusCode >= 400 && statusCode < 500) {
+        // Client error
+        if (statusCode == 401 || statusCode == 403) {
+          return ResultModel(
+            isSuccess: false,
+            error: 'Anda tidak memiliki akses ke layanan ini.',
+          );
+        } else if (statusCode == 404) {
+          return ResultModel(
+            isSuccess: false,
+            error: 'Layanan tidak ditemukan.',
+          );
+        }
+        return ResultModel(
+          isSuccess: false,
+          error: e.responseBody?['message'] ?? defaultErrorMessage,
+        );
+      } else if (statusCode >= 500 && statusCode < 600) {
+        // Server error
+        return ResultModel(
+          isSuccess: false,
+          error: 'Terjadi kendala pada server. Coba lagi nanti.',
+        );
+      }
+    } else if (e.message.contains('Failed host lookup') ||
+        e.message.contains('Connection refused')) {
+      return ResultModel(
+        isSuccess: false,
+        error:
+            'Tidak dapat terhubung ke server. Periksa koneksi internet Anda.',
+      );
+    } else if (e.message.contains('Connection timed out')) {
+      return ResultModel(
+        isSuccess: false,
+        error: 'Waktu koneksi habis. Periksa kecepatan internet Anda.',
+      );
+    }
+
+    return ResultModel(
+      isSuccess: false,
+      error: defaultErrorMessage,
+    );
+  }
+
+  // Helper function untuk retry request HTTP
+  Future<http.Response> _retryHttpRequest(
+      Future<http.Response> Function() requestFunction) async {
     int attempts = 0;
-    DioException? lastError;
+    HttpException? lastError;
 
     while (attempts <= MAX_RETRY_ATTEMPTS) {
       try {
         if (attempts > 0) {
-          log('Mencoba ulang request... Percobaan ke-$attempts', name: tag);
           await Future.delayed(Duration(milliseconds: RETRY_DELAY_MS));
         }
 
+        // Jalankan request dengan timeout
         return await requestFunction().timeout(
           Duration(milliseconds: DEFAULT_TIMEOUT),
           onTimeout: () {
-            throw DioException(
-              requestOptions: RequestOptions(path: ''),
-              type: DioExceptionType.connectionTimeout, // Corrected: Use DioExceptionType.connectionTimeout
-              error: 'Koneksi timeout',
-            );
+            throw HttpException(
+                message: 'Connection timed out',
+                statusCode: 408); // Menggunakan HttpException
           },
         );
-      } on DioException catch (e) {
+      } on HttpException catch (e) {
         lastError = e;
         attempts++;
 
-        if (e.type != DioExceptionType.connectionTimeout &&
-            e.type != DioExceptionType.receiveTimeout &&
-            e.type != DioExceptionType.sendTimeout &&
-            e.message != null && !e.message!.contains('SocketException')) {
-          rethrow;
+        // Hanya retry untuk timeout atau masalah koneksi
+        if (e.statusCode != 408 && // Request Timeout
+            !e.message.contains('Connection timed out') &&
+            !e.message.contains('Failed host lookup') &&
+            !e.message.contains('Connection refused')) {
+          rethrow; // Lempar error jika bukan masalah koneksi/timeout
         }
+      } catch (e) {
+        // Tangani error non-HttpException
+
+        rethrow;
       }
     }
-
-    throw lastError!;
-  }
-
-  String _getSpecificErrorMessage(dynamic error) {
-    if (error is DioException) {
-      switch (error.type) {
-        case DioExceptionType.connectionTimeout:
-        case DioExceptionType.sendTimeout:
-          return 'Waktu koneksi habis. Periksa kecepatan internet Anda.';
-        case DioExceptionType.receiveTimeout:
-          return 'Server membutuhkan waktu terlalu lama untuk merespons.';
-        case DioExceptionType.badResponse:
-          int? statusCode = error.response?.statusCode;
-          if (statusCode != null) {
-            if (statusCode == 401 || statusCode == 403) { // Unauthorized or Forbidden
-              return 'Anda tidak memiliki akses ke layanan ini.';
-            } else if (statusCode == 404) {
-              return 'Layanan tidak ditemukan.';
-            } else if (statusCode >= 500 && statusCode < 600) {
-              return 'Terjadi kendala pada server. Coba lagi nanti.';
-            }
-          }
-          return 'Terjadi kesalahan pada jaringan.';
-        case DioExceptionType.cancel:
-          return 'Permintaan dibatalkan.';
-        case DioExceptionType.unknown:
-          if (error.message != null && error.message!.contains('SocketException')) {
-            return 'Tidak dapat terhubung ke server. Periksa koneksi internet Anda.';
-          }
-          return 'Terjadi kesalahan tidak dikenal.';
-        default:
-          return 'Terjadi kesalahan. Silakan coba lagi nanti.';
-      }
-    }
-    return 'Terjadi kesalahan. Silakan coba lagi nanti.';
+    throw lastError!; // Lempar error terakhir jika semua percobaan gagal
   }
 
   Future<ResultModel<bool>> sendOtp(String phone) async {
     assert(() {
-      log('sendOtp', name: tag);
       return true;
     }());
 
@@ -109,9 +130,13 @@ class UserRepository extends BaseRepository {
       );
     }
 
+    String defaultErrorMessage = 'Gagal mengirim OTP.';
     try {
-      Response response = await _retryRequest(() => api.sendOtp(phone));
-      var responseJson = response.data;
+      // Asumsi api.sendOtp mengembalikan Future<http.Response>
+      http.Response response =
+          await _retryHttpRequest(() => api.sendOtp(phone));
+      var responseJson = json.decode(response.body);
+      print('sendOtp response: $responseJson');
 
       if (responseJson['status'] == 'success') {
         return ResultModel(
@@ -119,24 +144,24 @@ class UserRepository extends BaseRepository {
           data: true,
         );
       } else {
-        String errorMsg = responseJson['message'] ?? 'Gagal mengirim OTP.';
+        String errorMsg = responseJson['message'] ?? defaultErrorMessage;
         return ResultModel(
           isSuccess: false,
           error: errorMsg,
         );
       }
+    } on HttpException catch (e) {
+      return _handleHttpError(e, defaultErrorMessage);
     } catch (e) {
-      log(e.toString(), name: tag, error: e);
       return ResultModel(
         isSuccess: false,
-        error: _getSpecificErrorMessage(e),
+        error: defaultErrorMessage,
       );
     }
   }
 
   Future<ResultModel<String>> verifyOtp(String phone, String otp) async {
     assert(() {
-      log('verifyOtp', name: tag);
       return true;
     }());
 
@@ -147,9 +172,14 @@ class UserRepository extends BaseRepository {
       );
     }
 
+    String defaultErrorMessage =
+        'Kode OTP tidak benar. Tolong periksa kode yang Anda masukkan.';
     try {
-      Response response = await _retryRequest(() => api.verifyOtp(phone, otp));
-      var responseJson = response.data;
+      // Asumsi api.verifyOtp mengembalikan Future<http.Response>
+      http.Response response =
+          await _retryHttpRequest(() => api.verifyOtp(phone, otp));
+      var responseJson = json.decode(response.body);
+      print('sendOtp response: $responseJson');
 
       if (responseJson['status'] == 'success') {
         Map<String, dynamic> data = responseJson['data'];
@@ -160,22 +190,21 @@ class UserRepository extends BaseRepository {
       } else {
         return ResultModel(
           isSuccess: false,
-          error:
-              'Kode OTP tidak benar. Tolong periksa kode yang Anda masukkan.',
+          error: responseJson['message'] ?? defaultErrorMessage,
         );
       }
+    } on HttpException catch (e) {
+      return _handleHttpError(e, defaultErrorMessage);
     } catch (e) {
-      log(e.toString(), name: tag, error: e);
       return ResultModel(
         isSuccess: false,
-        error: _getSpecificErrorMessage(e),
+        error: defaultErrorMessage,
       );
     }
   }
 
   Future<ResultModel<UserModel>> getOne(String token) async {
     assert(() {
-      log('getOne $token', name: tag);
       return true;
     }());
 
@@ -183,8 +212,6 @@ class UserRepository extends BaseRepository {
 
     if (!await _isConnected()) {
       if (userDb != null) {
-        log('Menggunakan data cache karena tidak ada koneksi internet',
-            name: tag);
         return ResultModel(
           isSuccess: true,
           data: userDb,
@@ -198,18 +225,21 @@ class UserRepository extends BaseRepository {
       }
     }
 
+    String defaultErrorMessage = 'Gagal mengambil data pengguna.';
     try {
-      Response response = await _retryRequest(() => api.getOne(token));
-      var responseJson = response.data;
+      // Asumsi api.getOne mengembalikan Future<http.Response>
+      http.Response response = await _retryHttpRequest(() => api.getOne(token));
+      var responseJson = json.decode(response.body);
+      print('sendOtp response: $responseJson');
 
       if (responseJson['status'] == 'success') {
         Map<String, dynamic> userJson = responseJson['data'];
         int? notificationCounter = userJson['notification_counter'] as int?;
         if (notificationCounter != null) {
           SharedPreferencesUtil().sharedPreferences.setInt(
-                  SharedPreferencesUtil.SP_KEY_NOTIFICATION_COUNTER,
-                  notificationCounter,
-                );
+                SharedPreferencesUtil.SP_KEY_NOTIFICATION_COUNTER,
+                notificationCounter,
+              );
         }
 
         UserModel user = UserModel.fromJson(userJson);
@@ -232,37 +262,35 @@ class UserRepository extends BaseRepository {
 
         return ResultModel(
           isSuccess: false,
-          error: responseJson['message'] ?? 'Gagal mengambil data pengguna.',
+          error: responseJson['message'] ?? defaultErrorMessage,
         );
       }
-    } catch (e) {
-      log(e.toString(), name: tag, error: e);
-
+    } on HttpException catch (e) {
       if (userDb != null) {
-        log('Menggunakan data cache karena API error', name: tag);
         return ResultModel(
           isSuccess: true,
           data: userDb,
           isFromCache: true,
         );
       }
-
+      return _handleHttpError(e, defaultErrorMessage);
+    } catch (e) {
+      if (userDb != null) {
+        return ResultModel(
+          isSuccess: true,
+          data: userDb,
+          isFromCache: true,
+        );
+      }
       return ResultModel(
         isSuccess: false,
-        error: _getSpecificErrorMessage(e),
+        error: defaultErrorMessage,
       );
     }
   }
 
-  // Metode getUserRekening TELAH DIHAPUS dari UserRepository karena akan dipindahkan ke EWalletBankTujuan
-  // Future<ResultModel<List<UserBankDetail>>> getUserRekening(String userId, String token) async { ... }
-
-  // Metode getRiwayatWithdraw TELAH DIHAPUS dari UserRepository karena akan dipindahkan ke EWalletHistori
-  // Future<ResultModel<List<TransactionHistory>>> getRiwayatWithdraw(String userId, String token) async { ... }
-
   Future<ResultModel<UserModel>> getOneDb(String token) async {
     assert(() {
-      log('getOneDb', name: tag);
       return true;
     }());
     UserModel? userDb = await database.userDao.getOne();
@@ -282,7 +310,6 @@ class UserRepository extends BaseRepository {
 
   Future<ResultModel<UserModel>> updateOne(String token, dynamic data) async {
     assert(() {
-      log('updateOne', name: tag);
       return true;
     }());
 
@@ -293,9 +320,13 @@ class UserRepository extends BaseRepository {
       );
     }
 
+    String defaultErrorMessage = 'Gagal menyimpan data pengguna.';
     try {
-      Response response = await _retryRequest(() => api.updateOne(token, data));
-      var responseJson = response.data;
+      // Asumsi api.updateOne mengembalikan Future<http.Response>
+      http.Response response =
+          await _retryHttpRequest(() => api.updateOne(token, data));
+      var responseJson = json.decode(response.body);
+      print('updateOne response: $responseJson');
 
       if (responseJson['status'] == 'success') {
         Map<String, dynamic> userJson = responseJson['data'];
@@ -311,21 +342,21 @@ class UserRepository extends BaseRepository {
       } else {
         return ResultModel(
           isSuccess: false,
-          error: responseJson['message'] ?? 'Gagal menyimpan data pengguna.',
+          error: responseJson['message'] ?? defaultErrorMessage,
         );
       }
+    } on HttpException catch (e) {
+      return _handleHttpError(e, defaultErrorMessage);
     } catch (e) {
-      log(e.toString(), name: tag, error: e);
       return ResultModel(
         isSuccess: false,
-        error: _getSpecificErrorMessage(e),
+        error: defaultErrorMessage,
       );
     }
   }
 
   Future<ResultModel<bool>> userExists(String phone) async {
     assert(() {
-      log('userExists', name: tag);
       return true;
     }());
 
@@ -336,11 +367,13 @@ class UserRepository extends BaseRepository {
       );
     }
 
+    String defaultErrorMessage = 'Gagal memeriksa status pengguna.';
     try {
-      Response response = await _retryRequest(() => api.checkUserExists(phone));
-      var responseJson = response.data;
-
-      log('Response: $responseJson', name: tag);
+      // Asumsi api.checkUserExists mengembalikan Future<http.Response>
+      http.Response response =
+          await _retryHttpRequest(() => api.checkUserExists(phone));
+      var responseJson = json.decode(response.body);
+      print('updateOne response: $responseJson');
 
       if (responseJson['status'] == 'success' && responseJson['data'] != null) {
         bool exists = responseJson['data']['exists'] as bool;
@@ -361,21 +394,21 @@ class UserRepository extends BaseRepository {
       } else {
         return ResultModel(
           isSuccess: false,
-          error: responseJson['message'] ?? 'Gagal memeriksa status pengguna.',
+          error: responseJson['message'] ?? defaultErrorMessage,
         );
       }
+    } on HttpException catch (e) {
+      return _handleHttpError(e, defaultErrorMessage);
     } catch (e) {
-      log('Error: $e', name: tag, error: e);
       return ResultModel(
         isSuccess: false,
-        error: _getSpecificErrorMessage(e),
+        error: defaultErrorMessage,
       );
     }
   }
 
   Future<ResultModel<bool>> saveFcmToken(String token, String fcmToken) async {
     assert(() {
-      log('saveFcmToken', name: tag);
       return true;
     }());
 
@@ -388,10 +421,13 @@ class UserRepository extends BaseRepository {
       );
     }
 
+    String defaultErrorMessage = 'Gagal menyimpan FCM token.';
     try {
-      Response response =
-          await _retryRequest(() => api.saveFcmToken(token, fcmToken));
-      var responseJson = response.data;
+      // Asumsi api.saveFcmToken mengembalikan Future<http.Response>
+      http.Response response =
+          await _retryHttpRequest(() => api.saveFcmToken(token, fcmToken));
+      var responseJson = json.decode(response.body);
+      print('updateOne response: $responseJson');
 
       if (responseJson['status'] == 'success') {
         return ResultModel(
@@ -402,15 +438,21 @@ class UserRepository extends BaseRepository {
         _saveFcmTokenLocally(token, fcmToken);
         return ResultModel(
           isSuccess: false,
-          error: responseJson['message'] ?? 'Gagal menyimpan FCM token.',
+          error: responseJson['message'] ?? defaultErrorMessage,
           isFromCache: true,
         );
       }
-    } catch (e) {
-      log(e.toString(), name: tag, error: e);
+    } on HttpException catch (e) {
       _saveFcmTokenLocally(token, fcmToken);
       return ResultModel(
-        isSuccess: true,
+        isSuccess: true, // Masih mengembalikan true jika disimpan lokal
+        data: true,
+        isFromCache: true,
+      );
+    } catch (e) {
+      _saveFcmTokenLocally(token, fcmToken);
+      return ResultModel(
+        isSuccess: true, // Masih mengembalikan true jika disimpan lokal
         data: true,
         isFromCache: true,
       );
@@ -419,10 +461,9 @@ class UserRepository extends BaseRepository {
 
   void _saveFcmTokenLocally(String token, String fcmToken) {
     SharedPreferencesUtil().sharedPreferences.setString(
-            'PENDING_FCM_TOKEN',
-            fcmToken,
-          );
-    log('FCM token disimpan secara lokal untuk dikirim nanti', name: tag);
+          'PENDING_FCM_TOKEN',
+          fcmToken,
+        );
   }
 
   Future<bool> sendPendingFcmToken(String token) async {
@@ -436,295 +477,8 @@ class UserRepository extends BaseRepository {
           SharedPreferencesUtil().sharedPreferences.remove('PENDING_FCM_TOKEN');
           return true;
         }
-      } catch (e) {
-        log('Gagal mengirim FCM token yang tertunda: $e', name: tag, error: e);
-      }
+      } catch (e) {}
     }
     return false;
   }
 }
-
-
-// class UserRepository extends BaseRepository {
-//   static String tag = 'UserRepository';
-//   UserApi api = UserApi();
-//   AppDatabase database = AppDatabase();
-
-//   Future<ResultModel<bool>> sendOtp(String phone) async {
-//     assert(() {
-//       log('sendOtp', name: tag);
-//       return true;
-//     }());
-//     String finalErrorMessage =
-//         'Tidak dapat mengirimkan OTP. Tolong periksa Internet Anda.';
-//     try {
-//       Response response = await api.sendOtp(phone);
-//       var responseJson = response.data;
-
-//       if (responseJson['status'] == 'success') {
-//         return ResultModel(
-//           isSuccess: true,
-//           data: true,
-//         );
-//       } else {
-//         return ResultModel(
-//           isSuccess: false,
-//           error: finalErrorMessage,
-//         );
-//       }
-//     } catch (e) {
-//       log(e.toString(), name: tag, error: e);
-//       if (e is DioError) {
-//         int? statusCode = e.response?.statusCode;
-//         if (statusCode != null) {
-//           if (statusCode >= 400 && statusCode < 500) {
-//             // Client error
-//             return ResultModel(
-//               isSuccess: false,
-//               error: finalErrorMessage,
-//             );
-//           } else if (statusCode >= 500 && statusCode < 600) {
-//             // Server error
-//             return ResultModel(
-//               isSuccess: false,
-//               error: finalErrorMessage,
-//             );
-//           }
-//         }
-//         if (e.message.contains('SocketException')) {
-//           return ResultModel(
-//             isSuccess: false,
-//             error: finalErrorMessage,
-//           );
-//         }
-//       }
-//       return ResultModel(
-//         isSuccess: false,
-//         error: finalErrorMessage,
-//       );
-//     }
-//   }
-
-//   Future<ResultModel<String>> verifyOtp(String phone, String otp) async {
-//     assert(() {
-//       log('verifyOtp', name: tag);
-//       return true;
-//     }());
-//     String finalErrorMessage =
-//         'Tidak dapat memverifikasi OTP. Tolong periksa Internet Anda.';
-//     try {
-//       Response response = await api.verifyOtp(phone, otp);
-//       var responseJson = response.data;
-
-//       if (responseJson['status'] == 'success') {
-//         Map<String, dynamic> data = responseJson['data'];
-//         return ResultModel(
-//           isSuccess: true,
-//           data: data['token'],
-//         );
-//       } else {
-//         return ResultModel(
-//           isSuccess: false,
-//           error:
-//               'Kode OTP tidak benar. Tolong periksa kode yang Anda masukkan.',
-//         );
-//       }
-//     } catch (e) {
-//       log(e.toString(), name: tag, error: e);
-//       if (e is DioError) {
-//         int? statusCode = e.response?.statusCode;
-//         if (statusCode != null) {
-//           if (statusCode >= 400 && statusCode < 500) {
-//             // Client error
-//             return ResultModel(
-//               isSuccess: false,
-//               error: finalErrorMessage,
-//             );
-//           } else if (statusCode >= 500 && statusCode < 600) {
-//             // Server error
-//             return ResultModel(
-//               isSuccess: false,
-//               error: finalErrorMessage,
-//             );
-//           }
-//         }
-//         if (e.message.contains('SocketException')) {
-//           return ResultModel(
-//             isSuccess: false,
-//             error: finalErrorMessage,
-//           );
-//         }
-//       }
-//       return ResultModel(
-//         isSuccess: false,
-//         error: finalErrorMessage,
-//       );
-//     }
-//   }
-
-//   Future<ResultModel<UserModel>> getOne(String token) {
-//     assert(() {
-//       log('getOne $token', name: tag);
-//       return true;
-//     }());
-//     return getResultModel(
-//       tag: tag,
-//       getFromDb: () async {
-//         UserModel? userDb = await database.userDao.getOne();
-//         return userDb;
-//       },
-//       getFromApi: () => api.getOne(token),
-//       getDataFromApiResponse: (responseJson) {
-//         Map<String, dynamic> userJson = responseJson['data'];
-//         int? notificationCounter = userJson['notification_counter'];
-//         if (notificationCounter != null) {
-//           SharedPreferencesUtil().sharedPreferences.setInt(
-//                 SharedPreferencesUtil.SP_KEY_NOTIFICATION_COUNTER,
-//                 notificationCounter,
-//               );
-//         }
-//         return UserModel.fromJson(userJson);
-//       },
-//       removeFromDb: (user) async {
-//         await database.userDao.removeAll();
-//       },
-//       insertToDb: (user) async {
-//         await database.userDao.insert(user);
-//       },
-//       errorMessage: 'Gagal mengambil data user. Tolong periksa Internet Anda.',
-//     );
-//   }
-
-//   Future<ResultModel<UserModel>> getOneDb(String token) async {
-//     assert(() {
-//       log('getOneDb', name: tag);
-//       return true;
-//     }());
-//     UserModel? userDb = await database.userDao.getOne();
-//     return ResultModel(
-//       isSuccess: true,
-//       data: userDb,
-//     );
-//   }
-
-//   Future<ResultModel<UserModel>> updateOne(String token, dynamic data) {
-//     assert(() {
-//       log('updateOne', name: tag);
-//       return true;
-//     }());
-//     return getResultModel(
-//       tag: tag,
-//       getFromDb: () async {
-//         return null;
-//       },
-//       getFromApi: () => api.updateOne(token, data),
-//       getDataFromApiResponse: (responseJson) {
-//         Map<String, dynamic> userJson = responseJson['data'];
-//         return UserModel.fromJson(userJson);
-//       },
-//       removeFromDb: (user) async {
-//         await database.userDao.removeAll();
-//       },
-//       insertToDb: (user) async {
-//         await database.userDao.insert(user);
-//       },
-//       errorMessage: 'Gagal menyimpan data user. Tolong periksa Internet Anda.',
-//     );
-//   }
-
-//   Future<ResultModel<bool>> userExists(String phone) async {
-//     try {
-//       // Mengirimkan parameter 'telepon' sesuai dengan API
-//       Response response = await api.checkUserExists(phone);
-//       var responseJson = response.data;
-
-//       // Log respons untuk debugging
-//       log('Response: $responseJson');
-
-//       // Periksa status respons
-//       if (responseJson['status'] == 'success' && responseJson['data'] != null) {
-//         bool exists = responseJson['data']['exists'];
-
-//         if (!exists) {
-//           return ResultModel(
-//             isSuccess: false,
-//             error:
-//                 "Nomor Anda belum terdaftar. Silakan daftar terlebih dahulu.",
-//             data: exists,
-//           );
-//         }
-
-//         return ResultModel(
-//           isSuccess: true,
-//           data: exists,
-//         );
-//       } else {
-//         return ResultModel(
-//           isSuccess: false,
-//           error: 'Gagal memeriksa status pengguna.',
-//         );
-//       }
-//     } catch (e) {
-//       log('Error: $e');
-//       return ResultModel(
-//         isSuccess: false,
-//         error: 'Terjadi kesalahan saat memeriksa status pengguna.',
-//       );
-//     }
-//   }
-
-//   Future<ResultModel<bool>> saveFcmToken(String token, String fcmToken) async {
-//     assert(() {
-//       log('saveFcmToken: $token $fcmToken', name: tag);
-//       return true;
-//     }());
-//     String finalErrorMessage =
-//         'Tidak dapat menyimpan FCM Token terbaru. Tolong periksa Internet Anda.';
-//     try {
-//       Response response = await api.saveFcmToken(token, fcmToken);
-//       var responseJson = response.data;
-
-//       if (responseJson['status'] == 'success') {
-//         return ResultModel(
-//           isSuccess: true,
-//           data: true,
-//         );
-//       } else {
-//         return ResultModel(
-//           isSuccess: false,
-//           error: finalErrorMessage,
-//         );
-//       }
-//     } catch (e) {
-//       log(e.toString(), name: tag, error: e);
-//       if (e is DioError) {
-//         int? statusCode = e.response?.statusCode;
-//         if (statusCode != null) {
-//           if (statusCode >= 400 && statusCode < 500) {
-//             // Client error
-//             return ResultModel(
-//               isSuccess: false,
-//               error: finalErrorMessage,
-//             );
-//           } else if (statusCode >= 500 && statusCode < 600) {
-//             // Server error
-//             return ResultModel(
-//               isSuccess: false,
-//               error: finalErrorMessage,
-//             );
-//           }
-//         }
-//         if (e.message.contains('SocketException')) {
-//           return ResultModel(
-//             isSuccess: false,
-//             error: finalErrorMessage,
-//           );
-//         }
-//       }
-//       return ResultModel(
-//         isSuccess: false,
-//         error: finalErrorMessage,
-//       );
-//     }
-//   }
-// }

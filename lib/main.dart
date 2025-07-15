@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:io';
+
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -63,23 +66,35 @@ import 'screen/home/dashboard/event/event_detail_screen.dart';
 import 'screen/home/dashboard/pensiunku_plus/aktifkan_pensiunku_plus_screen.dart';
 import 'screen/home/dashboard/usaha/usaha_screen.dart';
 
-// Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-//   print("Handling a background message: ${message.messageId}");
-// }
+bool isProd = true;
+String get apiHost {
+  return isProd
+      ? "https://pensiunku.id/mobileapi"
+      : "https://pensiunku.id/mobileapi";
+}
 
-// void main() async {
-//   WidgetsFlutterBinding.ensureInitialized();
+Map<String, String> get defaultApiHeaders {
+  return {
+    'User-Agent':
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36',
+    'Accept': 'application/json',
+    'Accept-Language': 'id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7',
+    'X-Requested-With': 'com.pensiunku.app',
+    'Content-Type': 'application/json',
+  };
+}
 
-//   // Set orientation
-//   SystemChrome.setPreferredOrientations(
-//       [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
+// Global variables for Firebase Messaging
+final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+    FlutterLocalNotificationsPlugin();
+const AndroidNotificationChannel channel = AndroidNotificationChannel(
+  'high_importance_channel', // id
+  'High Importance Notifications', // title
+  description:
+      'This channel is used for important notifications.', // description
+  importance: Importance.max,
+);
 
-//   // Initialize Firebase first
-//   await Firebase.initializeApp();
-//   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-
-//   runApp(MyApp());
-// }
 // Background message handler (harus di level top, bukan di dalam class)
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
@@ -94,34 +109,33 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   // Untuk saat ini, kita fokus di foreground dulu.
 }
 
-// Global instance untuk flutter_local_notifications
-final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-    FlutterLocalNotificationsPlugin();
-
-// Pengaturan channel notifikasi untuk Android (Penting untuk Android 8.0+)
-const AndroidNotificationChannel channel = AndroidNotificationChannel(
-  'high_importance_channel', // id
-  'High Importance Notifications', // title
-  description: 'This channel is used for important notifications.', // description
-  importance: Importance.max,
-);
+// Custom HttpOverrides untuk menambahkan retry logic ke semua permintaan HTTP
+class MyHttpOverrides extends HttpOverrides {
+  @override
+  HttpClient createHttpClient(SecurityContext? context) {
+    return super.createHttpClient(context)
+      // --- PERHATIAN: badCertificateCallback ini HANYA untuk development. HAPUS di production! ---
+      ..badCertificateCallback =
+          (X509Certificate cert, String host, int port) => true;
+  }
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown
-  ]);
+  // --- PERUBAHAN BARU: Mengatur HttpOverrides kustom di sini ---
+  HttpOverrides.global = MyHttpOverrides();
+  // --- AKHIR PERUBAHAN BARU ---
+
+  await SystemChrome.setPreferredOrientations(
+      [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
 
   // Inisialisasi Firebase
   await Firebase.initializeApp();
 
   // Inisialisasi flutter_local_notifications
-  // Pengaturan untuk Android
   var androidInitializeSettings =
       const AndroidInitializationSettings('@mipmap/ic_launcher');
-  // Pengaturan untuk iOS
   var iOSInitializeSettings = const DarwinInitializationSettings(
     requestAlertPermission: true,
     requestBadgePermission: true,
@@ -132,22 +146,10 @@ void main() async {
 
   await flutterLocalNotificationsPlugin.initialize(
     initializationSettings,
-    onDidReceiveNotificationResponse: (NotificationResponse notificationResponse) async {
-      // Callback saat notifikasi lokal ditekan
-      // Anda bisa menangani navigasi di sini juga jika notifikasi lokal yang dipicu
-      // mengandung data navigasi.
+    onDidReceiveNotificationResponse:
+        (NotificationResponse notificationResponse) async {
       print('Notification payload: ${notificationResponse.payload}');
-      // Contoh: Navigasi ke NotificationScreen jika payload sesuai
-      if (notificationResponse.payload != null) {
-        // Asumsi payload adalah JSON string dari data FCM
-        // Anda mungkin perlu parsing JSON di sini jika payload adalah data kompleks
-        // Misal: Navigator.pushNamed(context, '/detail_screen', arguments: notificationResponse.payload);
-      }
     },
-    // Jika Anda menggunakan onDidReceiveBackgroundNotificationResponse untuk iOS 10+ di background
-    // onDidReceiveBackgroundNotificationResponse: (NotificationResponse notificationResponse) {
-    //   print('Background notification payload: ${notificationResponse.payload}');
-    // },
   );
 
   // Buat channel notifikasi untuk Android (hanya perlu sekali)
@@ -161,8 +163,6 @@ void main() async {
 
   runApp(MyApp());
 }
-
-
 
 class MyApp extends StatelessWidget {
   @override
@@ -327,15 +327,15 @@ class MyApp extends StatelessWidget {
             );
             break;
           // case ReferralScreen.ROUTE_NAME:
-          //   // page = ReferralScreen();
-          //   // log(ReferralScreenArguments.retype<num>());
+          //   // page = ReferralScreen();
+          //   // log(ReferralScreenArguments.retype<num>());
 
-          //   final args = settings.arguments as ReferralScreenArguments;
-          //   page = ReferralScreen(
-          //     referralModel: args.referralModel,
-          //     onSuccess: args.onSuccess,
-          //   );
-          //   break;
+          //   final args = settings.arguments as ReferralScreenArguments;
+          //   page = ReferralScreen(
+          //     referralModel: args.referralModel,
+          //     onSuccess: args.onSuccess,
+          //   );
+          //   break;
 
           case TermAndConditionScreen.ROUTE_NAME:
             page = TermAndConditionScreen();
@@ -344,12 +344,13 @@ class MyApp extends StatelessWidget {
             page = PrivacyPolicyScreen();
             break;
           // case PrepareSelfieScreen.ROUTE_NAME:
-          //   final args = settings.arguments as PrepareSelfieScreenArguments;
-          //   page = PrepareSelfieScreen(
-          //     submissionModel: args.submissionModel,
-          //     onSuccess: args.onSuccess,
-          //   );
-          //   break;
+          //   final args = settings.arguments as PrepareSelfieScreenArguments;
+          //   page = PrepareSelfieScreen(
+          //     submissionModel: args.submissionModel,
+          //     onSuccess: args.onSuccess,
+          //   );
+          //   break;
+          // ini tambahan baru
           case AccountInfoScreen.ROUTE_NAME:
             page = AccountInfoScreen();
             break;
@@ -401,13 +402,13 @@ class MyApp extends StatelessWidget {
             );
             break;
           // case ConfirmKtpReferalScreen.ROUTE_NAME:
-          //   var args = settings.arguments as ConfirmKtpReferalScreenArgs;
-          //   page = ConfirmKtpReferalScreen(
-          //     referralModel: args.referralModel,
-          //     ktpModel: args.ktpModel,
-          //     onSuccess: args.onSuccess,
-          //   );
-          //   break;
+          //   var args = settings.arguments as ConfirmKtpReferalScreenArgs;
+          //   page = ConfirmKtpReferalScreen(
+          //     referralModel: args.referralModel,
+          //     ktpModel: args.ktpModel,
+          //     onSuccess: args.onSuccess,
+          //   );
+          //   break;
           // ini tambahan baru
           case PrepareKtpScreen.ROUTE_NAME:
             final args = settings.arguments as PrepareKtpScreenArguments;
@@ -418,11 +419,11 @@ class MyApp extends StatelessWidget {
             break;
 
           // case ReferralSuccessScreen.ROUTE_NAME:
-          //   var args = settings.arguments as ReferralSuccessScreenArgs;
-          //   page = ReferralSuccessScreen(
-          //     referralModel: args.referralModel,
-          //   );
-          //   break;
+          //   var args = settings.arguments as ReferralSuccessScreenArgs;
+          //   page = ReferralSuccessScreen(
+          //     referralModel: args.referralModel,
+          //   );
+          //   break;
           case PrepareRegisterScreen.ROUTE_NAME:
             page = PrepareRegisterScreen();
             break;

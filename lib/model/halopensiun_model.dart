@@ -9,13 +9,12 @@ class Categories {
 
   factory Categories.fromJson(Map<String, dynamic> json) {
     // Perubahan: Pastikan 'id' diurai dengan aman sebagai int
-    final idValue = json['id'];
     int parsedId;
+    final idValue = json['id'];
     if (idValue is int) {
       parsedId = idValue;
     } else if (idValue is String) {
-      parsedId =
-          int.tryParse(idValue) ?? 0; // Coba parse, default ke 0 jika gagal
+      parsedId = int.tryParse(idValue) ?? 0; // Coba parse, default ke 0 jika gagal
     } else {
       parsedId = 0; // Default jika bukan int atau String
     }
@@ -31,13 +30,13 @@ class ListHalopensiun {
   int? id;
   final int idKategori;
   final String judul;
-  final String infografis;
+  final String? infografis; // --- PERUBAHAN: infografis bisa null ---
 
   ListHalopensiun({
     this.id,
     required this.idKategori,
     required this.judul,
-    required this.infografis,
+    this.infografis, // --- PERUBAHAN: infografis bisa null ---
   });
 
   factory ListHalopensiun.fromJson(Map<String, dynamic> json) {
@@ -49,7 +48,6 @@ class ListHalopensiun {
     } else if (idValue is String) {
       parsedId = int.tryParse(idValue); // parsedId bisa null jika gagal parse
     }
-    // Jika json.containsKey('id') tidak ada, parsedId tetap null, sesuai dengan 'int? id'
 
     // Perubahan: Pastikan 'id_kategori' diurai dengan aman sebagai int
     final idKategoriValue = json['id_kategori'];
@@ -68,7 +66,7 @@ class ListHalopensiun {
       idKategori:
           parsedIdKategori, // Gunakan idKategori yang sudah di-parse dengan aman
       judul: json['judul']?.toString() ?? '', // Perbaikan: Pastikan string tidak null
-      infografis: json['infografis']?.toString() ?? '', // Perbaikan: Pastikan string tidak null
+      infografis: json['infografis']?.toString(), // --- PERUBAHAN: infografis bisa null ---
     );
   }
 }
@@ -83,14 +81,13 @@ class HalopensiunModel {
   });
 
   factory HalopensiunModel.fromJson(Map<String, dynamic> json) {
-    List<dynamic> categoriesJson = json['categories'];
-    List<dynamic> halopensiunJson = json['list'];
+    // Memastikan categoriesJson dan halopensiunJson adalah List
+    List<dynamic> categoriesJson = json['categories'] is List ? json['categories'] : [];
+    List<dynamic> halopensiunJson = json['list'] is List ? json['list'] : [];
 
     return HalopensiunModel(
-      // Perubahan: Pemanggilan fromJson untuk Categories akan menggunakan perbaikan parsing id
       categories:
           categoriesJson.map((json) => Categories.fromJson(json)).toList(),
-      // Perubahan: Pemanggilan fromJson untuk ListHalopensiun akan menggunakan perbaikan parsing id dan idKategori
       list: halopensiunJson
           .map((json) => ListHalopensiun.fromJson(json))
           .toList(),

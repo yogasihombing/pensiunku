@@ -7,7 +7,7 @@ class ArticleCategoryModel {
 
   factory ArticleCategoryModel.fromJson(Map<String, dynamic> json) {
     return ArticleCategoryModel(
-      name: json['name']?.toString() ?? '', // Perbaikan: Pastikan string tidak null
+      name: json['name']?.toString() ?? '',
     );
   }
 
@@ -46,10 +46,10 @@ class ArticleModel {
     }
 
     return ArticleModel(
-      imageUrl: json['image']?.toString() ?? '', // Perbaikan: Pastikan string tidak null
-      title: json['title']?.toString() ?? '', // Perbaikan: Pastikan string tidak null
-      category: json['category']?.toString() ?? '', // Perbaikan: Pastikan string tidak null
-      url: json['url']?.toString() ?? '', // Perbaikan: Pastikan string tidak null
+      imageUrl: json['image']?.toString() ?? '',
+      title: json['title']?.toString() ?? '',
+      category: json['category']?.toString() ?? '',
+      url: json['url']?.toString() ?? '',
       id: parsedId,
     );
   }
@@ -98,12 +98,14 @@ class MobileArticleModel {
 
     return MobileArticleModel(
       id: parsedId,
-      imageUrl: json['image']?.toString() ?? '', // Perbaikan: Pastikan string tidak null
-      title: json['title']?.toString() ?? '', // Perbaikan: Pastikan string tidak null
-      category: json['category']?.toString() ?? '', // Perbaikan: Pastikan string tidak null
-      url: json['url']?.toString() ?? '', // Perbaikan: Pastikan string tidak null
-      tanggal: json['tanggal']?.toString() ?? '', // Perbaikan: Pastikan string tidak null
-      penulis: json['penulis']?.toString() ?? '', // Perbaikan: Pastikan string tidak null
+      // --- PERUBAHAN: Menggunakan key 'imageUrl' jika API mengirimkannya dengan nama itu, jika tidak fallback ke 'image' ---
+      imageUrl: json['imageUrl']?.toString() ?? json['image']?.toString() ?? '',
+      // --- AKHIR PERUBAHAN ---
+      title: json['title']?.toString() ?? '',
+      category: json['category']?.toString() ?? '',
+      url: json['url']?.toString() ?? '',
+      tanggal: json['tanggal']?.toString() ?? '',
+      penulis: json['penulis']?.toString() ?? '',
     );
   }
 
@@ -124,7 +126,7 @@ class MobileArticleModel {
 class MobileArticleDetailModel {
   final int id;
   final String title;
-  final String imageUrl; // Pastikan ini 'image' dari JSON jika itu yang dikirim API
+  final String imageUrl;
   final String category;
   final String tanggal;
   final String penulis;
@@ -153,12 +155,14 @@ class MobileArticleDetailModel {
     
     return MobileArticleDetailModel(
       id: parsedId,
-      title: json['title']?.toString() ?? '',          // Perbaikan: Handle null to String
-      imageUrl: json['image']?.toString() ?? '',       // Perbaikan: Handle null to String (dan pastikan key adalah 'image')
-      category: json['category']?.toString() ?? '',    // Perbaikan: Handle null to String
-      tanggal: json['tanggal']?.toString() ?? '',      // Perbaikan: Handle null to String
-      penulis: json['penulis']?.toString() ?? '',      // Perbaikan: Handle null to String
-      content: json['content']?.toString() ?? '',      // Perbaikan: Handle null to String
+      title: json['title']?.toString() ?? '',
+      // --- PERUBAHAN: Menggunakan key 'imageUrl' jika API mengirimkannya dengan nama itu, jika tidak fallback ke 'image' ---
+      imageUrl: json['imageUrl']?.toString() ?? json['image']?.toString() ?? '',
+      // --- AKHIR PERUBAHAN ---
+      category: json['category']?.toString() ?? '',
+      tanggal: json['tanggal']?.toString() ?? '',
+      penulis: json['penulis']?.toString() ?? '',
+      content: json['content']?.toString() ?? '',
     );
   }
 

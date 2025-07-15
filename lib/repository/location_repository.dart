@@ -1,7 +1,9 @@
+import 'dart:convert';
 import 'dart:developer';
+import 'dart:io';
+import 'package:http/http.dart' as http;
 
-import 'package:dio/dio.dart';
-import 'package:pensiunku/data/api/wilayah_api.dart';
+import 'package:pensiunku/config.dart' show apiHost;
 import 'package:pensiunku/model/option_model.dart';
 import 'package:pensiunku/model/result_model.dart';
 
@@ -1190,227 +1192,132 @@ class LocationRepository {
   }
 
   static OptionModel getCityByName(String cityName) {
-    final matchedCities = cities.where((element) => element.text == cityName);
-    if (matchedCities.isNotEmpty) {
-      return matchedCities.first;
-    }
-    return OptionModel(id: 0, text: '');
+    final matched = cities.where((e) => e.text == cityName);
+    return matched.isNotEmpty ? matched.first : OptionModel(id: 0, text: '');
   }
 
   static OptionModel getProvinceById(int provinceId) {
-    final matchedProvinces =
-        provinces.where((element) => element.id == provinceId);
-    if (matchedProvinces.isNotEmpty) {
-      return matchedProvinces.first;
-    }
-    return OptionModel(id: 0, text: '');
+    final matched = provinces.where((e) => e.id == provinceId);
+    return matched.isNotEmpty ? matched.first : OptionModel(id: 0, text: '');
   }
 
   static Future<ResultModel<List<OptionModel>>> getWilayah(String id) async {
-    assert(() {
-      log('getWilayahById', name: tag);
-      return true;
-    }());
-    String finalErrorMessage = 'Tidak dapat mengambil data nama wilayah';
+    log('getWilayahById: $id', name: tag);
+    final errorMsg = 'Tidak dapat mengambil data nama wilayah';
+
     try {
-      Response response = await WilayahApi().getWilayah(id);
-      var responseJson = response.data;
+      final uri = Uri.parse('$apiHost/wilayah/$id');
+      final resp = await http.get(uri);
 
-      if (responseJson['status'] == 'success') {
-        List<dynamic> dataJson = responseJson['data'];
+      if (resp.statusCode == 200) {
+        final jsonBody = json.decode(resp.body);
+        if (jsonBody['status'] == 'success') {
+          final dataList = jsonBody['data'] as List<dynamic>;
+          late List<OptionModel> result;
 
-        late List<OptionModel> result;
-        switch (id.length) {
-          case 2:
-            result = dataJson
-                .map((json) => OptionModel.fromKabupatenJson(json))
-                .toList();
-            break;
-          case 4:
-            result = dataJson
-                .map((json) => OptionModel.fromKecamatanJson(json))
-                .toList();
-            break;
-          case 6:
-            result = dataJson
-                .map((json) => OptionModel.fromKelurahanJson(json))
-                .toList();
-            break;
-          case 10:
-            result = dataJson
-                .map((json) => OptionModel.fromKelurahanJson(json))
-                .toList();
-            break;
+          switch (id.length) {
+            case 2:
+              result = dataList
+                  .map((e) => OptionModel.fromKabupatenJson(e))
+                  .toList();
+              break;
+            case 4:
+              result = dataList
+                  .map((e) => OptionModel.fromKecamatanJson(e))
+                  .toList();
+              break;
+            case 6:
+            case 10:
+              result = dataList
+                  .map((e) => OptionModel.fromKelurahanJson(e))
+                  .toList();
+              break;
+            default:
+              result = [];
+          }
+          return ResultModel(isSuccess: true, data: result);
         }
-        // log(result.toString(), name: 'reslut get wilayah');
-        return ResultModel(isSuccess: true, data: result);
-      } else {
-        log('message:' + responseJson.toString());
-        return ResultModel(
-          isSuccess: false,
-          error: finalErrorMessage,
-        );
+        log('Unexpected status: ${jsonBody['status']}', name: tag);
       }
+      return ResultModel(isSuccess: false, error: errorMsg);
     } catch (e) {
       log(e.toString(), name: tag, error: e);
-      if (e is DioException) {
-        int? statusCode = e.response?.statusCode;
-        if (statusCode != null) {
-          if (statusCode >= 400 && statusCode < 500) {
-            // Client error
-            return ResultModel(
-              isSuccess: false,
-              error: finalErrorMessage,
-            );
-          } else if (statusCode >= 500 && statusCode < 600) {
-            // Server error
-            return ResultModel(
-              isSuccess: false,
-              error: finalErrorMessage,
-            );
-          }
-        }
-        if (e.message?.contains('SocketException') ?? false) {
-          return ResultModel(
-            isSuccess: false,
-            error: finalErrorMessage,
-          );
-        }
+      if (e is SocketException) {
+        return ResultModel(isSuccess: false, error: errorMsg);
       }
-      return ResultModel(
-        isSuccess: false,
-        error: finalErrorMessage,
-      );
+      return ResultModel(isSuccess: false, error: errorMsg);
     }
   }
 
   static Future<ResultModel<List<OptionModel>>> getKodePos(
       String idKecamatan, String idKelurahan) async {
-    assert(() {
-      log('getWilayahById', name: tag);
-      return true;
-    }());
-    String finalErrorMessage = 'Tidak dapat mengambil data nama wilayah';
+    log('getKodePos: $idKecamatan, $idKelurahan', name: tag);
+    final errorMsg = 'Tidak dapat mengambil data kode pos';
     try {
-      Response response =
-          await WilayahApi().getKodePos(idKecamatan, idKelurahan);
-      var responseJson = response.data;
+      final uri = Uri.parse('$apiHost/kodepos?id_kec=$idKecamatan&id_kel=$idKelurahan');
+      final resp = await http.get(uri);
 
-      if (responseJson['status'] == 'success') {
-        List<dynamic> dataJson = responseJson['data'];
-
-        late List<OptionModel> result;
-        result = dataJson.map((json) => OptionModel.fromJson(json)).toList();
-        log(result.toString(), name: 'getKodePos');
-
-        return ResultModel(isSuccess: true, data: result);
-      } else {
-        log('message:' + responseJson.toString());
-        return ResultModel(
-          isSuccess: false,
-          error: finalErrorMessage,
-        );
+      if (resp.statusCode == 200) {
+        final jsonBody = json.decode(resp.body);
+        if (jsonBody['status'] == 'success') {
+          final dataList = jsonBody['data'] as List<dynamic>;
+          final result =
+              dataList.map((e) => OptionModel.fromJson(e)).toList();
+          return ResultModel(isSuccess: true, data: result);
+        }
+        log('Unexpected status: ${jsonBody['status']}', name: tag);
       }
+      return ResultModel(isSuccess: false, error: errorMsg);
     } catch (e) {
       log(e.toString(), name: tag, error: e);
-      if (e is DioException) {
-        int? statusCode = e.response?.statusCode;
-        if (statusCode != null) {
-          if (statusCode >= 400 && statusCode < 500) {
-            // Client error
-            return ResultModel(
-              isSuccess: false,
-              error: finalErrorMessage,
-            );
-          } else if (statusCode >= 500 && statusCode < 600) {
-            // Server error
-            return ResultModel(
-              isSuccess: false,
-              error: finalErrorMessage,
-            );
-          }
-        }
-        if (e.message?.contains('SocketException') ?? false) {
-          return ResultModel(
-            isSuccess: false,
-            error: finalErrorMessage,
-          );
-        }
+      if (e is SocketException) {
+        return ResultModel(isSuccess: false, error: errorMsg);
       }
-      return ResultModel(
-        isSuccess: false,
-        error: finalErrorMessage,
-      );
+      return ResultModel(isSuccess: false, error: errorMsg);
     }
   }
 
   static Future<ResultModel<OptionModel>> getNamaWilayah(String id) async {
-    assert(() {
-      log('getNamaWilayah', name: tag);
-      return true;
-    }());
-    String finalErrorMessage = 'Tidak dapat mengambil data nama wilayah';
+    log('getNamaWilayah: $id', name: tag);
+    final errorMsg = 'Tidak dapat mengambil data nama wilayah';
+
     try {
-      Response response = await WilayahApi().getNamaWilayah(id);
-      var responseJson = response.data;
+      final uri = Uri.parse('$apiHost/namawilayah/$id');
+      final resp = await http.get(uri);
 
-      if (responseJson['status'] == 'success') {
-        dynamic dataJson = responseJson['data'];
+      if (resp.statusCode == 200) {
+        final jsonBody = json.decode(resp.body);
+        if (jsonBody['status'] == 'success') {
+          final dataJson = jsonBody['data'];
+          late OptionModel result;
 
-        late OptionModel result;
-        switch (id.length) {
-          case 2:
-            result = OptionModel.fromProvinsiJson(dataJson);
-            break;
-          case 4:
-            result = OptionModel.fromKabupatenJson(dataJson);
-            break;
-          case 6:
-            result = OptionModel.fromKecamatanJson(dataJson);
-            break;
-          case 10:
-            result = OptionModel.fromKelurahanJson(dataJson);
-            break;
+          switch (id.length) {
+            case 2:
+              result = OptionModel.fromProvinsiJson(dataJson);
+              break;
+            case 4:
+              result = OptionModel.fromKabupatenJson(dataJson);
+              break;
+            case 6:
+              result = OptionModel.fromKecamatanJson(dataJson);
+              break;
+            case 10:
+              result = OptionModel.fromKelurahanJson(dataJson);
+              break;
+            default:
+              result = OptionModel(id: 0, text: '');
+          }
+          return ResultModel(isSuccess: true, data: result);
         }
-        // log(result.toString(), name: 'reslut get wilayah');
-        return ResultModel(isSuccess: true, data: result);
-      } else {
-        log('message:' + responseJson.toString());
-        return ResultModel(
-          isSuccess: false,
-          error: finalErrorMessage,
-        );
+        log('Unexpected status: ${jsonBody['status']}', name: tag);
       }
+      return ResultModel(isSuccess: false, error: errorMsg);
     } catch (e) {
       log(e.toString(), name: tag, error: e);
-      if (e is DioException) {
-        int? statusCode = e.response?.statusCode;
-        if (statusCode != null) {
-          if (statusCode >= 400 && statusCode < 500) {
-            // Client error
-            return ResultModel(
-              isSuccess: false,
-              error: finalErrorMessage,
-            );
-          } else if (statusCode >= 500 && statusCode < 600) {
-            // Server error
-            return ResultModel(
-              isSuccess: false,
-              error: finalErrorMessage,
-            );
-          }
-        }
-        if (e.message?.contains('SocketException') ?? false) {
-          return ResultModel(
-            isSuccess: false,
-            error: finalErrorMessage,
-          );
-        }
+      if (e is SocketException) {
+        return ResultModel(isSuccess: false, error: errorMsg);
       }
-      return ResultModel(
-        isSuccess: false,
-        error: finalErrorMessage,
-      );
+      return ResultModel(isSuccess: false, error: errorMsg);
     }
   }
 }

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:pensiunku/model/halopensiun_model.dart';
 import 'package:pensiunku/repository/halopensiun_repository.dart';
 import 'package:pensiunku/model/result_model.dart';
+import 'package:pensiunku/screen/welcome/welcome_screen.dart';
 import 'package:pensiunku/util/shared_preferences_util.dart';
 import 'package:pensiunku/widget/chip_tab.dart';
 import 'package:pensiunku/widget/sliver_app_bar_sheet_top.dart';
@@ -20,7 +21,7 @@ class HalopensiunScreen extends StatefulWidget {
 }
 
 class _HalopensiunScreenState extends State<HalopensiunScreen> {
-  ScrollController scrollController = new ScrollController();
+  ScrollController scrollController = ScrollController();
   late Future<ResultModel<HalopensiunModel>> _futureData;
   late String _searchText;
   final TextEditingController editingController = TextEditingController();
@@ -28,68 +29,133 @@ class _HalopensiunScreenState extends State<HalopensiunScreen> {
   late List<ListHalopensiun> _listHalopensiun = [];
   late int _selectedCategoryId;
 
-  // bool _isLoading = false;
-  final dataKey = new GlobalKey();
+  final dataKey = GlobalKey();
 
   @override
   void initState() {
     super.initState();
     _selectedCategoryId = 1;
     _searchText = '';
+    // --- PERUBAHAN: Inisialisasi _futureData dengan data kosong yang sukses, bukan error dummy ---
+    _futureData = Future.value(ResultModel(
+        isSuccess: true, data: HalopensiunModel(categories: [], list: [])));
+    // --- AKHIR PERUBAHAN ---
     _refreshData();
   }
 
-  _refreshData() {
+  Future<void> _refreshData() async {
     String? token = SharedPreferencesUtil()
         .sharedPreferences
         .getString(SharedPreferencesUtil.SP_KEY_TOKEN);
 
-    return _futureData =
-        HalopensiunRepository().getAllHalopensiuns(token!).then((value) {
-      if (value.error != null) {
+    if (token == null || token.isEmpty) {
+      if (mounted) {
         showDialog(
-            context: context,
-            builder: (_) => AlertDialog(
-                  content: Text(value.error.toString(),
-                      style: TextStyle(color: Colors.white)),
-                  backgroundColor: Colors.red,
-                  elevation: 24.0,
-                ));
-      } else {
-        setState(() {
-          _categories = [];
-          _listHalopensiun = [];
-          //categories
-          value.data!.categories.asMap().forEach((key, value) {
-            _categories.add(value);
-          });
-
-          //listhalopensiun
-          value.data!.list.asMap().forEach((key, value) {
-            if (value.idKategori == _selectedCategoryId &&
-                value.judul.toLowerCase().contains(_searchText)) {
-              _listHalopensiun.add(value);
-            }
-          });
+          context: context,
+          builder: (_) => AlertDialog(
+            content: Text(
+              'Token otentikasi tidak ditemukan. Silakan coba masuk kembali.',
+              style: TextStyle(color: Colors.black),
+            ),
+            backgroundColor: Colors.red,
+            elevation: 24.0,
+          ),
+        ).then((_) {
+          Navigator.of(context).pushNamedAndRemoveUntil(
+            WelcomeScreen.ROUTE_NAME,
+            (Route<dynamic> route) => false,
+          );
         });
       }
-      setState(() {});
-      return value;
-    });
+      // --- PERUBAHAN: Set _futureData ke error jika token tidak ada ---
+      setState(() {
+        _futureData = Future.error('Token otentikasi tidak ditemukan.');
+      });
+      return;
+      // --- AKHIR PERUBAHAN ---
+    }
+
+    try {
+      final value = await HalopensiunRepository().getAllHalopensiuns(token);
+      if (mounted) {
+        setState(() {
+          _futureData = Future.value(value); // Selesaikan Future
+          if (value.error != null) {
+            if (value.error!.contains('Sesi Anda telah berakhir') ||
+                value.error!.contains('Unauthorized')) {
+              showDialog(
+                context: context,
+                builder: (_) => AlertDialog(
+                  content: Text(
+                    'Sesi Anda telah berakhir. Mohon login kembali.',
+                    style: TextStyle(color: Colors.black),
+                  ),
+                  backgroundColor: Colors.red,
+                  elevation: 24.0,
+                ),
+              ).then((_) {
+                Navigator.of(context).pushNamedAndRemoveUntil(
+                  WelcomeScreen.ROUTE_NAME,
+                  (Route<dynamic> route) => false,
+                );
+              });
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(value.error.toString(),
+                      style: const TextStyle(color: Colors.black)),
+                  backgroundColor: Colors.red,
+                  duration: const Duration(seconds: 3),
+                ),
+              );
+            }
+          } else if (value.data != null) {
+            _categories = [];
+            _listHalopensiun = [];
+
+            value.data!.categories.asMap().forEach((key, categoryValue) {
+              _categories.add(categoryValue);
+            });
+
+            value.data!.list.asMap().forEach((key, halopensiunItem) {
+              if (halopensiunItem.idKategori == _selectedCategoryId &&
+                  halopensiunItem.judul
+                      .toLowerCase()
+                      .contains(_searchText.toLowerCase())) {
+                _listHalopensiun.add(halopensiunItem);
+              }
+            });
+          }
+        });
+      }
+    } catch (e) {
+      print('Error during _refreshData: $e');
+      if (mounted) {
+        setState(() {
+          _futureData = Future.error(e); // Selesaikan Future dengan error
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal memuat data: ${e.toString()}',
+                style: const TextStyle(color: Colors.black)),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     ThemeData theme = Theme.of(context);
 
-    // Widget Dimensions
     Size screenSize = MediaQuery.of(context).size;
     double sliverAppBarExpandedHeight = screenSize.height * 0.24;
 
     return Stack(
       fit: StackFit.expand,
       children: [
-        // 1) Background gradient
         Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
@@ -105,15 +171,16 @@ class _HalopensiunScreenState extends State<HalopensiunScreen> {
             ),
           ),
         ),
-
-        // 2) Scaffold transparan
         Scaffold(
           backgroundColor: Colors.transparent,
           extendBodyBehindAppBar: true,
           body: RefreshIndicator(
-            onRefresh: () => _refreshData(),
+            onRefresh: () =>
+                _refreshData(), // onRefresh akan await Future<void>
             child: CustomScrollView(
               controller: scrollController,
+              physics:
+                  const AlwaysScrollableScrollPhysics(), // Memastikan selalu bisa di-scroll
               slivers: [
                 SliverAppBar(
                   pinned: true,
@@ -163,7 +230,7 @@ class _HalopensiunScreenState extends State<HalopensiunScreen> {
                                                   .size
                                                   .width *
                                               9 /
-                                              16, // Rasio 16:9
+                                              16,
                                         ),
                                       ],
                                     ),
@@ -173,19 +240,49 @@ class _HalopensiunScreenState extends State<HalopensiunScreen> {
                             ),
                           ),
                         ),
-                        SliverAppBarSheetTop(),
                       ],
                     ),
                   ),
                 ),
+                // --- PERUBAHAN: Membungkus SliverAppBarSheetTop dengan SliverToBoxAdapter ---
                 SliverToBoxAdapter(
-                    child: FutureBuilder(
-                  future: _futureData,
-                  builder: (BuildContext context,
-                      AsyncSnapshot<ResultModel<HalopensiunModel>> snapshot) {
-                    if (snapshot.hasData) {
-                      if (snapshot.data?.data?.categories.isNotEmpty == true) {
-                        HalopensiunModel data = snapshot.data!.data!;
+                  child: SliverAppBarSheetTop(),
+                ),
+                // --- AKHIR PERUBAHAN ---
+                SliverToBoxAdapter(
+                  child: FutureBuilder<ResultModel<HalopensiunModel>>(
+                    future: _futureData,
+                    builder: (BuildContext context,
+                        AsyncSnapshot<ResultModel<HalopensiunModel>> snapshot) {
+                      // --- PERUBAHAN: Logika loading dan error yang lebih cerdas ---
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        // Tampilkan loading hanya jika belum ada data yang dimuat sebelumnya
+                        if (_categories.isEmpty && _listHalopensiun.isEmpty) {
+                          return _buildLoadingIndicator(screenSize, theme);
+                        } else {
+                          // Jika sudah ada data, sembunyikan indikator loading di sini
+                          // (animasi refresh indicator di atas sudah cukup)
+                          return const SizedBox.shrink();
+                        }
+                      } else if (snapshot.hasError ||
+                          !snapshot.hasData ||
+                          !snapshot.data!.isSuccess) {
+                        // Tampilkan error hanya jika tidak ada data sama sekali untuk ditampilkan
+                        if (_categories.isEmpty && _listHalopensiun.isEmpty) {
+                          return _buildErrorWidget(snapshot.error?.toString() ??
+                              snapshot.data?.error ??
+                              'Terjadi kesalahan tidak dikenal.');
+                        } else {
+                          // Jika ada data lama, jangan tampilkan error card, cukup pesan toast (sudah di _refreshData)
+                          return const SizedBox.shrink();
+                        }
+                      }
+                      // --- AKHIR PERUBAHAN ---
+
+                      // Data berhasil dimuat dan sudah diproses di _refreshData
+                      // Sekarang, cukup tampilkan UI menggunakan _categories dan _listHalopensiun
+                      if (_categories.isNotEmpty) {
+                        // Pastikan kategori tidak kosong
                         return Container(
                           child: Padding(
                             padding: EdgeInsets.only(
@@ -200,7 +297,9 @@ class _HalopensiunScreenState extends State<HalopensiunScreen> {
                                   height: 36.0,
                                   child: TextField(
                                     onSubmitted: (value) {
-                                      _searchText = value;
+                                      setState(() {
+                                        _searchText = value;
+                                      });
                                       _refreshData();
                                     },
                                     controller: editingController,
@@ -228,7 +327,7 @@ class _HalopensiunScreenState extends State<HalopensiunScreen> {
                                   child: ListView(
                                     scrollDirection: Axis.horizontal,
                                     children: [
-                                      ...data.categories
+                                      ..._categories
                                           .asMap()
                                           .map((index, halopensiunCategory) {
                                             return MapEntry(
@@ -260,25 +359,17 @@ class _HalopensiunScreenState extends State<HalopensiunScreen> {
                           ),
                         );
                       } else {
-                        return noData();
+                        return noData(); // Tampilkan noData jika kategori kosong
                       }
-                    } else {
-                      return Container(
-                        height: (screenSize.height) * 0.5 + 36 + 16.0,
-                        child: Center(
-                          child: CircularProgressIndicator(
-                            color: theme.primaryColor,
-                          ),
-                        ),
-                      );
-                    }
-                  },
-                )),
+                    },
+                  ),
+                ),
                 SliverPadding(
                   padding: EdgeInsets.symmetric(horizontal: 20),
                   sliver: SliverList(
                     delegate: SliverChildBuilderDelegate(
                       (BuildContext context, int index) {
+                        final item = _listHalopensiun[index];
                         return Card(
                           margin: const EdgeInsets.symmetric(vertical: 8.0),
                           shape: RoundedRectangleBorder(
@@ -289,14 +380,29 @@ class _HalopensiunScreenState extends State<HalopensiunScreen> {
                             color: Colors.white,
                             alignment: Alignment.center,
                             child: ExpansionTile(
-                              title: Text(_listHalopensiun[index].judul),
+                              title: Text(item.judul),
                               children: [
-                                CachedNetworkImage(
-                                  placeholder: (context, url) =>
-                                      const CircularProgressIndicator(),
-                                  imageUrl: _listHalopensiun[index].infografis,
-                                  fit: BoxFit.fitWidth,
-                                ),
+                                if (item.infografis != null &&
+                                    item.infografis!.isNotEmpty &&
+                                    Uri.tryParse(item.infografis!)
+                                            ?.hasAbsolutePath ==
+                                        true)
+                                  CachedNetworkImage(
+                                    placeholder: (context, url) =>
+                                        const CircularProgressIndicator(),
+                                    imageUrl: item.infografis!,
+                                    fit: BoxFit.fitWidth,
+                                    errorWidget: (context, url, error) =>
+                                        Image.asset(
+                                      'assets/placeholder_image.png',
+                                      fit: BoxFit.fitWidth,
+                                    ),
+                                  )
+                                else
+                                  Image.asset(
+                                    'assets/placeholder_image.png',
+                                    fit: BoxFit.fitWidth,
+                                  ),
                               ],
                             ),
                           ),
@@ -311,6 +417,30 @@ class _HalopensiunScreenState extends State<HalopensiunScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildLoadingIndicator(Size screenSize, ThemeData theme) {
+    return Container(
+      height: (screenSize.height) * 0.5 + 36 + 16.0,
+      child: Center(
+        child: CircularProgressIndicator(
+          color: theme.primaryColor,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorWidget(String message) {
+    return Padding(
+      padding: const EdgeInsets.all(20.0),
+      child: Center(
+        child: Text(
+          'Error: $message',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: Colors.red, fontSize: 16),
+        ),
+      ),
     );
   }
 
@@ -334,7 +464,7 @@ class _HalopensiunScreenState extends State<HalopensiunScreen> {
           Text(
             'Tidak ada info Halo Pensiun',
             textAlign: TextAlign.center,
-            style: theme.textTheme.headline5?.copyWith(
+            style: theme.textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -342,7 +472,7 @@ class _HalopensiunScreenState extends State<HalopensiunScreen> {
           Text(
             'Jika ada info Halo Pensiun, maka informasinya akan muncul disini',
             textAlign: TextAlign.center,
-            style: theme.textTheme.bodyText1?.copyWith(
+            style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.textTheme.caption?.color,
             ),
           ),

@@ -1,505 +1,316 @@
+import 'dart:convert'; // Tetap diperlukan untuk json.decode jika parsing manual di getDataFromApiResponse
 import 'dart:developer';
-import 'package:dio/dio.dart';
-import 'package:pensiunku/data/api/forum_api.dart';
-import 'package:pensiunku/model/forum_model.dart';
+import 'dart:io'; // Tetap diperlukan jika ada penanganan SocketException di luar getResultModel, tapi idealnya tidak
+import 'package:http/http.dart' as http; // Menggunakan paket http
+import 'package:pensiunku/data/api/forum_api.dart'; // Pastikan path ini benar
+import 'package:pensiunku/model/forum_model.dart'; // Pastikan semua model di sini
 import 'package:pensiunku/repository/base_repository.dart';
 import 'package:pensiunku/model/result_model.dart';
+import 'package:pensiunku/util/shared_preferences_util.dart';
 
-import '../util/shared_preferences_util.dart';
 
 class ForumRepository extends BaseRepository {
   static String tag = 'Forum Repository';
   ForumApi api = ForumApi();
 
-  Future<ResultModel<List<ForumModel>>> getAllForumPost(String token) async {
+  // Mengambil semua postingan forum
+  Future<ResultModel<List<ForumModel>>> getAllForumPost(String token) {
     assert(() {
-      log('getAllForumPost', name: tag);
+      log('getAllForumPost Repository dipanggil.', name: tag);
       return true;
     }());
-    String finalErrorMessage =
-        'Gagal mengambil data forum terbaru. Tolong periksa Internet Anda.';
-    try {
-      Response response = await api.getAllForumPost(token);
-
-      var responseJson = response.data;
-
-      if (responseJson['status'] == 'success') {
-        List<dynamic> itemsJson = responseJson['data'];
-        List<ForumModel> forumList = [];
-        itemsJson.forEach((value) {
-          forumList.add(
-            ForumModel.fromJson(value),
-          );
-        });
-        return ResultModel(
-          isSuccess: true,
-          data: forumList,
-        );
-      } else {
-        return ResultModel(
-          isSuccess: false,
-          error: finalErrorMessage,
-          data: [],
-        );
-      }
-    } catch (e) {
-      log(e.toString(), name: tag, error: e);
-      if (e is DioError) {
-        int? statusCode = e.response?.statusCode;
-        if (statusCode != null) {
-          if (statusCode >= 400 && statusCode < 500) {
-            // Client error
-            return ResultModel(
-              isSuccess: false,
-              error: finalErrorMessage,
-            );
-          } else if (statusCode >= 500 && statusCode < 600) {
-            // Server error
-            return ResultModel(
-              isSuccess: false,
-              error: finalErrorMessage,
-            );
+    return super.getResultModel<List<ForumModel>>(
+      tag: tag,
+      getFromDb: () async => null, // Tidak ada interaksi DB untuk fungsi ini
+      getFromApi: () async {
+        log('Mencoba ambil semua postingan forum dari API.', name: tag);
+        // --- PERUBAHAN: Langsung panggil API dan kembalikan http.Response, hapus try-catch di sini ---
+        return await api.getAllForumPost(token);
+        // --- AKHIR PERUBAHAN ---
+      },
+      getDataFromApiResponse: (responseJson) {
+        log('Mengolah respons API untuk getAllForumPost: $responseJson', name: tag);
+        if (responseJson['status'] == 'success' && responseJson['data'] != null) {
+          List<dynamic> itemsJson = responseJson['data'];
+          List<ForumModel> forumList = [];
+          for (var value in itemsJson) {
+            try {
+              forumList.add(
+                ForumModel.fromJson(value),
+              );
+            } catch (e) {
+              log('!!! ERROR parsing ForumModel dari data: $value. Error: $e. Type of error: ${e.runtimeType} !!!', name: tag, error: e);
+              rethrow;
+            }
           }
+          log('ForumModel berhasil diparsing: ${forumList.length} item.', name: tag);
+          return forumList;
+        } else {
+          log('Status API bukan sukses atau data kosong untuk getAllForumPost. Respons: $responseJson', name: tag);
+          throw Exception(responseJson['msg'] ?? 'Respons API tidak valid.');
         }
-        if (e.message?.contains('SocketException') ?? false) {
-          return ResultModel(
-            isSuccess: false,
-            error: finalErrorMessage,
-          );
-        }
-      }
-      return ResultModel(
-        isSuccess: false,
-        error: finalErrorMessage,
-      );
-    }
+      },
+      removeFromDb: (_) async {}, // Tidak ada interaksi DB untuk fungsi ini
+      insertToDb: (_) async {}, // Tidak ada interaksi DB untuk fungsi ini
+      errorMessage: 'Gagal mengambil data forum terbaru. Tolong periksa Internet Anda.',
+    );
   }
 
+  // Mengambil postingan forum berdasarkan ID pengguna
   Future<ResultModel<List<ForumModel>>> getForumPostbyUserID(
     String token,
     int userID,
-  ) async {
+  ) {
     assert(() {
-      log('getForumPostbyUserID', name: tag);
+      log('getForumPostbyUserID Repository dipanggil.', name: tag);
       return true;
     }());
-    String finalErrorMessage =
-        'Gagal mengambil data forum terbaru. Tolong periksa Internet Anda.';
-    try {
-      Response response = await api.getForumPostbyUserID(token, userID);
-      var responseJson = response.data;
-      // log(responseJson['data'].toString());
-
-      if (responseJson['status'] == 'success') {
-        List<dynamic> itemsJson = responseJson['data'];
-        List<ForumModel> forumList = [];
-        itemsJson.forEach((value) {
-          forumList.add(
-            ForumModel.fromJson(value),
-          );
-        });
-        return ResultModel(
-          isSuccess: true,
-          data: forumList,
-        );
-      } else {
-        return ResultModel(
-          isSuccess: false,
-          error: finalErrorMessage,
-          data: [],
-        );
-      }
-    } catch (e) {
-      log(e.toString(), name: tag, error: e);
-      if (e is DioError) {
-        int? statusCode = e.response?.statusCode;
-        if (statusCode != null) {
-          if (statusCode >= 400 && statusCode < 500) {
-            // Client error
-            return ResultModel(
-              isSuccess: false,
-              error: finalErrorMessage,
-            );
-          } else if (statusCode >= 500 && statusCode < 600) {
-            // Server error
-            return ResultModel(
-              isSuccess: false,
-              error: finalErrorMessage,
-            );
+    return super.getResultModel<List<ForumModel>>(
+      tag: tag,
+      getFromDb: () async => null,
+      getFromApi: () async {
+        log('Mencoba ambil postingan forum berdasarkan userID dari API.', name: tag);
+        // --- PERUBAHAN: Langsung panggil API dan kembalikan http.Response, hapus try-catch di sini ---
+        return await api.getForumPostByUserID(token, userID);
+        // --- AKHIR PERUBAHAN ---
+      },
+      getDataFromApiResponse: (responseJson) {
+        log('Mengolah respons API untuk getForumPostbyUserID: $responseJson', name: tag);
+        if (responseJson['status'] == 'success' && responseJson['data'] != null) {
+          List<dynamic> itemsJson = responseJson['data'];
+          List<ForumModel> forumList = [];
+          for (var value in itemsJson) {
+            try {
+              forumList.add(
+                ForumModel.fromJson(value),
+              );
+            } catch (e) {
+              log('!!! ERROR parsing ForumModel dari data: $value. Error: $e. Type of error: ${e.runtimeType} !!!', name: tag, error: e);
+              rethrow;
+            }
           }
+          log('ForumModel berhasil diparsing: ${forumList.length} item.', name: tag);
+          return forumList;
+        } else {
+          log('Status API bukan sukses atau data kosong untuk getForumPostbyUserID. Respons: $responseJson', name: tag);
+          throw Exception(responseJson['msg'] ?? 'Respons API tidak valid.');
         }
-        if (e.message?.contains('SocketException') ?? false) {
-          return ResultModel(
-            isSuccess: false,
-            error: finalErrorMessage,
-          );
-        }
-      }
-      return ResultModel(
-        isSuccess: false,
-        error: finalErrorMessage,
-      );
-    }
+      },
+      removeFromDb: (_) async {},
+      insertToDb: (_) async {},
+      errorMessage: 'Gagal mengambil data forum terbaru. Tolong periksa Internet Anda.',
+    );
   }
 
+  // Mengambil detail postingan forum berdasarkan ID postingan
   Future<ResultModel<List<ForumDetailModel>>> getForumPostbyPostID(
-      String token, int postID) async {
+      String token, int postID) {
     assert(() {
-      log('getForumPostbyPostID', name: tag);
+      log('getForumPostbyPostID Repository dipanggil.', name: tag);
       return true;
     }());
-    String finalErrorMessage =
-        'Gagal mengambil data detail forum. Tolong periksa Internet Anda.';
-    try {
-      Response response = await api.getForumPostbyPostID(token, postID);
-      var responseJson = response.data;
-      // log(responseJson['data'].toString());
-
-      if (responseJson['status'] == 'success') {
-        List<dynamic> itemsJson = responseJson['data'];
-        List<ForumDetailModel> forumDetailList = [];
-        itemsJson.forEach((value) {
-          forumDetailList.add(
-            ForumDetailModel.fromJson(value),
-          );
-        });
-        return ResultModel(
-          isSuccess: true,
-          data: forumDetailList,
-        );
-      } else {
-        return ResultModel(
-          isSuccess: false,
-          error: finalErrorMessage,
-        );
-      }
-    } catch (e) {
-      log(e.toString(), name: tag, error: e);
-      if (e is DioError) {
-        int? statusCode = e.response?.statusCode;
-        if (statusCode != null) {
-          if (statusCode >= 400 && statusCode < 500) {
-            // Client error
-            return ResultModel(
-              isSuccess: false,
-              error: finalErrorMessage,
-            );
-          } else if (statusCode >= 500 && statusCode < 600) {
-            // Server error
-            return ResultModel(
-              isSuccess: false,
-              error: finalErrorMessage,
-            );
+    return super.getResultModel<List<ForumDetailModel>>(
+      tag: tag,
+      getFromDb: () async => null,
+      getFromApi: () async {
+        log('Mencoba ambil detail postingan forum berdasarkan postID dari API.', name: tag);
+        // --- PERUBAHAN: Langsung panggil API dan kembalikan http.Response, hapus try-catch di sini ---
+        return await api.getForumPostByPostID(token, postID);
+        // --- AKHIR PERUBAHAN ---
+      },
+      getDataFromApiResponse: (responseJson) {
+        log('Mengolah respons API untuk getForumPostbyPostID: $responseJson', name: tag);
+        if (responseJson['status'] == 'success' && responseJson['data'] != null) {
+          List<dynamic> itemsJson = responseJson['data'];
+          List<ForumDetailModel> forumDetailList = [];
+          for (var value in itemsJson) {
+            try {
+              forumDetailList.add(
+                ForumDetailModel.fromJson(value),
+              );
+            } catch (e) {
+              log('!!! ERROR parsing ForumDetailModel dari data: $value. Error: $e. Type of error: ${e.runtimeType} !!!', name: tag, error: e);
+              rethrow;
+            }
           }
+          log('ForumDetailModel berhasil diparsing: ${forumDetailList.length} item.', name: tag);
+          return forumDetailList;
+        } else {
+          log('Status API bukan sukses atau data kosong untuk getForumPostbyPostID. Respons: $responseJson', name: tag);
+          throw Exception(responseJson['msg'] ?? 'Respons API tidak valid.');
         }
-        if (e.message?.contains('SocketException') ?? false) {
-          return ResultModel(
-            isSuccess: false,
-            error: finalErrorMessage,
-          );
-        }
-      }
-      return ResultModel(
-        isSuccess: false,
-        error: finalErrorMessage,
-      );
-    }
+      },
+      removeFromDb: (_) async {},
+      insertToDb: (_) async {},
+      errorMessage: 'Gagal mengambil data detail forum. Tolong periksa Internet Anda.',
+    );
   }
 
-  Future<ResultModel<bool>> addPostLike(String token, int id) async {
+  // Menambahkan like pada postingan
+  Future<ResultModel<bool>> addPostLike(String token, int id) {
     assert(() {
-      log('addLikePost:', name: tag);
+      log('addLikePost Repository dipanggil.', name: tag);
       return true;
     }());
-    String finalErrorMessage =
-        'Tidak dapat menambahkan like. Tolong periksa Internet Anda.';
-    try {
-      Response response = await api.addPostLike(token, id);
-      var responseJson = response.data;
-      log(responseJson.toString());
-
-      if (responseJson['status'] == 'success') {
-        return ResultModel(
-          isSuccess: true,
-          data: true,
-        );
-      } else {
-        return ResultModel(
-          isSuccess: false,
-          error: finalErrorMessage,
-          data: false,
-        );
-      }
-    } catch (e) {
-      log(e.toString(), name: tag, error: e);
-      if (e is DioError) {
-        int? statusCode = e.response?.statusCode;
-        if (statusCode != null) {
-          if (statusCode >= 400 && statusCode < 500) {
-            // Client error
-            return ResultModel(
-              isSuccess: false,
-              error: finalErrorMessage,
-            );
-          } else if (statusCode >= 500 && statusCode < 600) {
-            // Server error
-            return ResultModel(
-              isSuccess: false,
-              error: finalErrorMessage,
-            );
-          }
+    return super.getResultModel<bool>(
+      tag: tag,
+      getFromDb: () async => null,
+      getFromApi: () async {
+        log('Mencoba menambahkan like pada postingan dari API.', name: tag);
+        // --- PERUBAHAN: Langsung panggil API dan kembalikan http.Response, hapus try-catch di sini ---
+        return await api.addPostLike(token, id);
+        // --- AKHIR PERUBAHAN ---
+      },
+      getDataFromApiResponse: (responseJson) {
+        log('Mengolah respons API untuk addPostLike: $responseJson', name: tag);
+        if (responseJson['status'] == 'success') {
+          log('Berhasil menambahkan like.', name: tag);
+          return true;
+        } else {
+          log('Status API bukan sukses untuk addPostLike. Respons: $responseJson', name: tag);
+          throw Exception(responseJson['msg'] ?? 'Respons API tidak valid.');
         }
-        if (e.message?.contains('SocketException') ?? false) {
-          return ResultModel(
-            isSuccess: false,
-            error: finalErrorMessage,
-          );
-        }
-      }
-      return ResultModel(
-        isSuccess: false,
-        error: finalErrorMessage,
-      );
-    }
+      },
+      removeFromDb: (_) async {},
+      insertToDb: (_) async {},
+      errorMessage: 'Tidak dapat menambahkan like. Tolong periksa Internet Anda.',
+    );
   }
 
-  Future<ResultModel<bool>> removeLike(String token, int id) async {
+  // Menghapus like pada postingan
+  Future<ResultModel<bool>> removeLike(String token, int id) {
     assert(() {
-      log('removeLike:', name: tag);
+      log('removeLike Repository dipanggil.', name: tag);
       return true;
     }());
-    String finalErrorMessage =
-        'Tidak dapat menghapus like. Tolong periksa Internet Anda.';
-    try {
-      Response response = await api.removeLike(token, id);
-      var responseJson = response.data;
-      log(responseJson.toString());
-
-      if (responseJson['status'] == 'success') {
-        return ResultModel(
-          isSuccess: true,
-          data: true,
-        );
-      } else {
-        return ResultModel(
-          isSuccess: false,
-          error: finalErrorMessage,
-        );
-      }
-    } catch (e) {
-      log(e.toString(), name: tag, error: e);
-      if (e is DioError) {
-        int? statusCode = e.response?.statusCode;
-        if (statusCode != null) {
-          if (statusCode >= 400 && statusCode < 500) {
-            // Client error
-            return ResultModel(
-              isSuccess: false,
-              error: finalErrorMessage,
-            );
-          } else if (statusCode >= 500 && statusCode < 600) {
-            // Server error
-            return ResultModel(
-              isSuccess: false,
-              error: finalErrorMessage,
-            );
-          }
+    return super.getResultModel<bool>(
+      tag: tag,
+      getFromDb: () async => null,
+      getFromApi: () async {
+        log('Mencoba menghapus like dari API.', name: tag);
+        // --- PERUBAHAN: Langsung panggil API dan kembalikan http.Response, hapus try-catch di sini ---
+        return await api.removeLike(token, id);
+        // --- AKHIR PERUBAHAN ---
+      },
+      getDataFromApiResponse: (responseJson) {
+        log('Mengolah respons API untuk removeLike: $responseJson', name: tag);
+        if (responseJson['status'] == 'success') {
+          log('Berhasil menghapus like.', name: tag);
+          return true;
+        } else {
+          log('Status API bukan sukses untuk removeLike. Respons: $responseJson', name: tag);
+          throw Exception(responseJson['msg'] ?? 'Respons API tidak valid.');
         }
-        if (e.message?.contains('SocketException') ?? false) {
-          return ResultModel(
-            isSuccess: false,
-            error: finalErrorMessage,
-          );
-        }
-      }
-      return ResultModel(
-        isSuccess: false,
-        error: finalErrorMessage,
-      );
-    }
+      },
+      removeFromDb: (_) async {},
+      insertToDb: (_) async {},
+      errorMessage: 'Tidak dapat menghapus like. Tolong periksa Internet Anda.',
+    );
   }
 
-  Future<ResultModel<bool>> addForumComment(String token, dynamic data) async {
+  // Menambahkan komentar pada postingan forum
+  Future<ResultModel<bool>> addForumComment(String token, dynamic data) {
     assert(() {
-      log('addForumComment:', name: tag);
+      log('addForumComment Repository dipanggil.', name: tag);
       return true;
     }());
-    String finalErrorMessage =
-        'Tidak dapat menambahkan komentar. Tolong periksa Internet Anda.';
-    try {
-      Response response = await api.addForumComment(token, data);
-      var responseJson = response.data;
-      // log(responseJson['data'].toString());
-
-      if (responseJson['status'] == 'success') {
-        return ResultModel(
-          isSuccess: true,
-          data: true,
-        );
-      } else {
-        return ResultModel(
-          isSuccess: false,
-          error: finalErrorMessage,
-          data: false,
-        );
-      }
-    } catch (e) {
-      log(e.toString(), name: tag, error: e);
-      if (e is DioError) {
-        int? statusCode = e.response?.statusCode;
-        if (statusCode != null) {
-          if (statusCode >= 400 && statusCode < 500) {
-            // Client error
-            return ResultModel(
-              isSuccess: false,
-              error: finalErrorMessage,
-            );
-          } else if (statusCode >= 500 && statusCode < 600) {
-            // Server error
-            return ResultModel(
-              isSuccess: false,
-              error: finalErrorMessage,
-            );
-          }
+    return super.getResultModel<bool>(
+      tag: tag,
+      getFromDb: () async => null,
+      getFromApi: () async {
+        log('Mencoba menambahkan komentar forum dari API.', name: tag);
+        // --- PERUBAHAN: Langsung panggil API dan kembalikan http.Response, hapus try-catch di sini ---
+        return await api.addForumComment(token, data);
+        // --- AKHIR PERUBAHAN ---
+      },
+      getDataFromApiResponse: (responseJson) {
+        log('Mengolah respons API untuk addForumComment: $responseJson', name: tag);
+        if (responseJson['status'] == 'success') {
+          log('Berhasil menambahkan komentar.', name: tag);
+          return true;
+        } else {
+          log('Status API bukan sukses untuk addForumComment. Respons: $responseJson', name: tag);
+          throw Exception(responseJson['msg'] ?? 'Respons API tidak valid.');
         }
-        if (e.message?.contains('SocketException') ?? false) {
-          return ResultModel(
-            isSuccess: false,
-            error: finalErrorMessage,
-          );
-        }
-      }
-      return ResultModel(
-        isSuccess: false,
-        error: finalErrorMessage,
-      );
-    }
+      },
+      removeFromDb: (_) async {},
+      insertToDb: (_) async {},
+      errorMessage: 'Tidak dapat menambahkan komentar. Tolong periksa Internet Anda.',
+    );
   }
 
-  Future<ResultModel<bool>> addForumPost(String token, dynamic data) async {
+  // Menambahkan postingan forum baru
+  Future<ResultModel<bool>> addForumPost(String token, dynamic data) {
     assert(() {
-      log('addForumPost:', name: tag);
+      log('addForumPost Repository dipanggil.', name: tag);
       return true;
     }());
-    String finalErrorMessage =
-        'Tidak dapat membuat postingan. Tolong periksa Internet Anda.';
-    try {
-      Response response = await api.addForumPost(token, data);
-      var responseJson = response.data;
-      // log(responseJson['data'].toString());
-
-      if (responseJson['status'] == 'success') {
-        return ResultModel(
-          isSuccess: true,
-          data: true,
-        );
-      } else {
-        return ResultModel(
-          isSuccess: false,
-          error: finalErrorMessage,
-          data: false,
-        );
-      }
-    } catch (e) {
-      log(e.toString(), name: tag, error: e);
-      if (e is DioError) {
-        int? statusCode = e.response?.statusCode;
-        if (statusCode != null) {
-          if (statusCode >= 400 && statusCode < 500) {
-            // Client error
-            return ResultModel(
-              isSuccess: false,
-              error: finalErrorMessage,
-            );
-          } else if (statusCode >= 500 && statusCode < 600) {
-            // Server error
-            return ResultModel(
-              isSuccess: false,
-              error: finalErrorMessage,
-            );
-          }
+    return super.getResultModel<bool>(
+      tag: tag,
+      getFromDb: () async => null,
+      getFromApi: () async {
+        log('Mencoba menambahkan postingan forum baru dari API.', name: tag);
+        // --- PERUBAHAN: Langsung panggil API dan kembalikan http.Response, hapus try-catch di sini ---
+        return await api.addForumPost(token, data);
+        // --- AKHIR PERUBAHAN ---
+      },
+      getDataFromApiResponse: (responseJson) {
+        log('Mengolah respons API untuk addForumPost: $responseJson', name: tag);
+        if (responseJson['status'] == 'success') {
+          log('Berhasil menambahkan postingan.', name: tag);
+          return true;
+        } else {
+          log('Status API bukan sukses untuk addForumPost. Respons: $responseJson', name: tag);
+          throw Exception(responseJson['msg'] ?? 'Respons API tidak valid.');
         }
-        if (e.message?.contains('SocketException') ?? false) {
-          return ResultModel(
-            isSuccess: false,
-            error: finalErrorMessage,
-          );
-        }
-      }
-      return ResultModel(
-        isSuccess: false,
-        error: finalErrorMessage,
-      );
-    }
+      },
+      removeFromDb: (_) async {},
+      insertToDb: (_) async {},
+      errorMessage: 'Tidak dapat membuat postingan. Tolong periksa Internet Anda.',
+    );
   }
 
-  // Future<int> checkStatusLike(String token, int idPost) async {
-  //   Response response = await api.checkStatusLike(token, idPost);
-  //   print(response.data.toString());
-  //   return 1;
-  // }
-
-  Future<ResultModel<String>> checkStatusLike(
-    int idPost,
-  ) async {
+  // Memeriksa status like pada postingan
+  Future<ResultModel<String>> checkStatusLike(int idPost) async {
     assert(() {
-      log('checkStatusLike', name: tag);
+      log('checkStatusLike Repository dipanggil.', name: tag);
       return true;
     }());
-    String finalErrorMessage =
-        'Gagal mengambil data forum . Tolong periksa Internet Anda.';
-    String? token = SharedPreferencesUtil()
-        .sharedPreferences
-        .getString(SharedPreferencesUtil.SP_KEY_TOKEN);
-    try {
-      Response response = await api.checkStatusLike(token!, idPost);
-      var responseJson = response.data;
-      // log(responseJson['data']['isLike'].toString());
-      // print(responseJson['data'].toString());
+    String finalErrorMessage = 'Gagal mengambil data forum. Tolong periksa Internet Anda.';
+    String? token = SharedPreferencesUtil().sharedPreferences.getString(SharedPreferencesUtil.SP_KEY_TOKEN);
 
-      if (responseJson['status'] == 'success') {
-        String isLiked = responseJson['data']['isLike'];
-        log('Isliked : ' + isLiked);
-        return ResultModel(
-          isSuccess: true,
-          data: isLiked,
-        );
-      } else {
-        return ResultModel(
-          isSuccess: false,
-          error: finalErrorMessage,
-        );
-      }
-    } catch (e) {
-      log(e.toString(), name: tag, error: e);
-      if (e is DioError) {
-        int? statusCode = e.response?.statusCode;
-        if (statusCode != null) {
-          if (statusCode >= 400 && statusCode < 500) {
-            // Client error
-            return ResultModel(
-              isSuccess: false,
-              error: finalErrorMessage,
-            );
-          } else if (statusCode >= 500 && statusCode < 600) {
-            // Server error
-            return ResultModel(
-              isSuccess: false,
-              error: finalErrorMessage,
-            );
-          }
-        }
-        if (e.message?.contains('SocketException') ?? false) {
-          return ResultModel(
-            isSuccess: false,
-            error: finalErrorMessage,
-          );
-        }
-      }
+    // Periksa jika token null sebelum melanjutkan
+    if (token == null) {
+      log('Token tidak ditemukan di SharedPreferences. Mengembalikan error.', name: tag);
       return ResultModel(
         isSuccess: false,
-        error: finalErrorMessage,
+        error: 'Token otentikasi tidak tersedia.',
       );
     }
+
+    return super.getResultModel<String>(
+      tag: tag,
+      getFromDb: () async => null,
+      getFromApi: () async {
+        log('Mencoba memeriksa status like dari API.', name: tag);
+        // --- PERUBAHAN: Langsung panggil API dan kembalikan http.Response, hapus try-catch di sini ---
+        return await api.checkStatusLike(token, idPost);
+        // --- AKHIR PERUBAHAN ---
+      },
+      getDataFromApiResponse: (responseJson) {
+        log('Mengolah respons API untuk checkStatusLike: $responseJson', name: tag);
+        if (responseJson['status'] == 'success' && responseJson['data'] != null && responseJson['data']['isLike'] != null) {
+          String isLiked = responseJson['data']['isLike'].toString();
+          log('Isliked: ' + isLiked, name: tag);
+          return isLiked;
+        } else {
+          log('Status API bukan sukses atau data isLike kosong untuk checkStatusLike. Respons: $responseJson', name: tag);
+          throw Exception(responseJson['msg'] ?? 'Respons API tidak valid atau data isLike tidak ditemukan.');
+        }
+      },
+      removeFromDb: (_) async {},
+      insertToDb: (_) async {},
+      errorMessage: finalErrorMessage,
+    );
   }
 }

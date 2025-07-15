@@ -1,314 +1,400 @@
-import 'package:dio/dio.dart';
-import 'package:pensiunku/config.dart' show apiHost, defaultApiOptions;
+// File: lib/data/api/base_api.dart
+
+import 'package:http/http.dart' as http; // Menggunakan paket http
+import 'dart:convert'; // Untuk mengelola JSON
+import 'dart:async'; // Untuk Future.timeout
+import 'dart:io'; // Untuk SocketException
+import 'package:pensiunku/config.dart'
+    show apiHost, defaultApiHeaders; // Menggunakan defaultApiHeaders
+
+// Kelas Exception kustom untuk menangani error HTTP, mirip DioException
+class HttpException implements Exception {
+  final int? statusCode;
+  final String message;
+  final dynamic responseBody; // Bisa berupa String atau Map
+  final Uri? requestUrl;
+
+  HttpException({
+    this.statusCode,
+    required this.message,
+    this.responseBody,
+    this.requestUrl,
+  });
+
+  @override
+  String toString() {
+    return 'HttpException: $message (Status: $statusCode, URL: $requestUrl)';
+  }
+}
 
 class BaseApi {
   static String tag = 'BaseApi';
-  static String? baseUrl = apiHost;
-  // Perbaikan: Gunakan Duration secara langsung
-  static Duration connectTimeout =
-      const Duration(milliseconds: 10000); // Waktu tunggu koneksi
-  static Duration receiveTimeout =
-      const Duration(milliseconds: 5000); // Waktu tunggu penerimaan data
+  static String? get baseUrl => apiHost;
+  static const Duration connectTimeout = Duration(seconds: 10);
+  static const Duration receiveTimeout = Duration(seconds: 5);
 
-  Dio _createDio() {
-    var dio = Dio();
-    // Perbaikan: Tetapkan Duration langsung ke dio.options
-    dio.options.connectTimeout = connectTimeout;
-    dio.options.receiveTimeout = receiveTimeout;
-    return dio;
-  }
-
-  bool _isCloudflareChallenge(Response response) {
-    // Memastikan response.data adalah String sebelum memanggil contains
+  bool _isCloudflareChallenge(http.Response response) {
     return response.statusCode == 200 &&
-        response.data != null &&
-        response.data is String && // Tambahkan cek tipe data
-        response.data.toString().contains('One moment, please...');
+        response.body.contains('One moment, please...');
   }
 
-  Future<Response> httpGet(
+  // --- PERUBAHAN: Memperbaiki parameter httpGet menjadi queryParameters ---
+  Future<http.Response> httpGet(
     String url, {
-    Options? options,
+    Map<String, String>? headers,
+    Map<String, String>? queryParameters, // Parameter untuk query string
     bool bypassCloudflare = true,
     int maxRetry = 3,
   }) async {
-    String fullUrl = '$baseUrl$url';
-    print('--- Permintaan HTTP GET Dijalankan ---');
-    print('URL Lengkap: $fullUrl');
-
-    Options finalOptions = options ?? defaultApiOptions;
-    if (finalOptions.headers != null) {
-      print('Opsi GET (Header): ${finalOptions.headers}');
+    Uri uri = Uri.parse('${baseUrl!}$url');
+    if (queryParameters != null && queryParameters.isNotEmpty) {
+      uri = uri.replace(queryParameters: queryParameters);
     }
 
-    Dio dio = _createDio();
-    Response? response;
-    DioException? lastError; // Perbaikan: Gunakan DioException untuk Dio 5+
+    print('--- Permintaan HTTP GET Dijalankan ---');
+    print('URL Lengkap: $uri');
 
-    // Buat opsi dasar untuk permintaan
-    final baseRequestOptions = RequestOptions(
-      path: fullUrl,
-      method: 'GET',
-      headers: finalOptions.headers,
-      contentType: finalOptions.contentType,
-      responseType: finalOptions.responseType,
-      // Perbaikan: Gunakan Duration langsung
-      connectTimeout: connectTimeout,
-      receiveTimeout: receiveTimeout,
-    );
+    Map<String, String> finalHeaders = {...defaultApiHeaders, ...?headers};
+    print('Opsi GET (Header): $finalHeaders');
+
+    http.Response? response;
+    HttpException? lastError;
 
     for (int percobaan = 1; percobaan <= maxRetry; percobaan++) {
       try {
         print('$tag: Percobaan $percobaan/$maxRetry');
-        response = await dio.get(fullUrl, options: finalOptions);
+        response = await http.get(uri, headers: finalHeaders).timeout(
+              connectTimeout + receiveTimeout,
+              onTimeout: () {
+                throw TimeoutException('Koneksi atau penerimaan data timeout');
+              },
+            );
 
-        if (bypassCloudflare && _isCloudflareChallenge(response)) {
-          print('$tag: Tantangan Cloudflare terdeteksi');
+        if (response.statusCode == 401) {
+          throw HttpException(
+            message: 'Sesi Anda telah berakhir. Mohon login kembali.',
+            statusCode: 401,
+            responseBody: response.body,
+            requestUrl: uri,
+          );
+        }
 
-          // Ambil cookie dari respons
-          // Pastikan headers['set-cookie'] tidak null dan memiliki elemen pertama
-          final String? cookie = response.headers['set-cookie']?.first;
-
+        if (response.headers.containsKey('cf-mitigated') &&
+            response.headers['cf-mitigated'] == 'challenge') {
+          print(
+              '$tag: Tantangan Cloudflare terdeteksi melalui header cf-mitigated.');
+        } else if (bypassCloudflare && _isCloudflareChallenge(response)) {
+          print('$tag: Tantangan Cloudflare terdeteksi (legacy check).');
+          final String? cookie = response.headers['set-cookie'];
           if (cookie != null) {
             print('$tag: Mendapatkan cookie Cloudflare: $cookie');
-
-            // Perbarui header dengan cookie
-            Map<String, dynamic> headerBaru =
-                Map.from(finalOptions.headers ?? {});
-            headerBaru['cookie'] = cookie;
-
-            // Buat opsi baru dengan cookie
-            finalOptions = finalOptions.copyWith(
-                headers:
-                    headerBaru); // Gunakan copyWith untuk mempertahankan properti lain
-
-            // Tunggu sebelum mencoba lagi
-            await Future.delayed(const Duration(seconds: 2));
-            continue; // Lanjutkan ke percobaan berikutnya
+            finalHeaders['cookie'] = cookie;
           }
+        } else {
+          print('--- Respons HTTP GET Diterima ---');
+          print('URL: $uri');
+          print('Status Kode: ${response.statusCode}');
+          print('--- Permintaan GET Selesai ---');
+          return response;
         }
 
-        // Jika bukan tantangan, kembalikan respons
-        print('--- Respons HTTP GET Diterima ---');
-        print('URL: $fullUrl');
-        print('Status Kode: ${response.statusCode}');
-        print('--- Permintaan GET Selesai ---');
-        return response;
-      } on DioException catch (e) {
-        // Perbaikan: Tangkap DioException
-        lastError = e;
-        print('!!! Error HTTP GET Ditemukan !!!');
-        print('URL Gagal: $fullUrl');
-        print('Tipe Error: ${e.type}');
-        print('Pesan Error: ${e.message}');
-
-        if (e.response != null) {
-          print('Status Kode: ${e.response?.statusCode}');
-          print('Data Error: ${e.response?.data}');
-        }
-
-        // Tunggu sebelum mencoba lagi
-        await Future.delayed(const Duration(seconds: 2));
-      } catch (e, stackTrace) {
-        // Tangkap error umum dan stack trace
-        print('!!! Kesalahan tidak diketahui saat HTTP GET !!!');
-        print('URL Gagal: $fullUrl');
-        print('Pesan Error: $e');
-        print('Stack Trace: $stackTrace'); // Cetak stack trace untuk debugging
-        lastError = DioException(
-          requestOptions: baseRequestOptions,
-          error: 'Kesalahan tidak diketahui: $e',
-          type: DioExceptionType
-              .unknown, // Perbaikan: Gunakan DioExceptionType.unknown
+        int delaySeconds = 1 << (percobaan - 1);
+        if (delaySeconds > 30) delaySeconds = 30;
+        print(
+            '$tag: Menunggu ${delaySeconds} detik sebelum percobaan berikutnya...');
+        await Future.delayed(Duration(seconds: delaySeconds));
+      } on TimeoutException catch (e) {
+        lastError = HttpException(
+          statusCode: null,
+          message: e.message ?? 'Permintaan HTTP timeout',
+          requestUrl: uri,
         );
-        await Future.delayed(const Duration(seconds: 2));
+        print('!!! Error HTTP GET Ditemukan (Timeout) !!!');
+        print('URL Gagal: $uri');
+        print('Pesan Error: ${e.message}');
+        int delaySeconds = 1 << (percobaan - 1);
+        if (delaySeconds > 30) delaySeconds = 30;
+        await Future.delayed(Duration(seconds: delaySeconds));
+      } on SocketException catch (e) {
+        lastError = HttpException(
+          statusCode: null,
+          message: 'Tidak ada koneksi internet. Tolong periksa Internet Anda.',
+          requestUrl: uri,
+        );
+        print('!!! Error HTTP GET Ditemukan (SocketException) !!!');
+        print('URL Gagal: $uri');
+        print('Pesan Error: ${e.message}');
+        int delaySeconds = 1 << (percobaan - 1);
+        if (delaySeconds > 30) delaySeconds = 30;
+        await Future.delayed(Duration(seconds: delaySeconds));
+      } on HttpException catch (e) {
+        lastError = e;
+        print('!!! Error HTTP GET Ditemukan (HttpException) !!!');
+        print('URL Gagal: $uri');
+        print('Pesan Error: ${e.message}');
+        if (e.responseBody != null) {
+          print('Respons Error: ${e.responseBody}');
+        }
+        if (e.statusCode == 401) {
+          rethrow;
+        }
+        int delaySeconds = 1 << (percobaan - 1);
+        if (delaySeconds > 30) delaySeconds = 30;
+        await Future.delayed(Duration(seconds: delaySeconds));
+      } catch (e, stackTrace) {
+        lastError = HttpException(
+          statusCode: response?.statusCode,
+          message: 'Kesalahan tidak diketahui: $e',
+          responseBody: response?.body,
+          requestUrl: uri,
+        );
+        print('!!! Error HTTP GET Ditemukan (Umum) !!!');
+        print('URL Gagal: $uri');
+        print('Pesan Error: $e');
+        print('Stack Trace: $stackTrace');
+
+        if (response != null) {
+          print('Status Kode: ${response.statusCode}');
+          print('Data Error: ${response.body}');
+        }
+        int delaySeconds = 1 << (percobaan - 1);
+        if (delaySeconds > 30) delaySeconds = 30;
+        await Future.delayed(Duration(seconds: delaySeconds));
       }
     }
 
     print('!!! Semua percobaan gagal !!!');
-    print('URL Gagal: $fullUrl');
+    print('URL Gagal: $uri');
 
-    // Tangani error dengan benar
     if (lastError != null) {
       throw lastError;
     } else {
-      // Ini seharusnya tidak tercapai jika lastError selalu diatur, tapi sebagai fallback
-      throw DioException(
-        // Perbaikan: Gunakan DioException
-        requestOptions: baseRequestOptions,
-        error: 'Kesalahan tidak diketahui setelah $maxRetry percobaan',
-        type: DioExceptionType
-            .unknown, // Perbaikan: Gunakan DioExceptionType.unknown
+      throw HttpException(
+        message: 'Kesalahan tidak diketahui setelah $maxRetry percobaan',
+        requestUrl: uri,
       );
     }
   }
+  // --- AKHIR PERUBAHAN ---
 
-  // Metode HTTP POST
-  Future<Response> httpPost(
+  // --- PERUBAHAN: Memperbaiki parameter httpPost menjadi data dan queryParameters ---
+  Future<http.Response> httpPost(
     String url, {
-    dynamic data,
-    Options? options,
+    dynamic data, // Parameter untuk request body
+    Map<String, String>? headers,
+    Map<String, String>? queryParameters, // Parameter untuk query string
   }) async {
-    String fullUrl = '$baseUrl$url';
+    Uri uri = Uri.parse('${baseUrl!}$url');
+    if (queryParameters != null && queryParameters.isNotEmpty) {
+      uri = uri.replace(queryParameters: queryParameters);
+    }
+
     print('--- Permintaan HTTP POST Dijalankan ---');
-    print('URL Lengkap: $fullUrl');
+    print('URL Lengkap: $uri');
     print('Data POST: $data');
 
-    final baseRequestOptions = RequestOptions(
-      path: fullUrl,
-      method: 'POST',
-      headers: options?.headers,
-      contentType: options?.contentType,
-      responseType: options?.responseType,
-      // Perbaikan: Gunakan Duration langsung
-      connectTimeout: connectTimeout,
-      receiveTimeout: receiveTimeout,
-    );
+    Map<String, String> finalHeaders = {...defaultApiHeaders, ...?headers};
+    print('Opsi POST (Header): $finalHeaders');
 
     try {
-      var dio = _createDio();
-      Response response = await dio.post(fullUrl, data: data, options: options);
+      final response = await http
+          .post(
+            uri,
+            headers: finalHeaders,
+            body: data != null ? json.encode(data) : null,
+          )
+          .timeout(
+            connectTimeout + receiveTimeout,
+            onTimeout: () {
+              throw TimeoutException('Koneksi atau penerimaan data timeout');
+            },
+          );
+
+      if (response.statusCode == 401) {
+        throw HttpException(
+          message: 'Sesi Anda telah berakhir. Mohon login kembali.',
+          statusCode: 401,
+          responseBody: response.body,
+          requestUrl: uri,
+        );
+      }
+
       print('--- Respons HTTP POST Diterima ---');
-      print('URL: $fullUrl');
+      print('URL: $uri');
       print('Status Kode: ${response.statusCode}');
       print('--- Permintaan POST Selesai ---');
       return response;
-    } on DioException catch (e) {
-      // Perbaikan: Tangkap DioException
-      print('!!! Error HTTP POST Ditemukan !!!');
-      print('URL Gagal: $fullUrl');
-      print('Tipe Error: ${e.type}');
-      print('Pesan Error: ${e.message}');
-      if (e.response != null) {
-        print('Status Kode: ${e.response?.statusCode}');
-        print('Data Error: ${e.response?.data}');
-      }
+    } on TimeoutException catch (e) {
+      throw HttpException(
+        statusCode: null,
+        message: e.message ?? 'Permintaan HTTP timeout',
+        requestUrl: uri,
+      );
+    } on SocketException catch (e) {
+      throw HttpException(
+        statusCode: null,
+        message: 'Tidak ada koneksi internet. Tolong periksa Internet Anda.',
+        requestUrl: uri,
+      );
+    } on HttpException catch (e) {
       rethrow;
     } catch (e, stackTrace) {
-      // Tangkap error umum dan stack trace
       print('!!! Kesalahan POST tidak diketahui !!!');
-      print('URL Gagal: $fullUrl');
+      print('URL Gagal: $uri');
       print('Pesan Error: $e');
       print('Stack Trace: $stackTrace');
-      throw DioException(
-        // Perbaikan: Gunakan DioException
-        requestOptions: baseRequestOptions,
-        error: 'Kesalahan POST tidak diketahui: $e',
-        type: DioExceptionType
-            .unknown, // Perbaikan: Gunakan DioExceptionType.unknown
+      throw HttpException(
+        message: 'Kesalahan POST tidak diketahui: $e',
+        requestUrl: uri,
       );
     }
   }
+  // --- AKHIR PERUBAHAN ---
 
-  // Metode HTTP DELETE
-  Future<Response> httpDelete(
+  // --- PERUBAHAN: Memperbaiki parameter httpDelete menjadi data dan queryParameters ---
+  Future<http.Response> httpDelete(
     String url, {
-    Options? options,
+    dynamic data, // Parameter untuk request body
+    Map<String, String>? headers,
+    Map<String, String>? queryParameters, // Parameter untuk query string
   }) async {
-    String fullUrl = '$baseUrl$url';
-    print('--- Permintaan HTTP DELETE Dijalankan ---');
-    print('URL Lengkap: $fullUrl');
+    Uri uri = Uri.parse('${baseUrl!}$url');
+    if (queryParameters != null && queryParameters.isNotEmpty) {
+      uri = uri.replace(queryParameters: queryParameters);
+    }
 
-    final baseRequestOptions = RequestOptions(
-      path: fullUrl,
-      method: 'DELETE',
-      headers: options?.headers,
-      contentType: options?.contentType,
-      responseType: options?.responseType,
-      // Perbaikan: Gunakan Duration langsung
-      connectTimeout: connectTimeout,
-      receiveTimeout: receiveTimeout,
-    );
+    print('--- Permintaan HTTP DELETE Dijalankan ---');
+    print('URL Lengkap: $uri');
+
+    Map<String, String> finalHeaders = {...defaultApiHeaders, ...?headers};
+    print('Opsi DELETE (Header): $finalHeaders');
 
     try {
-      var dio = _createDio();
-      Response response = await dio.delete(fullUrl, options: options);
+      final response = await http
+          .delete(
+            uri,
+            headers: finalHeaders,
+            body: data != null ? json.encode(data) : null,
+          )
+          .timeout(
+            connectTimeout + receiveTimeout,
+            onTimeout: () {
+              throw TimeoutException('Koneksi atau penerimaan data timeout');
+            },
+          );
+
+      if (response.statusCode == 401) {
+        throw HttpException(
+          message: 'Sesi Anda telah berakhir. Mohon login kembali.',
+          statusCode: 401,
+          responseBody: response.body,
+          requestUrl: uri,
+        );
+      }
+
       print('--- Respons HTTP DELETE Diterima ---');
-      print('URL: $fullUrl');
+      print('URL: $uri');
       print('Status Kode: ${response.statusCode}');
       print('--- Permintaan DELETE Selesai ---');
       return response;
-    } on DioException catch (e) {
-      // Perbaikan: Tangkap DioException
-      print('!!! Error HTTP DELETE Ditemukan !!!');
-      print('URL Gagal: $fullUrl');
-      print('Tipe Error: ${e.type}');
-      print('Pesan Error: ${e.message}');
-      if (e.response != null) {
-        print('Status Kode: ${e.response?.statusCode}');
-        print('Data Error: ${e.response?.data}');
-      }
+    } on TimeoutException catch (e) {
+      throw HttpException(
+        statusCode: null,
+        message: e.message ?? 'Permintaan HTTP timeout',
+        requestUrl: uri,
+      );
+    } on SocketException catch (e) {
+      throw HttpException(
+        statusCode: null,
+        message: 'Tidak ada koneksi internet. Tolong periksa Internet Anda.',
+        requestUrl: uri,
+      );
+    } on HttpException catch (e) {
       rethrow;
     } catch (e, stackTrace) {
-      // Tangkap error umum dan stack trace
       print('!!! Kesalahan DELETE tidak diketahui !!!');
-      print('URL Gagal: $fullUrl');
+      print('URL Gagal: $uri');
       print('Pesan Error: $e');
       print('Stack Trace: $stackTrace');
-      throw DioException(
-        // Perbaikan: Gunakan DioException
-        requestOptions: baseRequestOptions,
-        error: 'Kesalahan DELETE tidak diketahui: $e',
-        type: DioExceptionType
-            .unknown, // Perbaikan: Gunakan DioExceptionType.unknown
+      throw HttpException(
+        message: 'Kesalahan DELETE tidak diketahui: $e',
+        requestUrl: uri,
       );
     }
   }
+  // --- AKHIR PERUBAHAN ---
 
-  // Metode HTTP PUT
-  Future<Response> httpPut(
+  // --- PERUBAHAN: Memperbaiki parameter httpPut menjadi data dan queryParameters ---
+  Future<http.Response> httpPut(
     String url, {
-    dynamic data,
-    Options? options,
+    dynamic data, // Parameter untuk request body
+    Map<String, String>? headers,
+    Map<String, String>? queryParameters, // Parameter untuk query string
   }) async {
-    String fullUrl = '$baseUrl$url';
+    Uri uri = Uri.parse('${baseUrl!}$url');
+    if (queryParameters != null && queryParameters.isNotEmpty) {
+      uri = uri.replace(queryParameters: queryParameters);
+    }
+
     print('--- Permintaan HTTP PUT Dijalankan ---');
-    print('URL Lengkap: $fullUrl');
+    print('URL Lengkap: $uri');
     print('Data PUT: $data');
 
-    final baseRequestOptions = RequestOptions(
-      path: fullUrl,
-      method: 'PUT',
-      headers: options?.headers,
-      contentType: options?.contentType,
-      responseType: options?.responseType,
-      // Perbaikan: Gunakan Duration langsung
-      connectTimeout: connectTimeout,
-      receiveTimeout: receiveTimeout,
-    );
+    Map<String, String> finalHeaders = {...defaultApiHeaders, ...?headers};
+    print('Opsi PUT (Header): $finalHeaders');
 
     try {
-      var dio = _createDio();
-      Response response = await dio.put(fullUrl, data: data, options: options);
+      final response = await http
+          .put(
+            uri,
+            headers: finalHeaders,
+            body: data != null ? json.encode(data) : null,
+          )
+          .timeout(
+            connectTimeout + receiveTimeout,
+            onTimeout: () {
+              throw TimeoutException('Koneksi atau penerimaan data timeout');
+            },
+          );
+
+      if (response.statusCode == 401) {
+        throw HttpException(
+          message: 'Sesi Anda telah berakhir. Mohon login kembali.',
+          statusCode: 401,
+          responseBody: response.body,
+          requestUrl: uri,
+        );
+      }
+
       print('--- Respons HTTP PUT Diterima ---');
-      print('URL: $fullUrl');
+      print('URL: $uri');
       print('Status Kode: ${response.statusCode}');
       print('--- Permintaan PUT Selesai ---');
       return response;
-    } on DioException catch (e) {
-      // Perbaikan: Tangkap DioException
-      print('!!! Error HTTP PUT Ditemukan !!!');
-      print('URL Gagal: $fullUrl');
-      print('Tipe Error: ${e.type}');
-      print('Pesan Error: ${e.message}');
-      if (e.response != null) {
-        print('Status Kode: ${e.response?.statusCode}');
-        print('Data Error: ${e.response?.data}');
-      }
+    } on TimeoutException catch (e) {
+      throw HttpException(
+        statusCode: null,
+        message: e.message ?? 'Permintaan HTTP timeout',
+        requestUrl: uri,
+      );
+    } on SocketException catch (e) {
+      throw HttpException(
+        statusCode: null,
+        message: 'Tidak ada koneksi internet. Tolong periksa Internet Anda.',
+        requestUrl: uri,
+      );
+    } on HttpException catch (e) {
       rethrow;
     } catch (e, stackTrace) {
-      // Tangkap error umum dan stack trace
       print('!!! Kesalahan PUT tidak diketahui !!!');
-      print('URL Gagal: $fullUrl');
+      print('URL Gagal: $uri');
       print('Pesan Error: $e');
       print('Stack Trace: $stackTrace');
-      throw DioException(
-        // Perbaikan: Gunakan DioException
-        requestOptions: baseRequestOptions,
-        error: 'Kesalahan PUT tidak diketahui: $e',
-        type: DioExceptionType
-            .unknown, // Perbaikan: Gunakan DioExceptionType.unknown
+      throw HttpException(
+        message: 'Kesalahan PUT tidak diketahui: $e',
+        requestUrl: uri,
       );
     }
   }
+  // --- AKHIR PERUBAHAN ---
 }

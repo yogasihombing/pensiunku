@@ -1,20 +1,26 @@
 class ForumFotoModel {
   String? path;
+  // --- PERUBAHAN: Menambahkan field 'type' dan memastikan parsing aman ---
+  int? type;
 
   ForumFotoModel({
     required this.path,
+    this.type, // type bisa null jika tidak ada di JSON
   });
 
   factory ForumFotoModel.fromJson(Map<String, dynamic> json) {
-    // Mengubah ke factory constructor
     return ForumFotoModel(
-      path: json['path']?.toString(), // Pastikan diubah ke String
+      path: json['path']?.toString(),
+      // --- PERUBAHAN: Parsing 'type' dengan aman (handle 'tipe' atau 'type' dan String ke int) ---
+      type: json['type'] is String ? int.tryParse(json['type']) : json['type'],
+      // --- AKHIR PERUBAHAN ---
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'path': path,
+      'type': type,
     };
   }
 }
@@ -29,10 +35,9 @@ class ForumkomentarModel {
   });
 
   factory ForumkomentarModel.fromJson(Map<String, dynamic> json) {
-    // Mengubah ke factory constructor
     return ForumkomentarModel(
-      content: json['content']?.toString(), // Pastikan diubah ke String
-      nama: json['nama']?.toString(), // Pastikan diubah ke String
+      content: json['content']?.toString(),
+      nama: json['nama']?.toString(),
     );
   }
 
@@ -66,7 +71,6 @@ class ForumDetailModel {
   });
 
   factory ForumDetailModel.fromJson(Map<String, dynamic> json) {
-    // Mengubah ke factory constructor
     // Perubahan: Parsing id_forum dengan aman
     int? parsedIdForum;
     final idForumValue = json['id_forum'];
@@ -101,14 +105,13 @@ class ForumDetailModel {
       parsedTotalLike = int.tryParse(totalLikeValue);
     }
 
-    // Perubahan: Handle jika 'foto' atau 'comment' mungkin null atau bukan List
     List<dynamic> fotoJson = json['foto'] is List ? json['foto'] : [];
     List<dynamic> komentarJson = json['comment'] is List ? json['comment'] : [];
 
     return ForumDetailModel(
       id_forum: parsedIdForum,
-      nama: json['nama']?.toString(), // Pastikan diubah ke String
-      content: json['content']?.toString(), // Pastikan diubah ke String
+      nama: json['nama']?.toString(),
+      content: json['content']?.toString(),
       created_at: parsedCreatedAt,
       total_comment: parsedTotalComment,
       total_like: parsedTotalLike,
@@ -123,14 +126,12 @@ class ForumDetailModel {
     return {
       'id_forum': id_forum,
       'nama': nama,
-      'created_at': created_at?.toIso8601String(), // Ubah ke ISO 8601 string
+      'created_at': created_at?.toIso8601String(),
       'content': content,
       'total_comment': total_comment,
       'total_like': total_like,
-      'comment': comment?.map((comment) => comment.toJson()).toList() ??
-          [], // Handle null list
-      'foto':
-          foto?.map((foto) => foto.toJson()).toList() ?? [], // Handle null list
+      'comment': comment?.map((comment) => comment.toJson()).toList() ?? [],
+      'foto': foto?.map((foto) => foto.toJson()).toList() ?? [],
     };
   }
 }
@@ -144,8 +145,7 @@ class ForumModel {
   String? content;
   int? total_comment;
   int? total_like;
-  List<ForumkomentarModel>?
-      comment; // Field ini tidak ada di ForumModel.fromJson asli Anda.
+  List<ForumkomentarModel>? comment;
   List<ForumFotoModel>? foto;
 
   ForumModel({
@@ -157,12 +157,11 @@ class ForumModel {
     required this.created_at,
     this.total_comment,
     this.total_like,
-    this.comment, // Perlu ditambahkan jika ForumModel memang memiliki comment
+    this.comment,
     this.foto,
   });
 
   factory ForumModel.fromJson(Map<String, dynamic> json) {
-    // Mengubah ke factory constructor
     // Perubahan: Parsing id_forum dengan aman
     int? parsedIdForum;
     final idForumValue = json['id_forum'];
@@ -206,22 +205,19 @@ class ForumModel {
       parsedTotalLike = int.tryParse(totalLikeValue);
     }
 
-    // Perubahan: Handle jika 'foto' atau 'comment' mungkin null atau bukan List
-    // Catatan: ForumModel asli Anda tidak memiliki 'comment' di fromJson-nya.
-    // Jika ada, tambahkan logika parsing untuk 'comment' di sini.
     List<dynamic> fotoJson = json['foto'] is List ? json['foto'] : [];
-    // List<dynamic> komentarJson = json['comment'] is List ? json['comment'] : []; // Jika ada 'comment' di JSON
+    List<dynamic> komentarJson = json['comment'] is List ? json['comment'] : [];
 
     return ForumModel(
       id_forum: parsedIdForum,
       id_user: parsedIdUser,
-      phone: json['phone']?.toString(), // Pastikan diubah ke String
-      nama: json['nama']?.toString(), // Pastikan diubah ke String
-      content: json['content']?.toString(), // Pastikan diubah ke String
+      phone: json['phone']?.toString(),
+      nama: json['nama']?.toString(),
+      content: json['content']?.toString(),
       created_at: parsedCreatedAt,
       total_comment: parsedTotalComment,
       total_like: parsedTotalLike,
-      // comment: komentarJson.map((komentar) => ForumkomentarModel.fromJson(komentar)).toList(), // Aktifkan jika comment ada di JSON
+      comment: komentarJson.map((komentar) => ForumkomentarModel.fromJson(komentar)).toList(),
       foto: fotoJson.map((foto) => ForumFotoModel.fromJson(foto)).toList(),
     );
   }
@@ -232,11 +228,11 @@ class ForumModel {
       'id_user': id_user,
       'phone': phone,
       'nama': nama,
-      'created_at': created_at?.toIso8601String(), // Ubah ke ISO 8601 string
+      'created_at': created_at?.toIso8601String(),
       'content': content,
       'forum_comment_count': total_comment,
       'total_like': total_like,
-      // 'comment': comment?.map((comment) => comment.toJson()).toList() ?? [], // Aktifkan jika comment ada di ForumModel
+      'comment': comment?.map((comment) => comment.toJson()).toList() ?? [],
       'foto': foto?.map((foto) => foto.toJson()).toList() ?? [],
     };
   }

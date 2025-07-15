@@ -43,7 +43,7 @@ dependencies:
   google_ml_kit: ^0.7.3 # Keeping current version due to large breaking changes in newer versions
   google_mlkit_face_detection: ^0.2.0 # Keeping current version due to large breaking changes in newer versions
   google_mlkit_text_recognition: ^0.5.0 # Keeping current version due to large breaking changes in newer versions
-  dio: ^5.8.0+1
+  # dio: ^5.8.0+1 balik ke versi http !
   sqflite: ^2.0.0+4
   image: ^3.0.2
   image_gallery_saver: ^2.0.1 # Keeping current version
@@ -64,6 +64,7 @@ dependencies:
   connectivity_plus: ^5.0.2 #untuk memeriksa status koneksi
   lottie: ^2.3.2
   http: ^0.13.1
+  showcaseview: ^4.0.1
 
 
   # Firebase
@@ -89,6 +90,7 @@ dependencies:
   webview_flutter_android: ^2.10.4 # Kept explicitly for webview_flutter 3.x.x
   cookie_jar: ^4.0.8
   dio_cookie_manager: ^3.2.0
+  flutter_secure_storage: ^8.1.0
 
 dev_dependencies:
   flutter_test:

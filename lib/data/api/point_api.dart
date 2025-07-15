@@ -1,36 +1,50 @@
-import 'package:dio/dio.dart';
-import 'package:pensiunku/data/api/base_api.dart';
-import 'package:pensiunku/model/point_model.dart';
+import 'package:http/http.dart' as http; // Menggunakan paket http
+import 'dart:convert'; // Diperlukan untuk json.encode pada POST requests
+import 'package:pensiunku/model/point_model.dart'; // Pastikan path ini benar untuk PriceModel dan TopUpModel
 import 'package:pensiunku/util/api_util.dart';
+import 'package:pensiunku/config.dart'; // Untuk apiHost
 
-class PointApi extends BaseApi {
-  Future<Response> getPoint(String token) {
-    return httpGet(
-      '/point',
-      options: ApiUtil.getTokenOptions(token),
+class PointApi {
+  final String _baseUrl;
+
+  // Inisialisasi _baseUrl dari config.dart, mirip EventApi
+  PointApi() : _baseUrl = apiHost;
+
+  /// Mendapatkan data poin pengguna
+  Future<http.Response> getPoint(String token) async {
+    final uri = Uri.parse('$_baseUrl/point');
+    return await http.get(
+      uri,
+      headers: ApiUtil.getTokenHeaders(token), // Menggunakan getTokenHeaders
     );
   }
 
-  Future<Response> getPriceList(String token, PriceModel price) {
-    return httpPost(
-      '/point/price-list',
-      data: price.toJson(),
-      options: ApiUtil.getTokenOptions(token),
+  /// Mendapatkan daftar harga (price list)
+  Future<http.Response> getPriceList(String token, PriceModel price) async {
+    final uri = Uri.parse('$_baseUrl/point/price-list');
+    return await http.post(
+      uri,
+      headers: ApiUtil.getTokenHeaders(token), // Menggunakan getTokenHeaders
+      body: json.encode(price.toJson()), // Mengubah data ke JSON string
     );
   }
 
-  Future<Response> pushTopUp(String token, TopUpModel topUpModel) {
-    return httpPost(
-      '/point/topup',
-      data: topUpModel.toJson(),
-      options: ApiUtil.getTokenOptions(token),
+  /// Melakukan top-up poin
+  Future<http.Response> pushTopUp(String token, TopUpModel topUpModel) async {
+    final uri = Uri.parse('$_baseUrl/point/topup');
+    return await http.post(
+      uri,
+      headers: ApiUtil.getTokenHeaders(token), // Menggunakan getTokenHeaders
+      body: json.encode(topUpModel.toJson()), // Mengubah data ke JSON string
     );
   }
 
-  Future<Response> getPointHistory(String token) {
-    return httpGet(
-      '/point/history',
-      options: ApiUtil.getTokenOptions(token),
+  /// Mendapatkan riwayat poin
+  Future<http.Response> getPointHistory(String token) async {
+    final uri = Uri.parse('$_baseUrl/point/history');
+    return await http.get(
+      uri,
+      headers: ApiUtil.getTokenHeaders(token), // Menggunakan getTokenHeaders
     );
   }
 }

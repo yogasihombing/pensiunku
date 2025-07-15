@@ -514,7 +514,7 @@ class _PengajuanOrangLainScreenState extends State<PengajuanOrangLainScreen> {
             child: Form(
               key: _formKey,
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+                // crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
                   if (id != null) // ###
                     Text('ID Pengguna: $id'), // Tampilkan ID User
@@ -609,7 +609,7 @@ class _PengajuanOrangLainScreenState extends State<PengajuanOrangLainScreen> {
                             text: namaFotoKTP ?? '',
                           ),
                           decoration: InputDecoration(
-                            labelText: 'KTP',
+                            labelText: 'Upload Foto KTP',
                             border: OutlineInputBorder(),
                           ),
                           readOnly: true,
@@ -651,7 +651,7 @@ class _PengajuanOrangLainScreenState extends State<PengajuanOrangLainScreen> {
                           controller:
                               TextEditingController(text: namaFotoNPWP ?? ''),
                           decoration: InputDecoration(
-                            labelText: 'NPWP',
+                            labelText: 'Upload Foto NPWP',
                             border: OutlineInputBorder(),
                           ),
                           readOnly: true,
@@ -692,7 +692,7 @@ class _PengajuanOrangLainScreenState extends State<PengajuanOrangLainScreen> {
                           controller:
                               TextEditingController(text: namaFotoKarip ?? ''),
                           decoration: InputDecoration(
-                            labelText: 'SK Pensiun/SK Aktif/Karip/Karpeg',
+                            labelText: 'UploadSK Pensiun/SK Aktif/Karip/Karpeg',
                             border: OutlineInputBorder(),
                           ),
                           readOnly: true,
@@ -730,7 +730,7 @@ class _PengajuanOrangLainScreenState extends State<PengajuanOrangLainScreen> {
                     onPressed: _submitPengajuanOrangLain,
                     style: ElevatedButton.styleFrom(
                         backgroundColor: Color(0xFF017964)),
-                    child: Text('Ajukan Orang Lain Sekarang'),
+                    child: Text('Kirim Berkas Sekarang'),
                   ),
                 ],
               ),

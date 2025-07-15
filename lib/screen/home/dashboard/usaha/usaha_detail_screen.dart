@@ -26,15 +26,10 @@ class UsahaDetailScreen extends StatefulWidget {
 }
 
 class _UsahaDetailScreenState extends State<UsahaDetailScreen> {
-  ScrollController scrollController = new ScrollController();
+  ScrollController scrollController = ScrollController();
   DetailUsaha get usahaDetailModel => widget.usahaDetailModel;
 
-  final dataKey = new GlobalKey();
-
-  @override
-  void initState() {
-    super.initState();
-  }
+  final dataKey = GlobalKey();
 
   @override
   Widget build(BuildContext context) {
@@ -50,6 +45,21 @@ class _UsahaDetailScreenState extends State<UsahaDetailScreen> {
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.white,
+              Colors.white,
+              Colors.white,
+              Color(0xFFDCE293),
+            ],
+            stops: [0.25, 0.5, 0.75, 1.0],
+          ),
+        ),
         child: Stack(
           children: [
             Container(
@@ -65,36 +75,21 @@ class _UsahaDetailScreenState extends State<UsahaDetailScreen> {
                     background: Stack(
                       children: [
                         Positioned.fill(
-                          child: Container(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  Color.fromARGB(255, 255, 255, 255),
-                                  Color.fromARGB(255, 255, 255, 255),
-                                ],
-                                begin: Alignment.topRight,
-                                end: Alignment.bottomLeft,
-                              ),
+                          child: Container(color: Colors.transparent),
+                        ),
+                        // CHANGED: pakai CachedNetworkImage dengan placeholder & errorWidget
+                        Positioned.fill(
+                          child: CachedNetworkImage(
+                            imageUrl: usahaDetailModel.banner,
+                            width: screenSize.width,
+                            height: sliverAppBarExpandedHeight,
+                            fit: BoxFit.cover,
+                            placeholder: (_, __) => Center(
+                              child: CircularProgressIndicator(),
                             ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Expanded(
-                                  child: InkWell(
-                                    child: Stack(
-                                      children: [
-                                        Container(
-                                          width: screenSize.width,
-                                          child: Image.network(
-                                              usahaDetailModel.banner,
-                                              fit: BoxFit.fill),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ],
+                            errorWidget: (_, __, ___) => Container(
+                              color: Colors.grey[300],
+                              child: Icon(Icons.broken_image, size: 60, color: Colors.grey[600]),
                             ),
                           ),
                         ),
@@ -103,193 +98,153 @@ class _UsahaDetailScreenState extends State<UsahaDetailScreen> {
                   ),
                 ),
                 SliverToBoxAdapter(
-                  child: Stack(
-                    children: [
-                      Positioned(
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Color(0xfff2f2f2),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.only(
-                              top: 0.0,
-                              bottom: 12.0,
+                  child: Container(
+                    color: Colors.transparent,
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 12.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Nama Usaha
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 32.0,
+                              vertical: 16.0,
                             ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                            child: Row(
                               children: [
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 32.0,
-                                    vertical: 16.0,
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Expanded(
-                                        child: Align(
-                                          alignment: Alignment.center,
-                                          child: Text(
-                                            usahaDetailModel.nama,
-                                            style: theme.textTheme.headline4
-                                                ?.copyWith(
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.black,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 32.0,
-                                    vertical: 16.0,
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                            usahaDetailModel.description,
-                                            style: theme.textTheme.subtitle1),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 32.0,
-                                    vertical: 16.0,
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          'Galeri',
-                                          style: theme.textTheme.headline6
-                                              ?.copyWith(
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                Column(
-                                  children: [
-                                    Container(
-                                      height: articleCarouselHeight,
-                                      child: ListView(
-                                        scrollDirection: Axis.horizontal,
-                                        children: [
-                                          ...usahaDetailModel.photo_gallery
-                                              .map((franchise) {
-                                            int indexFoto = usahaDetailModel
-                                                .photo_gallery
-                                                .indexOf(franchise);
-                                            List<String> fotos =
-                                                usahaDetailModel.photo_gallery
-                                                    .map((photo) {
-                                              return photo.path.toString();
-                                            }).toList();
-                                            return Builder(
-                                              builder: (BuildContext context) {
-                                                return Material(
-                                                  color: Colors.transparent,
-                                                  child: InkWell(
-                                                    onTap: () {
-                                                      Navigator.of(context)
-                                                          .pushNamed(
-                                                        GalleryFullScreen
-                                                            .ROUTE_NAME,
-                                                        arguments:
-                                                            GalleryFullScreenArguments(
-                                                                images: fotos,
-                                                                indexPage:
-                                                                    indexFoto),
-                                                      );
-                                                    },
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            8.0),
-                                                    child: Container(
-                                                      margin: const EdgeInsets
-                                                              .symmetric(
-                                                          horizontal: 4.0),
-                                                      width: cardWidthLogo,
-                                                      child: Column(
-                                                        crossAxisAlignment:
-                                                            CrossAxisAlignment
-                                                                .start,
-                                                        children: [
-                                                          Container(
-                                                            height:
-                                                                cardWidthLogo,
-                                                            child: ClipRRect(
-                                                              borderRadius:
-                                                                  BorderRadius
-                                                                      .circular(
-                                                                          8.0),
-                                                              child: Container(
-                                                                width: MediaQuery.of(
-                                                                        context)
-                                                                    .size
-                                                                    .width,
-                                                                decoration:
-                                                                    BoxDecoration(
-                                                                  color: theme
-                                                                      .primaryColor
-                                                                      .withOpacity(
-                                                                          0.5),
-                                                                  image:
-                                                                      DecorationImage(
-                                                                    image: CachedNetworkImageProvider(
-                                                                        franchise
-                                                                            .path),
-                                                                    fit: BoxFit
-                                                                        .cover,
-                                                                  ),
-                                                                ),
-                                                              ),
-                                                            ),
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    ),
-                                                  ),
-                                                );
-                                              },
-                                            );
-                                          }).toList(),
-                                        ],
+                                Expanded(
+                                  child: Align(
+                                    alignment: Alignment.center,
+                                    child: Text(
+                                      usahaDetailModel.nama,
+                                      style: theme.textTheme.headline4
+                                          ?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.black,
                                       ),
                                     ),
-                                  ],
-                                ),
-                                InkWell(
-                                  splashColor: Colors.black12,
-                                  onTap: () {
-                                    {
-                                      UrlUtil.launchURL(
-                                          'https://wa.me/+6281220357098?text=Hallo%20Pensiunku%0ASaya%20adalah%20Pensiun%20Hebat%20yang%20tetap%20ingin%20produktif%20di%20masa%20pensiun%0ASaya%20ingin%20konsultasi%20mengenai%20Franchise%20${usahaDetailModel.nama}');
-                                    }
-                                  },
-                                  child: Container(
-                                    padding: EdgeInsets.only(
-                                      left: 100.0,
-                                      right: 100.0,
-                                    ),
-                                    child: Image.asset(
-                                        'assets/dashboard_screen/button_wa.png'),
                                   ),
                                 ),
-                                SizedBox(height: 150.0)
                               ],
                             ),
                           ),
-                        ),
+                          // Deskripsi
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 32.0,
+                              vertical: 16.0,
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    usahaDetailModel.description,
+                                    style: theme.textTheme.subtitle1,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          // Judul Galeri
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 32.0,
+                              vertical: 16.0,
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    'Galeri',
+                                    style: theme.textTheme.headline6
+                                        ?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          // Carousel Foto
+                          SizedBox(
+                            height: articleCarouselHeight,
+                            child: ListView(
+                              scrollDirection: Axis.horizontal,
+                              children: usahaDetailModel.photo_gallery
+                                  .map((franchise) {
+                                int indexFoto = usahaDetailModel
+                                    .photo_gallery
+                                    .indexOf(franchise);
+                                List<String> fotos = usahaDetailModel
+                                    .photo_gallery
+                                    .map((photo) => photo.path.toString())
+                                    .toList();
+                                return Material(
+                                  color: Colors.transparent,
+                                  child: InkWell(
+                                    onTap: () {
+                                      Navigator.of(context).pushNamed(
+                                        GalleryFullScreen.ROUTE_NAME,
+                                        arguments:
+                                            GalleryFullScreenArguments(
+                                          images: fotos,
+                                          indexPage: indexFoto,
+                                        ),
+                                      );
+                                    },
+                                    borderRadius:
+                                        BorderRadius.circular(8.0),
+                                    child: Container(
+                                      margin: const EdgeInsets.symmetric(
+                                          horizontal: 4.0),
+                                      width: cardWidthLogo,
+                                      child: ClipRRect(
+                                        borderRadius:
+                                            BorderRadius.circular(8.0),
+                                        // CHANGED: juga gunakan CachedNetworkImage di carousel
+                                        child: CachedNetworkImage(
+                                          imageUrl: franchise.path,
+                                          fit: BoxFit.cover,
+                                          placeholder: (_, __) =>
+                                              Center(child: CircularProgressIndicator()),
+                                          errorWidget: (_, __, ___) => Container(
+                                            color: Colors.grey[300],
+                                            child: Icon(Icons.broken_image,
+                                                color: Colors.grey[600]),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                          ),
+                          // Tombol WA
+                          Center(
+                            child: InkWell(
+                              splashColor: Colors.black12,
+                              onTap: () {
+                                UrlUtil.launchURL(
+                                  'https://wa.me/+6281220357098?text=Hallo%20Pensiunku%0ASaya%20adalah%20Pensiun%20Hebat%20yang%20tetap%20ingin%20produktif%20di%20masa%20pensiun%0ASaya%20ingin%20konsultasi%20mengenai%20Franchise%20${usahaDetailModel.nama}',
+                                );
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16.0,
+                                ),
+                                child: Image.asset(
+                                  'assets/dashboard_screen/button_wa.png',
+                                  width: 200,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 150.0),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
               ],

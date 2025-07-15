@@ -1,12 +1,12 @@
-import 'package:dio/dio.dart';
-import 'package:pensiunku/data/api/base_api.dart';
-import 'package:pensiunku/util/api_util.dart';
+import 'package:http/http.dart' as http; // Menggunakan paket http
+import 'package:pensiunku/data/api/base_api.dart'; // Pastikan path ini benar ke BaseApi yang sudah diubah
+import 'package:pensiunku/util/api_util.dart'; // Import ApiUtil
 
 class MonitoringApi extends BaseApi {
-  Future<Response> getMonitoring(String token) {
+  Future<http.Response> getMonitoring(String token) { // Mengubah tipe kembalian menjadi http.Response
     return httpGet(
       '/pengajuan/monitoring',
-      options: ApiUtil.getTokenOptions(token),
+      headers: ApiUtil.getTokenHeaders(token), // Menggunakan headers bukan options
     );
   }
 }

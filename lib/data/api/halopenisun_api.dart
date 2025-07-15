@@ -1,28 +1,55 @@
-import 'package:dio/dio.dart';
+
+import 'package:http/http.dart' as http;
 import 'package:pensiunku/data/api/base_api.dart';
 import 'package:pensiunku/util/api_util.dart';
 
+// --- PERUBAHAN: HalopensiunApi sekarang extends BaseApi ---
 class HalopensiunApi extends BaseApi {
-  Future<Response> getAll(String token) {
-    return httpGet('/halopensiuns', options: ApiUtil.getTokenOptions(token));
-  }
+  // final String _baseUrl; // Tidak diperlukan lagi
 
-  Future<Response> getAllByCategory(int categoryId) {
-    return httpGet('/halopensiun/cid/$categoryId');
-  }
+  // HalopensiunApi() : _baseUrl = apiHost; // Tidak diperlukan lagi
 
-  Future<Response> getAllByKeyword(String keyword) {
-    return httpGet('/halopensiun/search/$keyword');
+  /// Mendapatkan semua data halopensiun (butuh token)
+  // --- PERUBAHAN: Menggunakan httpGet dari BaseApi ---
+  Future<http.Response> getAll(String token) async {
+    return httpGet(
+      '/halopensiuns',
+      headers: ApiUtil.getTokenHeaders(token),
+    );
   }
+  // --- AKHIR PERUBAHAN ---
 
-  Future<Response> getAllByCategoryAndKeyword(
-      int categoryId, String? searchText, String token) {
-    if (searchText == null) {
-      return httpGet('/halopensiun/$categoryId',
-          options: ApiUtil.getTokenOptions(token));
-    } else {
-      return httpGet('/halopensiun/$categoryId/$searchText',
-          options: ApiUtil.getTokenOptions(token));
-    }
+  /// Mendapatkan data berdasarkan kategori (tanpa token)
+  // --- PERUBAHAN: Menggunakan httpGet dari BaseApi ---
+  Future<http.Response> getAllByCategory(int categoryId) async {
+    return httpGet('/halopensiun/cid/$categoryId'); // Path relatif
   }
+  // --- AKHIR PERUBAHAN ---
+
+  /// Mendapatkan data berdasarkan keyword (tanpa token)
+  // --- PERUBAHAN: Menggunakan httpGet dari BaseApi ---
+  Future<http.Response> getAllByKeyword(String keyword) async {
+    return httpGet('/halopensiun/search/$keyword'); // Path relatif
+  }
+  // --- AKHIR PERUBAHAN ---
+
+  /// Mendapatkan data berdasarkan kategori dan keyword (opsional token)
+  // --- PERUBAHAN: Menggunakan httpGet dari BaseApi dengan queryParameters ---
+  Future<http.Response> getAllByCategoryAndKeyword(
+    int categoryId,
+    String? searchText,
+    String token,
+  ) async {
+    final path = searchText == null
+        ? '/halopensiun/$categoryId'
+        : '/halopensiun/$categoryId/$searchText';
+    // BaseApi akan menangani penambahan baseUrl dan queryParameters
+    return httpGet(
+      path,
+      headers: ApiUtil.getTokenHeaders(token),
+      // Jika searchText perlu dikirim sebagai query parameter terpisah, bukan di path:
+      // queryParameters: searchText != null ? {'search': searchText} : null,
+    );
+  }
+  // --- AKHIR PERUBAHAN ---
 }

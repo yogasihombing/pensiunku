@@ -11,11 +11,6 @@ import 'package:pensiunku/screen/welcome/welcome_screen.dart';
 import 'package:pensiunku/util/shared_preferences_util.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Screen Inisialisasi (Splash Screen)
-/// Screen ini adalah screen pertama yang dipanggil saat aplikasi dibuka.
-/// Melakukan inisialisasi library yang diperlukan seperti database dan preferences,
-/// kemudian mengarahkan ke welcome screen atau home screen.
-
 class InitScreen extends StatefulWidget {
   static const String ROUTE_NAME = '/';
 
@@ -23,7 +18,8 @@ class InitScreen extends StatefulWidget {
   _InitScreenState createState() => _InitScreenState();
 }
 
-class _InitScreenState extends State<InitScreen> with SingleTickerProviderStateMixin {
+class _InitScreenState extends State<InitScreen>
+    with SingleTickerProviderStateMixin {
   bool _isLoadingOverlay = true;
 
   late final AnimationController _logoAnimationController;
@@ -51,54 +47,56 @@ class _InitScreenState extends State<InitScreen> with SingleTickerProviderStateM
     // Mulai setup Firebase Messaging (Notifikasi)
     _setupFirebaseMessaging();
   }
+
   void _handleNotificationNavigation(RemoteMessage message) {
-  // Pastikan widget masih mounted sebelum mencoba navigasi
-  if (!mounted) {
-    print("Widget tidak mounted, tidak bisa navigasi.");
-    return;
-  }
-
-  final data = message.data;
-  print("Menangani navigasi dengan data: $data");
-
-  // Contoh logic navigasi:
-  // Anda harus menyesuaikan ini dengan struktur data notifikasi Anda
-  if (data.containsKey('screen')) {
-    String targetScreen = data['screen'];
-    switch (targetScreen) {
-      case 'notification_screen':
-        // Pastikan Anda memiliki argument yang sesuai jika NotificationScreen membutuhkannya
-        // Misal: final currentIndex = int.tryParse(data['currentIndex'] ?? '0');
-        // Navigator.of(context).pushNamed(
-        //   NotificationScreen.ROUTE_NAME,
-        //   arguments: NotificationScreenArguments(currentIndex: currentIndex ?? 0),
-        // );
-        // Untuk contoh ini, kita navigasi ke NotificationScreen tanpa argumen spesifik
-        Navigator.of(context).pushNamed(NotificationScreen.ROUTE_NAME);
-        break;
-      case 'home_screen':
-        // Contoh navigasi ke Home Screen
-        // Navigator.of(context).pushNamed(HomeScreen.ROUTE_NAME);
-        break;
-      // Tambahkan case lain sesuai kebutuhan aplikasi Anda
-      default:
-        print('Target screen tidak dikenal: $targetScreen');
-        break;
+    // Pastikan widget masih mounted sebelum mencoba navigasi
+    if (!mounted) {
+      print("Widget tidak mounted, tidak bisa navigasi.");
+      return;
     }
-  } else if (data.containsKey('url')) {
-    // Contoh: Buka URL jika notifikasi berisi URL
-    // import 'package:url_launcher/url_launcher.dart';
-    // String url = data['url'];
-    // launchUrl(Uri.parse(url));
-    print('Notifikasi memiliki URL, bisa dibuka: ${data['url']}');
+
+    final data = message.data;
+    print("Menangani navigasi dengan data: $data");
+
+    // Contoh logic navigasi:
+    // Anda harus menyesuaikan ini dengan struktur data notifikasi Anda
+    if (data.containsKey('screen')) {
+      String targetScreen = data['screen'];
+      switch (targetScreen) {
+        case 'notification_screen':
+          // Pastikan Anda memiliki argument yang sesuai jika NotificationScreen membutuhkannya
+          // Misal: final currentIndex = int.tryParse(data['currentIndex'] ?? '0');
+          // Navigator.of(context).pushNamed(
+          //   NotificationScreen.ROUTE_NAME,
+          //   arguments: NotificationScreenArguments(currentIndex: currentIndex ?? 0),
+          // );
+          // Untuk contoh ini, kita navigasi ke NotificationScreen tanpa argumen spesifik
+          Navigator.of(context).pushNamed(NotificationScreen.ROUTE_NAME);
+          break;
+        case 'home_screen':
+          // Contoh navigasi ke Home Screen
+          // Navigator.of(context).pushNamed(HomeScreen.ROUTE_NAME);
+          break;
+        // Tambahkan case lain sesuai kebutuhan aplikasi Anda
+        default:
+          print('Target screen tidak dikenal: $targetScreen');
+          break;
+      }
+    } else if (data.containsKey('url')) {
+      // Contoh: Buka URL jika notifikasi berisi URL
+      // import 'package:url_launcher/url_launcher.dart';
+      // String url = data['url'];
+      // launchUrl(Uri.parse(url));
+      print('Notifikasi memiliki URL, bisa dibuka: ${data['url']}');
+    }
+    // Tambahkan logic lain berdasarkan struktur data Anda
   }
-  // Tambahkan logic lain berdasarkan struktur data Anda
-}
 
   @override
   void dispose() {
     _logoAnimationController.dispose(); // Hentikan animasi saat dispose
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: SystemUiOverlay.values);
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual,
+        overlays: SystemUiOverlay.values);
     super.dispose();
   }
 
@@ -147,7 +145,8 @@ class _InitScreenState extends State<InitScreen> with SingleTickerProviderStateM
     final token = prefs.getString(SharedPreferencesUtil.SP_KEY_TOKEN);
 
     // Cek FCM token dan perbarui jika diperlukan
-    final savedFcmToken = prefs.getString(SharedPreferencesUtil.SP_KEY_FCM_TOKEN);
+    final savedFcmToken =
+        prefs.getString(SharedPreferencesUtil.SP_KEY_FCM_TOKEN);
     if (savedFcmToken == null) {
       await _setupFCMToken(prefs);
     }
@@ -163,8 +162,8 @@ class _InitScreenState extends State<InitScreen> with SingleTickerProviderStateM
       await prefs.setString(SharedPreferencesUtil.SP_KEY_FCM_TOKEN, fcmToken);
       print('FCM Token baru: $fcmToken');
       // --- Lakukan panggilan API ke backend Anda di sini ---
-    // Contoh (pseudocode):
-    // await YourApiService.sendFcmTokenToBackend(fcmToken, userId);
+      // Contoh (pseudocode):
+      // await YourApiService.sendFcmTokenToBackend(fcmToken, userId);
 
     }
   }
@@ -185,75 +184,80 @@ class _InitScreenState extends State<InitScreen> with SingleTickerProviderStateM
 
     if (token != null) {
       // Jika ada token, navigasi ke PrepareRegisterScreen
-      Navigator.of(context).pushNamedAndRemoveUntil(PrepareRegisterScreen.ROUTE_NAME, (route) => false);
+      Navigator.of(context).pushNamedAndRemoveUntil(
+          PrepareRegisterScreen.ROUTE_NAME, (route) => false);
     } else {
       // Jika tidak ada token, navigasi ke WelcomeScreen (halaman default)
-      Navigator.of(context).pushNamedAndRemoveUntil(WelcomeScreen.ROUTE_NAME, (route) => false);
+      Navigator.of(context)
+          .pushNamedAndRemoveUntil(WelcomeScreen.ROUTE_NAME, (route) => false);
     }
   }
 
   /// Fungsi untuk setup Firebase Messaging (Push Notifikasi)
   /// Fungsi untuk setup Firebase Messaging (Push Notifikasi)
-Future<void> _setupFirebaseMessaging() async {
-  FirebaseMessaging messaging = FirebaseMessaging.instance;
+  Future<void> _setupFirebaseMessaging() async {
+    FirebaseMessaging messaging = FirebaseMessaging.instance;
 
-  // 1. Meminta Izin Notifikasi dari pengguna
-  // Ini juga akan meminta izin untuk flutter_local_notifications di iOS
-  NotificationSettings settings = await messaging.requestPermission(
-    alert: true,
-    announcement: false,
-    badge: true,
-    carPlay: false,
-    criticalAlert: false,
-    provisional: false,
-    sound: true,
-  );
+    // 1. Meminta Izin Notifikasi dari pengguna
+    // Ini juga akan meminta izin untuk flutter_local_notifications di iOS
+    NotificationSettings settings = await messaging.requestPermission(
+      alert: true,
+      announcement: false,
+      badge: true,
+      carPlay: false,
+      criticalAlert: false,
+      provisional: false,
+      sound: true,
+    );
 
-  print('Izin notifikasi diberikan: ${settings.authorizationStatus}');
+    print('Izin notifikasi diberikan: ${settings.authorizationStatus}');
 
-  // 2. Mendengarkan pesan saat aplikasi di foreground
-  FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-    print('Menerima pesan saat aplikasi di foreground!');
-    print('Data pesan: ${message.data}');
+    // 2. Mendengarkan pesan saat aplikasi di foreground
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      print('Menerima pesan saat aplikasi di foreground!');
+      print('Data pesan: ${message.data}');
 
-    // Tampilkan notifikasi visual menggunakan flutter_local_notifications
-    RemoteNotification? notification = message.notification;
-    AndroidNotification? android = message.notification?.android;
+      // Tampilkan notifikasi visual menggunakan flutter_local_notifications
+      RemoteNotification? notification = message.notification;
+      AndroidNotification? android = message.notification?.android;
 
-    if (notification != null && android != null) {
-      flutterLocalNotificationsPlugin.show(
-        notification.hashCode, // Gunakan hashCode notifikasi sebagai ID unik
-        notification.title,
-        notification.body,
-        NotificationDetails(
-          android: AndroidNotificationDetails(
-            channel.id, // Gunakan ID channel yang sudah kita buat
-            channel.name,
-            channelDescription: channel.description,
-            icon: '@mipmap/ic_launcher', // Pastikan icon ini ada di folder Android Anda
+      if (notification != null && android != null) {
+        flutterLocalNotificationsPlugin.show(
+          notification.hashCode, // Gunakan hashCode notifikasi sebagai ID unik
+          notification.title,
+          notification.body,
+          NotificationDetails(
+            android: AndroidNotificationDetails(
+              channel.id, // Gunakan ID channel yang sudah kita buat
+              channel.name,
+              channelDescription: channel.description,
+              icon:
+                  '@mipmap/ic_launcher', // Pastikan icon ini ada di folder Android Anda
+            ),
           ),
-        ),
-        // Tambahkan payload jika Anda ingin data dari notifikasi FCM diteruskan ke notifikasi lokal
-        payload: message.data.toString(), // Atau JSON.encode(message.data) jika data kompleks
-      );
+          // Tambahkan payload jika Anda ingin data dari notifikasi FCM diteruskan ke notifikasi lokal
+          payload: message.data
+              .toString(), // Atau JSON.encode(message.data) jika data kompleks
+        );
+      }
+    });
+
+    // 3. Menangani saat notifikasi ditekan (saat aplikasi di background/terminated)
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      print('Event onMessageOpenedApp dipublikasikan!');
+      print('Data pesan: ${message.data}');
+      // Panggil fungsi penanganan navigasi di sini
+      _handleNotificationNavigation(message);
+    });
+
+    // 4. Menangani saat aplikasi dibuka dari keadaan terminated oleh notifikasi
+    RemoteMessage? initialMessage = await messaging.getInitialMessage();
+    if (initialMessage != null) {
+      print(
+          'Aplikasi dibuka dari keadaan terminated oleh notifikasi: ${initialMessage.data}');
+      // Panggil fungsi penanganan navigasi di sini
+      _handleNotificationNavigation(initialMessage);
     }
-  });
-
-  // 3. Menangani saat notifikasi ditekan (saat aplikasi di background/terminated)
-  FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-    print('Event onMessageOpenedApp dipublikasikan!');
-    print('Data pesan: ${message.data}');
-    // Panggil fungsi penanganan navigasi di sini
-    _handleNotificationNavigation(message);
-  });
-
-  // 4. Menangani saat aplikasi dibuka dari keadaan terminated oleh notifikasi
-  RemoteMessage? initialMessage = await messaging.getInitialMessage();
-  if (initialMessage != null) {
-    print('Aplikasi dibuka dari keadaan terminated oleh notifikasi: ${initialMessage.data}');
-    // Panggil fungsi penanganan navigasi di sini
-    _handleNotificationNavigation(initialMessage);
-  }
   }
 
   @override
@@ -322,281 +326,3 @@ Future<void> _setupFirebaseMessaging() async {
     );
   }
 }
-// class InitScreen extends StatefulWidget {
-//   static const String ROUTE_NAME = '/';
-
-//   @override
-//   _InitScreenState createState() => _InitScreenState();
-// }
-
-// class _InitScreenState extends State<InitScreen>
-//     with SingleTickerProviderStateMixin {
-//   // Variabel untuk mengatur tampilan loading overlay
-//   bool _isLoadingOverlay = true;
-
-//   @override
-//   void initState() {
-//     super.initState();
-
-//     // Mengatur UI system
-//     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersive);
-//     SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-//       statusBarColor: Colors.transparent,
-//       systemNavigationBarColor: Colors.transparent,
-//     ));
-//     // Mulai proses inisialisasi
-//     _initializeApp();
-//   }
-
-//   /// Fungsi utama untuk inisialisasi aplikasi
-//   Future<void> _initializeApp() async {
-//     try {
-//       if (!mounted) return;
-
-//       // Jalankan inisialisasi database dan preferences secara parallel
-//       await Future.wait([
-//         _initializeDatabase(),
-//         _initializePreferences(),
-//       ]).timeout(
-//           Duration(seconds: 10)); // Timeout jika inisialisasi terlalu lama
-
-//       if (!mounted) return;
-
-//       // Cek token dan setup FCM
-//       final token = await _handleTokenAndNavigation();
-//       // Navigasi ke screen berikutnya berdasarkan token
-//       await _navigateToNextScreen(token);
-//     } catch (e) {
-//       print('Error during initialization: $e');
-//       _showErrorSnackbar();
-//     } finally {
-//       if (mounted) {
-//         setState(() => _isLoadingOverlay = false);
-//       }
-//     }
-//   }
-
-//   /// Inisialisasi database
-//   Future<void> _initializeDatabase() async {
-//     final appDatabase = AppDatabase();
-//     await appDatabase.init();
-//   }
-
-//   /// Inisialisasi shared preferences
-//   Future<void> _initializePreferences() async {
-//     await SharedPreferencesUtil().init();
-//   }
-
-//   /// Handle pengecekan token dan setup FCM
-//   Future<String?> _handleTokenAndNavigation() async {
-//     final prefs = SharedPreferencesUtil().sharedPreferences;
-//     final token = prefs.getString(SharedPreferencesUtil.SP_KEY_TOKEN);
-
-//     // Cek FCM token
-//     final savedFcmToken =
-//         prefs.getString(SharedPreferencesUtil.SP_KEY_FCM_TOKEN);
-//     if (savedFcmToken == null) {
-//       await _setupFCMToken(prefs);
-//     }
-
-//     return token;
-//   }
-
-//   /// Setup Firebase Cloud Messaging token
-//   Future<void> _setupFCMToken(SharedPreferences prefs) async {
-//     final messaging = FirebaseMessaging.instance;
-//     final fcmToken = await messaging.getToken();
-//     if (fcmToken != null) {
-//       await prefs.setString(SharedPreferencesUtil.SP_KEY_FCM_TOKEN, fcmToken);
-//     }
-//   }
-
-//   /// Tampilkan snackbar jika terjadi error
-//   void _showErrorSnackbar() {
-//     if (!mounted) return;
-
-//     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-//       content: Text('Terjadi kesalahan saat inisialisasi aplikasi'),
-//       backgroundColor: Colors.red,
-//     ));
-//   }
-
-//   /// Navigasi ke screen berikutnya dengan animasi fade out
-//   Future<void> _navigateToNextScreen(String? token) async {
-//     // Tunggu 2 detik sebelum mulai fade out
-//     await Future.delayed(Duration(seconds: 2));
-
-//     if (!mounted) return;
-
-//     // Navigasi berdasarkan status token
-//     if (token != null) {
-//       Navigator.of(context).pushNamedAndRemoveUntil(
-//           PrepareRegisterScreen.ROUTE_NAME, (route) => false);
-//     } else {
-//       Navigator.of(context)
-//           .pushNamedAndRemoveUntil(WelcomeScreen.ROUTE_NAME, (route) => false);
-//     }
-//   }
-
-//   @override
-//   void dispose() {
-//     // Kembalikan UI system ke mode normal
-//     SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual,
-//         overlays: SystemUiOverlay.values);
-//     super.dispose();
-//   }
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       backgroundColor: Colors.transparent,
-//       body: AnnotatedRegion<SystemUiOverlayStyle>(
-//         value: const SystemUiOverlayStyle(
-//           statusBarColor: Colors.transparent,
-//           systemNavigationBarColor: Colors.transparent,
-//           statusBarIconBrightness: Brightness.dark,
-//           systemNavigationBarIconBrightness: Brightness.dark,
-//         ),
-//         child: Stack(
-//           children: [
-//             Container(
-//               decoration: const BoxDecoration(
-//                 image: DecorationImage(
-//                   image: AssetImage("assets/background.png"),
-//                   fit: BoxFit.cover,
-//                 ),
-//               ),
-//               child: Center(
-//                 child: Image.asset(
-//                   'assets/logo.png',
-//                   width: 130,
-//                   height: 130,
-//                 ),
-//               ),
-//             ),
-//             // Loading overlay yang muncul ketika _isLoadingOverlay true
-//             if (_isLoadingOverlay)
-//               Positioned.fill(
-//                 child: ModalBarrier(
-//                   color: Colors.black.withOpacity(0.5),
-//                   dismissible: false, // Hindari interaksi selama loading
-//                 ),
-//               ),
-//             if (_isLoadingOverlay)
-//               Center(
-//                 child: Container(
-//                   padding: EdgeInsets.all(20),
-//                   decoration: BoxDecoration(
-//                     color: Colors.white,
-//                     borderRadius: BorderRadius.circular(10),
-//                   ),
-//                   child: Column(
-//                     mainAxisSize: MainAxisSize.min,
-//                     children: [
-//                       CircularProgressIndicator(
-//                         valueColor:
-//                             AlwaysStoppedAnimation<Color>(Color(0xFF017964)),
-//                       ),
-//                       SizedBox(height: 16),
-//                       Text(
-//                         'Mohon tunggu...',
-//                         style: TextStyle(
-//                           color: Color(0xFF017964),
-//                           fontWeight: FontWeight.bold,
-//                         ),
-//                       ),
-//                     ],
-//                   ),
-//                 ),
-//               ),
-//           ],
-//         ),
-//       ),
-//     );
-//   }
-// }
-
-                  // SizedBox(height: 24),
-                    // Loading indicator dengan animasi fade in
-                    // AnimatedOpacity(
-                    //   opacity: _opacity,
-                    //   duration:
-                    //       Duration(milliseconds: 800), // Durasi fade in loading
-                    //   child: CircularProgressIndicator(
-                    //     color: Colors.white,
-                    //     strokeWidth: 3,
-                    //   ),
-                    // ),
-
-// import 'package:firebase_core/firebase_core.dart';
-// import 'package:firebase_messaging/firebase_messaging.dart';
-// import 'package:flutter/material.dart';
-// import 'package:pensiunku/data/db/app_database.dart';
-// import 'package:pensiunku/screen/register/prepare_register_screen.dart';
-// import 'package:pensiunku/screen/welcome/welcome_screen.dart';
-// import 'package:pensiunku/util/shared_preferences_util.dart';
-
-// /// Initialization Screen
-// ///
-// /// This screen is called first on the main program. It initializes all
-// /// necessary libraries and then go to welcome/home screen.
-// ///
-// class InitScreen extends StatefulWidget {
-//   static const String ROUTE_NAME = '/';
-
-//   @override
-//   _InitScreenState createState() => _InitScreenState();
-// }
-
-// class _InitScreenState extends State<InitScreen> {
-//   @override
-//   void initState() {
-//     super.initState();
-
-//     _initializeApp();
-//   }
-
-//   /// Initialize necessary libraries and then go to welcome/home screen.
-//   Future<void> _initializeApp() async {
-//     // Initialize Database
-//     AppDatabase appDatabase = AppDatabase();
-//     await appDatabase.init();
-
-//     // Initialize SharedPreferences
-//     await SharedPreferencesUtil().init();
-//     String? token = SharedPreferencesUtil()
-//         .sharedPreferences
-//         .getString(SharedPreferencesUtil.SP_KEY_TOKEN);
-
-//     // Initialize FlutterFire
-//     await Firebase.initializeApp();
-//     String? savedFcmToken = SharedPreferencesUtil()
-//         .sharedPreferences
-//         .getString(SharedPreferencesUtil.SP_KEY_FCM_TOKEN);
-//     if (savedFcmToken == null) {
-//       FirebaseMessaging messaging = FirebaseMessaging.instance;
-//       String? fcmToken = await messaging.getToken();
-//       if (fcmToken != null) {
-//         await SharedPreferencesUtil()
-//             .sharedPreferences
-//             .setString(SharedPreferencesUtil.SP_KEY_FCM_TOKEN, fcmToken);
-//       }
-//     }
-
-//     if (token != null) {
-//       Navigator.of(context)
-//           .pushReplacementNamed(PrepareRegisterScreen.ROUTE_NAME);
-//     } else {
-//       Navigator.of(context).pushReplacementNamed(WelcomeScreen.ROUTE_NAME);
-//     }
-//   }
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       body: Center(
-//         child: CircularProgressIndicator(),
-//       ),
-//     );
-//   }
-// }

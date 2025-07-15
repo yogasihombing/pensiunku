@@ -1,12 +1,13 @@
-import 'package:dio/dio.dart';
-import 'package:pensiunku/data/api/base_api.dart';
+import 'package:http/http.dart' as http;
+import 'package:pensiunku/data/api/base_api.dart'; // Menggunakan paket http
+
 
 class KesehatanApi extends BaseApi {
-  Future<Response> getAll() {
+  Future<http.Response> getAll() { // Mengubah tipe kembalian menjadi http.Response
     return httpGet('/kesehatan');
   }
 
-  Future<Response> getDetail(int hospitalId) {
+  Future<http.Response> getDetail(int hospitalId) { // Mengubah tipe kembalian menjadi http.Response
     return httpGet('/kesehatan/$hospitalId');
   }
 }

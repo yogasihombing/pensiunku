@@ -1,9 +1,8 @@
 import 'dart:async';
-import 'dart:io';
-import 'dart:ui';
 
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:intl/intl.dart';
 import 'package:pensiunku/model/article_model.dart';
 import 'package:pensiunku/model/event_model.dart';
@@ -19,7 +18,6 @@ import 'package:pensiunku/screen/home/dashboard/article/article_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/article_list.dart';
 import 'package:pensiunku/screen/home/dashboard/event/event_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/forum/forum_screen.dart';
-import 'package:pensiunku/screen/home/dashboard/franchise/franchise_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/halopensiun/halopensiun_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/icon_menu.dart';
 import 'package:pensiunku/screen/home/dashboard/ajukan/pengajuan_anda_screen.dart';
@@ -39,8 +37,40 @@ import 'package:http/http.dart' as http;
 import 'package:pensiunku/widget/floating_bottom_navigation_bar.dart';
 import 'dart:convert';
 
-import 'package:pensiunku/screen/home/dashboard/poster/poster_dialog.dart';
+// Global variables for Firebase Messaging
+final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+    FlutterLocalNotificationsPlugin();
+const AndroidNotificationChannel channel = AndroidNotificationChannel(
+  'high_importance_channel', // id
+  'High Importance Notifications', // title
+  description:
+      'This channel is used for important notifications.', // description
+  importance: Importance.max,
+);
 
+// Variabel untuk menentukan mode produksi
+bool isProd = true;
+
+// Host API berdasarkan mode produksi
+String get apiHost {
+  return isProd
+      ? "https://pensiunku.id/mobileapi"
+      : "https://pensiunku.id/mobileapi";
+}
+
+// Konfigurasi header default untuk API
+Map<String, String> get defaultApiHeaders {
+  return {
+    'User-Agent':
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36',
+    'Accept': 'application/json',
+    'Accept-Language': 'id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7',
+    'X-Requested-With': 'com.pensiunku.app',
+    'Content-Type': 'application/json',
+  };
+}
+
+// 1. DashboardScreen
 // Kelas utama DashboardScreen dengan StatefulWidget agar memiliki state yang dapat berubah
 class DashboardScreen extends StatefulWidget {
   static const String ROUTE_NAME = '/dashboard_screen';
@@ -72,11 +102,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   // Variabel state untuk saldo pengguna
   String _userBalance = '0';
-  bool _isLoadingBalance = false;
+  // --- PERUBAHAN: Menghapus _isLoadingBalance karena tidak lagi diperlukan untuk UI loading di kartu ---
+  // bool _isLoadingBalance = false;
+  // --- AKHIR PERUBAHAN ---
 
-  // Future untuk mendapatkan data secara asinkron
-  // Kini akan langsung menyimpan daftar kategori artikel setelah diambil
+  // Variabel untuk menyimpan daftar kategori artikel setelah diambil
   List<ArticleCategoryModel> _articleCategories = [];
+  // Deklarasi Future untuk kategori artikel, akan diinisialisasi di initState/refreshData
+  late Future<ResultModel<List<ArticleCategoryModel>>> _futureArticleCategories;
+
   Future<ResultModel<List<ForumModel>>>?
       _futureDataForum; // Mengganti _futureData
   late Future<ResultModel<List<EventModel>>> _futureDataEventModel;
@@ -84,7 +118,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   late Future<String> _futureGreeting;
   UserModel? _userModel;
   late Future<ResultModel<UserModel>> _futureUser; // Mengganti _future
-  Future<int>? _futureMemberStatus;
+  // --- PERUBAHAN: Mengubah _futureMemberStatus menjadi int? dengan nilai default 0 ---
+  int? _memberStatus = 0; // Menyimpan status member, default 0 (belum aktif)
+  // --- AKHIR PERUBAHAN ---
 
   // Variabel untuk loading overlay dan status lainnya
   bool _isLoadingOverlay = false;
@@ -111,9 +147,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
     super.initState();
     print('DashboardScreen initialized');
     _isLoadingOverlay = true;
-    _refreshData(); // Memuat data awal
 
-    // Panggil fetchGreeting dan nonaktifkan overlay setelah selesai
+    _futureArticleCategories = ArticleRepository().getAllCategories();
+
+    _refreshData();
+
     _futureGreeting = fetchGreeting().whenComplete(() {
       if (mounted) {
         setState(() {
@@ -124,7 +162,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     });
   }
 
-  // Fungsi refresh untuk memuat data user dan data lainnya
   Future<void> _refreshData() async {
     print('DashboardScreen: _refreshData dipanggil.');
     String? token = SharedPreferencesUtil()
@@ -133,14 +170,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     if (token == null) {
       print('DashboardScreen: Token pengguna null, tidak dapat memuat data.');
-      // Handle case where token is null, e.g., redirect to login
       setState(() {
         _isLoadingOverlay = false;
       });
       return;
     }
 
-    // Memuat data user
     print('DashboardScreen: Memulai pengambilan data user...');
     try {
       final userResult = await UserRepository().getOne(token);
@@ -150,9 +185,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
           print(
               'DashboardScreen: Data user berhasil diambil. User ID: ${_userModel?.id}');
         });
-        // Panggil _fetchBalance setelah _userModel berhasil diambil
         if (_userModel?.id != null) {
           await _fetchBalance(_userModel!.id.toString());
+          // --- PERUBAHAN: Memanggil cekMember dan langsung update _memberStatus ---
+          try {
+            _memberStatus = await cekMember(_userModel!.id.toString());
+          } catch (e) {
+            print('DashboardScreen: Error mengambil status member: $e');
+            _memberStatus = 0; // Default ke 0 jika ada error
+          }
+          // --- AKHIR PERUBAHAN ---
         } else {
           print('DashboardScreen: User ID null setelah pengambilan data user.');
         }
@@ -163,47 +205,57 @@ class _DashboardScreenState extends State<DashboardScreen> {
       print("DashboardScreen: Exception saat mengambil user: $e");
     }
 
-    // Memuat kategori artikel
     print('DashboardScreen: Memulai pengambilan kategori artikel...');
+    setState(() {
+      _futureArticleCategories = ArticleRepository().getAllCategories();
+    });
+
     try {
-      final categoriesResult = await ArticleRepository().getAllCategories();
+      final categoriesResult = await _futureArticleCategories;
       if (categoriesResult.error != null) {
         print(
             'DashboardScreen: Error mengambil kategori artikel: ${categoriesResult.error}');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                categoriesResult.error.toString(),
+                style: const TextStyle(color: Colors.white),
+              ),
+              backgroundColor: Colors.redAccent,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            _articleCategories = categoriesResult.data ?? [];
+            print(
+                'DashboardScreen: Kategori artikel berhasil diambil. Jumlah kategori: ${_articleCategories.length}');
+            if (_articleCategories.isNotEmpty && _currentArticleIndex == 0) {}
+          });
+        }
+      }
+    } catch (e) {
+      print("DashboardScreen: Exception saat mengambil kategori artikel: $e");
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              categoriesResult.error.toString(),
+              'Gagal memuat kategori artikel: ${e.toString()}',
               style: const TextStyle(color: Colors.white),
             ),
             backgroundColor: Colors.redAccent,
             duration: const Duration(seconds: 3),
           ),
         );
-      } else {
-        if (mounted) {
-          setState(() {
-            _articleCategories =
-                categoriesResult.data ?? []; // Pastikan tidak null
-            print(
-                'DashboardScreen: Kategori artikel berhasil diambil. Jumlah kategori: ${_articleCategories.length}');
-            // Jika ada kategori, atur _currentArticleIndex ke 0 agar ChipTab pertama aktif
-            if (_articleCategories.isNotEmpty && _currentArticleIndex == 0) {
-              // Trigger pemuatan artikel untuk kategori pertama secara eksplisit jika diperlukan
-              // Artikel akan dimuat oleh ArticleList secara otomatis saat kategori dilewatkan
-            }
-          });
-        }
       }
-    } catch (e) {
-      print("DashboardScreen: Exception saat mengambil kategori artikel: $e");
     }
 
     print('DashboardScreen: _refreshData selesai.');
   }
 
-  // Fungsi fetchGreeting untuk mengambil sapaan dari server
-  // Fungsi fetchGreeting: Logika di frontend berdasarkan waktu lokal
   Future<String> fetchGreeting() async {
     final now = DateTime.now();
     final int totalMinutes = now.hour * 60 + now.minute;
@@ -220,12 +272,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  /// PENTING: Fungsi untuk mengambil saldo pengguna dari API
   Future<void> _fetchBalance(String userId) async {
-    if (!mounted) return; // Tambahkan check mounted
-    setState(() {
-      _isLoadingBalance = true; // Set status loading true
-    });
+    if (!mounted) return;
+    // --- PERUBAHAN: Menghapus setState(_isLoadingBalance = true) di awal ---
+    // setState(() {
+    //   _isLoadingBalance = true;
+    // });
+    // --- AKHIR PERUBAHAN ---
     try {
       const String url = 'https://api.pensiunku.id/new.php/getBalance';
       final response = await http.post(
@@ -238,12 +291,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
           'Respons API Get Balance (Status: ${response.statusCode}): ${response.body}');
 
       if (response.statusCode == 200) {
+        if (response.body.contains('One moment, please...') ||
+            response.body
+                .contains('Access denied by Imunify360 bot-protection') ||
+            response.body.trim().startsWith('<!DOCTYPE html>')) {
+          throw Exception(
+              'Deteksi tantangan keamanan (Cloudflare/Imunify360). Mohon coba lagi.');
+        }
+
         final data = jsonDecode(response.body);
         if (data != null &&
             data['text'] != null &&
             data['text']['balance'] != null) {
           String balanceStr = data['text']['balance'].toString();
-          // Hapus "Rp ", titik (ribuan), dan koma (desimal) sebelum parsing
           balanceStr = balanceStr
               .replaceAll('Rp ', '')
               .replaceAll('.', '')
@@ -253,7 +313,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
           final formatter = NumberFormat.currency(
               locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
           if (mounted) {
-            // Check mounted
             setState(() {
               _userBalance = formatter.format(double.tryParse(balanceStr) ?? 0);
               debugPrint('Saldo diterima dan diformat: $_userBalance');
@@ -263,10 +322,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           debugPrint(
               "Error: Field 'balance' tidak ditemukan dalam response: ${response.body}");
           if (mounted) {
-            // Check mounted
             setState(() {
-              _userBalance =
-                  'Error'; // Tampilkan error jika field tidak ditemukan
+              _userBalance = 'Error';
             });
           }
         }
@@ -277,21 +334,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
     } catch (e) {
       debugPrint("Error fetching balance: $e");
       if (mounted) {
-        // Check mounted
         setState(() {
-          _userBalance = 'Error'; // Tampilkan error jika ada exception
+          _userBalance = 'Error';
         });
       }
     } finally {
       if (mounted) {
-        setState(() {
-          _isLoadingBalance = false; // Set status loading false setelah selesai
-        });
+        // --- PERUBAHAN: Menghapus setState(_isLoadingBalance = false) di finally ---
+        // setState(() {
+        //   _isLoadingBalance = false;
+        // });
+        // --- AKHIR PERUBAHAN ---
       }
     }
   }
 
-  // Fungsi untuk mengecek status member
   Future<int> cekMember(String id) async {
     print('DashboardScreen: Mengecek status member untuk ID: $id');
     const String url = 'https://api.pensiunku.id/new.php/cekMember';
@@ -301,6 +358,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
       body: jsonEncode({'id_user': id}),
     );
     if (response.statusCode == 200) {
+      if (response.body.contains('One moment, please...') ||
+          response.body
+              .contains('Access denied by Imunify360 bot-protection') ||
+          response.body.trim().startsWith('<!DOCTYPE html>')) {
+        throw Exception(
+            'Deteksi tantangan keamanan (Cloudflare/Imunify360). Mohon coba lagi.');
+      }
+
       final data = jsonDecode(response.body);
       print('DashboardScreen: Cek member API response: $data');
       if (data != null &&
@@ -323,9 +388,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
         throw Exception("Field 'status' tidak ditemukan atau null");
       }
     } else {
-      print(
-          'DashboardScreen: Gagal memuat status member dengan status code: ${response.statusCode}');
-      throw Exception('Failed to load member status');
+      throw Exception(
+          'Failed to load member status with status code: ${response.statusCode}');
     }
   }
 
@@ -367,7 +431,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       Widget nextScreen =
           _decideNextScreen(status, submission, isFromBalanceCard: true);
       Navigator.push(
-          context, MaterialPageRoute(builder: (context) => nextScreen));
+              context, MaterialPageRoute(builder: (context) => nextScreen))
+          .then((_) {
+        _refreshData();
+      });
     } catch (error) {
       print("DashboardScreen: Error (Balance Card): $error");
       if (mounted) {
@@ -378,7 +445,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  // Handler untuk mengecek member dan menavigasi dari action button
   void _handleCheckMemberAndNavigateFromActionButton(
       BuildContext context) async {
     print(
@@ -414,7 +480,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
           'DashboardScreen: Memutuskan layar berikutnya dari Action Button dengan status: $status');
       Widget nextScreen = _decideNextScreen(status, submission);
       Navigator.push(
-          context, MaterialPageRoute(builder: (context) => nextScreen));
+              context, MaterialPageRoute(builder: (context) => nextScreen))
+          .then((_) {
+        _refreshData();
+      });
     } catch (error) {
       print("DashboardScreen: Error (Action Button): $error");
     } finally {
@@ -426,8 +495,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  // Modifikasi pada metode _decideNextScreen
-  // Ini adalah tempat logika utama untuk menentukan layar berikutnya berdasarkan status member.
   Widget _decideNextScreen(int status, SubmissionModel submission,
       {bool isFromBalanceCard = false}) {
     print(
@@ -448,23 +515,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
       case 3:
         return MemberWaitingScreen();
       case 4:
-        // Jika dipanggil dari Balance Card, arahkan ke EWalletScreen
         if (isFromBalanceCard) {
           print('DashboardScreen: Mengarahkan ke EWalletScreen.');
           return EWalletScreen();
         }
-        // Jika dipanggil dari Action Button (ajukan mitra), arahkan ke PengajuanOrangLainScreen
         print('DashboardScreen: Mengarahkan ke PengajuanOrangLainScreen.');
         return PengajuanOrangLainScreen();
       case 5:
         return MemberRejectScreen();
       default:
         print("DashboardScreen: Error: Status member tidak dikenal: $status");
-        return AktifkanPensiunkuPlusScreen(); // fallback
+        return AktifkanPensiunkuPlusScreen();
     }
   }
 
-  // List untuk program dan gambar produk
   final List<String> programList = [
     'Pra-Pensiun',
     'Pensiun',
@@ -479,16 +543,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Dapatkan informasi ukuran layar dari MediaQuery
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
     final ThemeData theme = Theme.of(context);
 
     return Scaffold(
-      // Menggunakan Stack untuk menampilkan konten utama dan overlay loading bila diperlukan
       body: Stack(
         children: [
-          // Kontainer background dengan gradient
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
@@ -503,75 +564,75 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 stops: [0.25, 0.5, 0.75, 1.0],
               ),
             ),
-            child: Scaffold(
-              backgroundColor: Colors.transparent,
-              body: SafeArea(
-                child: RefreshIndicator(
-                  onRefresh: _refreshData,
-                  child: SingleChildScrollView(
-                    controller: widget.scrollController,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        SizedBox(height: screenHeight * 0.010),
-                        // Header dengan logo dan icon akun
-                        Padding(
-                          padding: EdgeInsets.symmetric(
-                              horizontal: screenWidth * 0.04),
-                          child: _buildHeader(screenWidth, screenHeight),
-                        ),
-                        SizedBox(height: screenHeight * 0.005),
-                        // Greeting yang menyesuaikan teks greeting dan nama user
-                        Padding(
-                          padding: EdgeInsets.symmetric(
-                              horizontal: screenWidth * 0.04),
-                          child: _buildGreeting(screenWidth, screenHeight),
-                        ),
-                        SizedBox(height: screenHeight * 0.01),
-                        // Balance Card dengan tombol untuk verifikasi
-                        Padding(
-                          padding: EdgeInsets.symmetric(
-                              horizontal: screenWidth * 0.04),
-                          child: _buildBalanceCard(screenWidth, screenHeight),
-                        ),
-                        SizedBox(height: screenHeight * 0.015),
+          ),
+          Scaffold(
+            backgroundColor: Colors.transparent,
+            body: SafeArea(
+              child: RefreshIndicator(
+                onRefresh: _refreshData,
+                child: SingleChildScrollView(
+                  controller: widget.scrollController,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(height: screenHeight * 0.010),
+                      Padding(
+                        padding: EdgeInsets.symmetric(
+                            horizontal: screenWidth * 0.04),
+                        child: _buildHeader(screenWidth, screenHeight),
+                      ),
+                      SizedBox(height: screenHeight * 0.005),
+                      Padding(
+                        padding: EdgeInsets.symmetric(
+                            horizontal: screenWidth * 0.04),
+                        child: _buildGreeting(screenWidth, screenHeight),
+                      ),
+                      SizedBox(height: screenHeight * 0.01),
+                      // --- PERUBAHAN: Menampilkan _buildBalanceCard atau _aktifkanpensiunkuPlus berdasarkan _memberStatus ---
+                      Padding(
+                        padding: EdgeInsets.symmetric(
+                            horizontal: screenWidth * 0.04),
+                        child: (_memberStatus ==
+                                4) // Jika status 4 (member aktif)
+                            ? _buildBalanceCard(screenWidth, screenHeight)
+                            : _aktifkanpensiunkuPlus(screenWidth, screenHeight),
+                      ),
+                      // --- AKHIR PERUBAHAN ---
+                      SizedBox(height: screenHeight * 0.015),
 
-                        Padding(
-                          padding: EdgeInsets.symmetric(
-                              horizontal: screenWidth * 0.04),
-                          child: _buildSimulasiPensiunku(
-                              context, screenWidth, screenHeight),
-                        ),
-                        SizedBox(height: screenHeight * 0.015),
-                        SizedBox(height: screenHeight * 0.015),
-                        Padding(
-                          padding: EdgeInsets.symmetric(
-                              horizontal: screenWidth * 0.04),
-                          child: _buildActionButtons(
-                              context, screenWidth, screenHeight),
-                        ),
-                        SizedBox(height: screenHeight * 0.02),
-
-                        Padding(
-                          padding: EdgeInsets.symmetric(
-                              horizontal: screenWidth * 0.04),
-                          child: _buildMenuFeatures(
-                              context, screenWidth, screenHeight),
-                        ),
-                        SizedBox(height: screenHeight * 0.02),
-                        _buildHeaderImage(context, screenWidth, screenHeight),
-                        SizedBox(height: screenHeight * 0.015),
-                        _buildArticleFeatures(
+                      Padding(
+                        padding: EdgeInsets.symmetric(
+                            horizontal: screenWidth * 0.04),
+                        child: _buildSimulasiPensiunku(
                             context, screenWidth, screenHeight),
-                        SizedBox(height: screenHeight * 0.06),
-                      ],
-                    ),
+                      ),
+                      SizedBox(height: screenHeight * 0.015),
+                      SizedBox(height: screenHeight * 0.015),
+                      Padding(
+                        padding: EdgeInsets.symmetric(
+                            horizontal: screenWidth * 0.04),
+                        child: _buildActionButtons(
+                            context, screenWidth, screenHeight),
+                      ),
+                      SizedBox(height: screenHeight * 0.02),
+
+                      Padding(
+                        padding: EdgeInsets.symmetric(
+                            horizontal: screenWidth * 0.04),
+                        child: _buildMenuFeatures(
+                            context, screenWidth, screenHeight),
+                      ),
+                      SizedBox(height: screenHeight * 0.02),
+                      _buildHeaderImage(context, screenWidth, screenHeight),
+                      SizedBox(height: screenHeight * 0.015),
+                      _buildArticleFeatures(context, screenWidth, screenHeight),
+                      SizedBox(height: screenHeight * 0.06),
+                    ],
                   ),
                 ),
               ),
             ),
           ),
-          // Tambahkan floating navigation bar
           FloatingBottomNavigationBar(
             isVisible: _isBottomNavBarVisible,
             currentIndex: 2,
@@ -579,7 +640,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
               Navigator.of(context).pop(newIndex);
             },
           ),
-          // Overlay loading jika _isLoadingOverlay true
           if (_isLoadingOverlay)
             Positioned.fill(
               child: ModalBarrier(
@@ -619,18 +679,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // =========================
-  // Widget Pendukung (Header, Greeting, dll)
-  // =========================
-
-  // Widget Header: Menampilkan logo dan ikon akun
   Widget _buildHeader(double screenWidth, double screenHeight) {
     return Padding(
       padding: EdgeInsets.only(left: screenWidth * 0.04),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Gunakan Image.asset dengan ukuran responsif
           Image.asset(
             'assets/logo_pensiunku.png',
             height: screenHeight * 0.06,
@@ -644,7 +698,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           onChangeBottomNavIndex: (int index) {},
                         )))
                 .then((_) {
-              // Refresh data ketika kembali dari AccountScreen
               _refreshData();
             }),
             color: Colors.black54,
@@ -654,7 +707,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // Widget Greeting: Menampilkan sapaan berdasarkan data dari API dan nama user
   Widget _buildGreeting(double screenWidth, double screenHeight) {
     final TextStyle greetingStyle = TextStyle(
       fontSize: screenWidth * 0.032,
@@ -698,7 +750,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // Widget Balance Card: Menampilkan informasi dompet dan membuat seluruh kartu bisa diklik
   Widget _buildBalanceCard(double screenWidth, double screenHeight) {
     return GestureDetector(
       onTap: () => _handleCheckMemberAndNavigateFromBalanceCard(context),
@@ -736,51 +787,132 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 ),
                 Spacer(),
-                // Displaying the fetched balance or a loading indicator
-                _isLoadingBalance
-                    ? SizedBox(
-                        width: screenWidth * 0.04,
-                        height: screenWidth * 0.04,
-                        child: CircularProgressIndicator(
-                          strokeWidth: screenWidth * 0.005,
-                          valueColor:
-                              AlwaysStoppedAnimation<Color>(Colors.black87),
-                        ),
-                      )
-                    : Text(
-                        _userBalance,
-                        style: TextStyle(
-                          fontSize: screenWidth * 0.03,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
-                      ),
+                // --- PERUBAHAN: Menghilangkan CircularProgressIndicator, langsung tampilkan saldo atau "Error" ---
+                Text(
+                  _userBalance,
+                  style: TextStyle(
+                    fontSize: screenWidth * 0.03,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+                // --- AKHIR PERUBAHAN ---
               ],
             ),
-            if (_isLoadingCheckMemberBalanceCard)
-              Center(
-                child: CircularProgressIndicator(
-                  strokeWidth: screenWidth * 0.008,
-                ),
-              ),
+            // --- PERUBAHAN: Menghilangkan _isLoadingCheckMemberBalanceCard ---
+            // if (_isLoadingCheckMemberBalanceCard)
+            //   Center(
+            //     child: CircularProgressIndicator(
+            //       strokeWidth: screenWidth * 0.008,
+            //     ),
+            //   ),
+            // --- AKHIR PERUBAHAN ---
           ],
         ),
       ),
     );
   }
 
+  // Widget _aktifkanpensiunkuPlus dipindahkan ke sini
+  Widget _aktifkanpensiunkuPlus(double screenWidth, double screenHeight) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(screenWidth * 0.04),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(screenWidth * 0.03),
+        color: Colors.white.withOpacity(0.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 1,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.account_balance_wallet_outlined,
+                  color: Colors.black, size: screenWidth * 0.05),
+              SizedBox(width: screenWidth * 0.02),
+              Text(
+                'Dompet Anda',
+                style: TextStyle(
+                  fontSize: screenWidth * 0.035,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+              ),
+              Spacer(),
+              // --- PERUBAHAN: Menampilkan "Rp 0" secara langsung tanpa loading indicator ---
+              Text(
+                'Rp 0',
+                style: TextStyle(
+                    fontSize: screenWidth * 0.03,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87),
+              ),
+              // --- AKHIR PERUBAHAN ---
+            ],
+          ),
+          SizedBox(height: screenHeight * 0.01),
+          // --- PERUBAHAN: Menghilangkan _isLoadingCheckMemberBalanceCard di sini juga ---
+          _isLoadingCheckMemberBalanceCard
+              ? Center(
+                  child: CircularProgressIndicator(
+                  strokeWidth: screenWidth * 0.008,
+                ))
+              : ElevatedButton(
+                  onPressed: () {
+                    _handleCheckMemberAndNavigateFromBalanceCard(context);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFFFC950),
+                    minimumSize: Size(double.infinity, screenHeight * 0.035),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(screenWidth * 0.05),
+                    ),
+                    shadowColor: Colors.grey.withOpacity(0.5),
+                    elevation: 5,
+                  ),
+                  child: RichText(
+                    text: TextSpan(
+                      text: 'Aktifkan ',
+                      style: TextStyle(
+                        fontSize: screenWidth * 0.035,
+                        fontWeight: FontWeight.normal,
+                        color: Colors.green[900],
+                      ),
+                      children: [
+                        TextSpan(
+                            text: 'Pensiunku+',
+                            style: TextStyle(fontWeight: FontWeight.bold)),
+                        TextSpan(
+                            text: ' Sekarang',
+                            style: TextStyle(fontWeight: FontWeight.normal)),
+                      ],
+                    ),
+                  ),
+                ),
+          // --- AKHIR PERUBAHAN ---
+        ],
+      ),
+    );
+  }
+
   Widget _buildSimulasiPensiunku(
-      BuildContext context, double screenWidth, double screenHeight,
-      {Color shadowColor = Colors.grey}) {
+      BuildContext context, double screenWidth, double screenHeight) {
     return GestureDetector(
       onTap: () {
         Navigator.push(context,
             MaterialPageRoute(builder: (context) => SimulasiCepatScreen()));
       },
       child: PhysicalModel(
-        color: const Color(0xFFFFDE6B1), // Warna isi
-        elevation: shadowColor == Colors.transparent ? 0 : 4,
-        shadowColor: shadowColor,
+        color: const Color(0xFFFFDE6B1),
+        elevation: 4,
+        shadowColor: Colors.grey,
         borderRadius: BorderRadius.circular(screenWidth * 0.025),
         clipBehavior: Clip.antiAlias,
         child: Container(
@@ -789,7 +921,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               vertical: screenHeight * 0.02, horizontal: screenWidth * 0.03),
           child: Center(
             child: Text(
-              'Simulasi Cepat!',
+              'Simulasi Cepat Pensiunku!',
               style: TextStyle(
                   fontSize: screenWidth * 0.04,
                   fontWeight: FontWeight.bold,
@@ -802,10 +934,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // Widget Action Buttons: Menampilkan dua tombol aksi dengan ukuran dan padding dinamis
   Widget _buildActionButtons(
       BuildContext context, double screenWidth, double screenHeight) {
-    // Fungsi helper untuk membuat tombol dengan ikon dan teks
     Widget _buildButton(
         String iconPath, Widget textWidget, VoidCallback onPressed,
         {Color backgroundColor = Colors.white70,
@@ -907,10 +1037,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-// Widget Header Image: Menampilkan carousel gambar header dengan ukuran dinamis
   Widget _buildHeaderImage(
       BuildContext context, double screenWidth, double screenHeight) {
-    // Daftar gambar header
     final List<String> images = [
       'assets/dashboard_screen/image_1.png',
       'assets/dashboard_screen/image_2.png',
@@ -1003,7 +1131,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-// Widget Menu Features: Menampilkan menu-menu fitur dengan ikon
   Widget _buildMenuFeatures(
       BuildContext context, double screenWidth, double screenHeight) {
     return Column(
@@ -1093,25 +1220,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-// Fungsi untuk mendapatkan kategori artikel
-// Fungsi ini sekarang akan langsung mengembalikan _articleCategories yang sudah diisi oleh _refreshData
-// Jadi, FutureBuilder bisa langsung menggunakannya.
   Future<List<ArticleCategoryModel>> _getArticleCategories() async {
     print('DashboardScreen: _getArticleCategories dipanggil.');
-    // Karena _articleCategories diisi di _refreshData() dan itu dipanggil di initState(),
-    // kita asumsikan _articleCategories akan terisi.
-    // Jika masih ada potensi kosong (misalnya karena API error), FutureBuilder akan menangani.
     if (_articleCategories.isNotEmpty) {
       print(
           'DashboardScreen: Kategori artikel sudah tersedia: ${_articleCategories.length} kategori.');
-      return Future.value(
-          _articleCategories); // Mengembalikan Future yang segera selesai
+      return Future.value(_articleCategories);
     } else {
       print(
-          'DashboardScreen: Kategori artikel belum tersedia, mencoba mengambil ulang...');
-      // Jika _articleCategories kosong, panggil lagi API untuk kategori
+          'DashboardScreen: Kategori artikel belum tersedia, menunggu hasil _futureArticleCategories...');
       try {
-        final result = await ArticleRepository().getAllCategories();
+        final result = await _futureArticleCategories;
         if (result.data != null && result.data!.isNotEmpty) {
           if (mounted) {
             setState(() {
@@ -1134,7 +1253,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-// Widget Article Features: Menampilkan daftar artikel berdasarkan kategori yang dipilih
   Widget _buildArticleFeatures(
       BuildContext context, double screenWidth, double screenHeight) {
     print('DashboardScreen: _buildArticleFeatures dipanggil.');
@@ -1153,9 +1271,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   color: Colors.black),
             ),
           ),
-          FutureBuilder<List<ArticleCategoryModel>>(
-            future:
-                _getArticleCategories(), // Future ini akan memberikan kategori
+          FutureBuilder<ResultModel<List<ArticleCategoryModel>>>(
+            future: _futureArticleCategories,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 print(
@@ -1174,7 +1291,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 return Padding(
                   padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
                   child: Text(
-                    'Error memuat kategori: ${snapshot.error}', // Pesan error lebih spesifik
+                    'Error memuat kategori: ${snapshot.error}',
                     style: TextStyle(
                       color: Colors.red,
                       fontSize: screenWidth * 0.035,
@@ -1182,7 +1299,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 );
               }
-              if (!snapshot.hasData || snapshot.data!.isEmpty) {
+              if (!snapshot.hasData ||
+                  snapshot.data?.data == null ||
+                  snapshot.data!.data!.isEmpty) {
                 print(
                     'DashboardScreen: FutureBuilder (kategori) - Tidak ada data kategori atau kosong.');
                 return Padding(
@@ -1197,14 +1316,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 );
               }
 
-              final List<ArticleCategoryModel> categories = snapshot.data!;
+              final List<ArticleCategoryModel> categories =
+                  snapshot.data!.data!;
               print(
                   'DashboardScreen: FutureBuilder (kategori) - Data kategori berhasil dimuat. Jumlah: ${categories.length}');
 
-              // Pastikan _currentArticleIndex valid
               if (_currentArticleIndex >= categories.length) {
-                _currentArticleIndex =
-                    0; // Reset ke indeks 0 jika di luar batas
+                _currentArticleIndex = 0;
                 print(
                     'DashboardScreen: _currentArticleIndex direset karena di luar batas.');
               }
@@ -1217,31 +1335,37 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     child: SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       child: Row(
-                        children: categories.map((category) {
-                          final int index = categories.indexOf(category);
-                          return ChipTab(
-                            text: category.name,
-                            isActive: _currentArticleIndex == index,
-                            onTap: () {
-                              print(
-                                  'DashboardScreen: ChipTab ${category.name} diketuk. Mengubah _currentArticleIndex ke $index.');
-                              setState(() {
-                                _currentArticleIndex = index;
-                              });
-                            },
-                            backgroundColor: const Color(0xFFFEC842),
-                          );
-                        }).toList(),
+                        children: [
+                          ...categories
+                              .asMap()
+                              .map((index, category) {
+                                return MapEntry(
+                                  index,
+                                  ChipTab(
+                                    text: category.name,
+                                    isActive: _currentArticleIndex == index,
+                                    onTap: () {
+                                      print(
+                                          'DashboardScreen: ChipTab ${category.name} diketuk. Mengubah _currentArticleIndex ke $index.');
+                                      setState(() {
+                                        _currentArticleIndex = index;
+                                      });
+                                    },
+                                    backgroundColor: const Color(0xFFFEC842),
+                                  ),
+                                );
+                              })
+                              .values
+                              .toList(),
+                        ],
                       ),
                     ),
                   ),
                   SizedBox(height: screenHeight * 0.02),
-                  // Menampilkan ArticleList berdasarkan kategori yang sedang aktif
                   if (categories.isNotEmpty &&
                       _currentArticleIndex < categories.length)
                     ArticleList(
-                      articleCategory: categories[
-                          _currentArticleIndex], // Melewatkan objek kategori
+                      articleCategory: categories[_currentArticleIndex],
                       carouselHeight: screenHeight * 0.35,
                     )
                   else
@@ -1266,89 +1390,89 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
 
 // // Widget Balance Card: Menampilkan informasi dompet dan tombol aksi
-  // Widget _buildBalanceCard(double screenWidth, double screenHeight) {
-  //   return Container(
-  //     width: double.infinity,
-  //     padding: EdgeInsets.all(screenWidth * 0.04),
-  //     decoration: BoxDecoration(
-  //       borderRadius: BorderRadius.circular(screenWidth * 0.03),
-  //       color: Colors.white.withOpacity(0.5),
-  //       boxShadow: [
-  //         BoxShadow(
-  //           color: Colors.black.withOpacity(0.1),
-  //           blurRadius: 1,
-  //           offset: const Offset(0, 5),
-  //         ),
-  //       ],
-  //     ),
-  //     child: Column(
-  //       crossAxisAlignment: CrossAxisAlignment.start,
-  //       children: [
-  //         Row(
-  //           children: [
-  //             Icon(Icons.account_balance_wallet_outlined,
-  //                 color: Colors.black, size: screenWidth * 0.05),
-  //             SizedBox(width: screenWidth * 0.02),
-  //             Text(
-  //               'Dompet Anda',
-  //               style: TextStyle(
-  //                 fontSize: screenWidth * 0.035,
-  //                 fontWeight: FontWeight.bold,
-  //                 color: Colors.black,
-  //               ),
-  //             ),
-  //             Spacer(),
-  //             Text(
-  //               'Rp 0',
-  //               style: TextStyle(
-  //                   fontSize: screenWidth * 0.03,
-  //                   fontWeight: FontWeight.bold,
-  //                   color: Colors.black87),
-  //             ),
-  //           ],
-  //         ),
-  //         SizedBox(height: screenHeight * 0.01),
-  //         _isLoadingCheckMemberBalanceCard
-  //             ? Center(
-  //                 child: CircularProgressIndicator(
-  //                 strokeWidth: screenWidth * 0.008,
-  //               ))
-  //             : ElevatedButton(
-  //                 onPressed: () {
-  //                   _handleCheckMemberAndNavigateFromBalanceCard(context);
-  //                 },
-  //                 style: ElevatedButton.styleFrom(
-  //                   backgroundColor: const Color(0xFFFFC950),
-  //                   minimumSize: Size(double.infinity, screenHeight * 0.035),
-  //                   shape: RoundedRectangleBorder(
-  //                     borderRadius: BorderRadius.circular(screenWidth * 0.05),
-  //                   ),
-  //                   shadowColor: Colors.grey.withOpacity(0.5),
-  //                   elevation: 5,
-  //                 ),
-  //                 child: RichText(
-  //                   text: TextSpan(
-  //                     text: 'Aktifkan ',
-  //                     style: TextStyle(
-  //                       fontSize: screenWidth * 0.035,
-  //                       fontWeight: FontWeight.normal,
-  //                       color: Colors.green[900],
-  //                     ),
-  //                     children: [
-  //                       TextSpan(
-  //                           text: 'Pensiunku+',
-  //                           style: TextStyle(fontWeight: FontWeight.bold)),
-  //                       TextSpan(
-  //                           text: ' Sekarang',
-  //                           style: TextStyle(fontWeight: FontWeight.normal)),
-  //                     ],
-  //                   ),
-  //                 ),
-  //               ),
-  //       ],
-  //     ),
-  //   );
-  // }
+//   Widget _buildBalanceCard(double screenWidth, double screenHeight) {
+//     return Container(
+//       width: double.infinity,
+//       padding: EdgeInsets.all(screenWidth * 0.04),
+//       decoration: BoxDecoration(
+//         borderRadius: BorderRadius.circular(screenWidth * 0.03),
+//         color: Colors.white.withOpacity(0.5),
+//         boxShadow: [
+//           BoxShadow(
+//             color: Colors.black.withOpacity(0.1),
+//             blurRadius: 1,
+//             offset: const Offset(0, 5),
+//           ),
+//         ],
+//       ),
+//       child: Column(
+//         crossAxisAlignment: CrossAxisAlignment.start,
+//         children: [
+//           Row(
+//             children: [
+//               Icon(Icons.account_balance_wallet_outlined,
+//                   color: Colors.black, size: screenWidth * 0.05),
+//               SizedBox(width: screenWidth * 0.02),
+//               Text(
+//                 'Dompet Anda',
+//                 style: TextStyle(
+//                   fontSize: screenWidth * 0.035,
+//                   fontWeight: FontWeight.bold,
+//                   color: Colors.black,
+//                 ),
+//               ),
+//               Spacer(),
+//               Text(
+//                 'Rp 0',
+//                 style: TextStyle(
+//                     fontSize: screenWidth * 0.03,
+//                     fontWeight: FontWeight.bold,
+//                     color: Colors.black87),
+//               ),
+//             ],
+//           ),
+//           SizedBox(height: screenHeight * 0.01),
+//           _isLoadingCheckMemberBalanceCard
+//               ? Center(
+//                   child: CircularProgressIndicator(
+//                   strokeWidth: screenWidth * 0.008,
+//                 ))
+//               : ElevatedButton(
+//                   onPressed: () {
+//                     _handleCheckMemberAndNavigateFromBalanceCard(context);
+//                   },
+//                   style: ElevatedButton.styleFrom(
+//                     backgroundColor: const Color(0xFFFFC950),
+//                     minimumSize: Size(double.infinity, screenHeight * 0.035),
+//                     shape: RoundedRectangleBorder(
+//                       borderRadius: BorderRadius.circular(screenWidth * 0.05),
+//                     ),
+//                     shadowColor: Colors.grey.withOpacity(0.5),
+//                     elevation: 5,
+//                   ),
+//                   child: RichText(
+//                     text: TextSpan(
+//                       text: 'Aktifkan ',
+//                       style: TextStyle(
+//                         fontSize: screenWidth * 0.035,
+//                         fontWeight: FontWeight.normal,
+//                         color: Colors.green[900],
+//                       ),
+//                       children: [
+//                         TextSpan(
+//                             text: 'Pensiunku+',
+//                             style: TextStyle(fontWeight: FontWeight.bold)),
+//                         TextSpan(
+//                             text: ' Sekarang',
+//                             style: TextStyle(fontWeight: FontWeight.normal)),
+//                       ],
+//                     ),
+//                   ),
+//                 ),
+//         ],
+//       ),
+//     );
+//   }
 
 // // Widget Carousel Slider: Menampilkan produk menggunakan carousel
 //   Widget _buildCarouselSlider(
