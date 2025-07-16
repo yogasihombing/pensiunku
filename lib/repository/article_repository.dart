@@ -17,7 +17,8 @@ class ArticleRepository extends BaseRepository {
   ) {
     print(
         'ArticleRepository: getAll dipanggil untuk kategori: ${articleCategory.name}');
-    return super.getResultModel<List<ArticleModel>>( // --- PERUBAHAN: Menggunakan super.getResultModel ---
+    return super.getResultModel<List<ArticleModel>>(
+      // --- PERUBAHAN: Menggunakan super.getResultModel ---
       tag: tag,
       getFromDb: () async {
         print(
@@ -25,7 +26,7 @@ class ArticleRepository extends BaseRepository {
         List<ArticleModel>? articlesDb =
             await database.articleDao.getAll(articleCategory.name);
         print(
-            'ArticleRepository: Data artikel dari DB: ${articlesDb.length} item.'); // --- PERUBAHAN: Null-safety untuk length ---
+            'ArticleRepository: Data artikel dari DB: ${articlesDb?.length ?? 0} item.'); // --- PERUBAHAN: Null-safety untuk length ---
         return articlesDb;
       },
       getFromApi: () async {
@@ -75,8 +76,10 @@ class ArticleRepository extends BaseRepository {
       },
       insertToDb: (articles) async {
         print(
-            'ArticleRepository: Memasukkan data artikel baru ke DB untuk kategori: ${articleCategory.name}. Jumlah: ${articles.length}');
-        await database.articleDao.insert(articles);
+            'ArticleRepository: Memasukkan data artikel baru ke DB untuk kategori: ${articleCategory.name}. Jumlah: ${articles?.length ?? 0}'); // Null-safety
+        if (articles != null) {
+          await database.articleDao.insert(articles);
+        }
       },
       errorMessage:
           'Gagal mengambil data artikel terbaru. Tolong periksa Internet Anda.',
@@ -86,14 +89,15 @@ class ArticleRepository extends BaseRepository {
   // getAllCategories - Dipanggil dari DashboardScreen untuk chip kategori
   Future<ResultModel<List<ArticleCategoryModel>>> getAllCategories() {
     print('ArticleRepository: getAllCategories dipanggil.');
-    return super.getResultModel<List<ArticleCategoryModel>>( // --- PERUBAHAN: Menggunakan super.getResultModel ---
+    return super.getResultModel<List<ArticleCategoryModel>>(
+      // --- PERUBAHAN: Menggunakan super.getResultModel ---
       tag: tag,
       getFromDb: () async {
         print('ArticleRepository: Mencoba ambil kategori dari DB.');
         List<ArticleCategoryModel>? itemsDb =
             await database.articleDao.getAllCategories();
         print(
-            'ArticleRepository: Kategori dari DB: ${itemsDb.length} item.'); // --- PERUBAHAN: Null-safety untuk length ---
+            'ArticleRepository: Kategori dari DB: ${itemsDb?.length ?? 0} item.'); // --- PERUBAHAN: Null-safety untuk length ---
         return itemsDb;
       },
       getFromApi: () async {
@@ -130,8 +134,10 @@ class ArticleRepository extends BaseRepository {
       },
       insertToDb: (items) async {
         print(
-            'ArticleRepository: Memasukkan kategori baru ke DB. Jumlah: ${items.length}');
-        await database.articleDao.insertCategories(items);
+            'ArticleRepository: Memasukkan kategori baru ke DB. Jumlah: ${items?.length ?? 0}'); // Null-safety
+        if (items != null) {
+          await database.articleDao.insertCategories(items);
+        }
       },
       errorMessage:
           'Gagal mengambil data artikel terbaru. Tolong periksa Internet Anda.',
@@ -203,6 +209,8 @@ class ArticleRepository extends BaseRepository {
     return super.getResultModel<MobileArticleDetailModel>(
       tag: tag,
       getFromApi: () async {
+        print(
+            'ArticleRepository: Memanggil api.getArticle untuk ID: $articleId');
         return await api.getArticle(articleId);
       },
       getDataFromApiResponse: (responseJson) {
@@ -214,7 +222,8 @@ class ArticleRepository extends BaseRepository {
               'ArticleRepository: Status sukses dari api.getArticle. Mengurai data...');
           MobileArticleDetailModel parsedData;
           try {
-            parsedData = MobileArticleDetailModel.fromJson(responseJson['data']);
+            parsedData =
+                MobileArticleDetailModel.fromJson(responseJson['data']);
             print(
                 'ArticleRepository: Berhasil parsing MobileArticleDetailModel.');
           } catch (e) {

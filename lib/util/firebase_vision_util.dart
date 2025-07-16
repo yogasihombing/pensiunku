@@ -5,7 +5,6 @@ import 'package:age_calculator/age_calculator.dart';
 import 'package:flutter/services.dart';
 import 'package:pensiunku/model/selfie_model.dart';
 import 'package:pensiunku/model/result_model.dart';
-import 'package:string_similarity/string_similarity.dart';
 import 'package:camera/camera.dart';
 
 import 'package:google_ml_kit/google_ml_kit.dart';

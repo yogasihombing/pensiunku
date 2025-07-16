@@ -1,5 +1,4 @@
-import 'dart:developer';
-
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:pensiunku/model/article_model.dart';
 import 'package:pensiunku/model/theme_model.dart';
@@ -32,69 +31,120 @@ class ArticleDetailScreen extends StatefulWidget {
 
 class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
   late Future<ResultModel<MobileArticleDetailModel>> _futureData;
-  // late Future<ResultModel<ThemeModel>> _futureTheme;
   final _switchController = ValueNotifier<bool>(false);
   bool _darkMode = true;
-  late String articleTitle;
+  String articleTitle = ''; // Inisialisasi dengan string kosong
 
   @override
   void initState() {
     super.initState();
+    print('ArticleDetailScreen: initState dipanggil.');
+
+    // Inisialisasi _futureData segera dengan panggilan pertama ke _refreshData()
+    // Ini memastikan _futureData memiliki nilai Future sebelum build dipanggil.
+    _futureData = _refreshData();
+
     _switchController.addListener(() {
+      print(
+          'ArticleDetailScreen: _switchController listener dipicu. Value: ${_switchController.value}');
       setState(() {
         if (_switchController.value) {
           _darkMode = false;
+          print('ArticleDetailScreen: Mode terang diaktifkan.');
           //update db
           ThemeModel theme = ThemeModel(parameter: "darkMode", value: "false");
           ThemeRepository().update(theme).then((value) {
-            log("updateTheme" + value.toString());
+            print("ArticleDetailScreen: updateTheme (light mode): " +
+                value.toString()); // Menggunakan print
           });
         } else {
           _darkMode = true;
+          print('ArticleDetailScreen: Mode gelap diaktifkan.');
           //update db
           ThemeModel theme = ThemeModel(parameter: "darkMode", value: "true");
           ThemeRepository().update(theme).then((value) {
-            log("updateTheme" + value.toString());
+            print("ArticleDetailScreen: updateTheme (dark mode): " +
+                value.toString()); // Menggunakan print
           });
         }
       });
     });
 
-    _refreshData();
+    // _initializeData(); // Tidak perlu memanggil ini lagi karena _refreshData sudah dipanggil di atas
   }
 
-  _refreshData() {
-    //get theme setting
-    ThemeRepository().get().then((value) {
-      if (value.error == null) {
-        ThemeModel theme = value.data!;
-        if (theme.value == 'false') {
-          _darkMode = false;
-          _switchController.value = true;
+  // Fungsi ini sekarang tidak lagi diperlukan karena _refreshData dipanggil langsung di initState
+  // Future<void> _initializeData() async {
+  //   print('ArticleDetailScreen: _initializeData dipanggil.');
+  //   await _refreshData();
+  // }
+
+  // Mengubah tipe return menjadi Future<ResultModel<MobileArticleDetailModel>>
+  Future<ResultModel<MobileArticleDetailModel>> _refreshData() async {
+    print('ArticleDetailScreen: _refreshData dipanggil.');
+
+    // Get theme setting first
+    print('ArticleDetailScreen: Mengambil pengaturan tema...');
+    try {
+      final themeValue = await ThemeRepository().get();
+      if (mounted) {
+        if (themeValue.error == null && themeValue.data != null) {
+          ThemeModel theme = themeValue.data!;
+          if (theme.value == 'false') {
+            _darkMode = false;
+            _switchController.value = true;
+            print('ArticleDetailScreen: Tema diatur ke terang.');
+          } else {
+            _darkMode = true;
+            _switchController.value = false;
+            print('ArticleDetailScreen: Tema diatur ke gelap.');
+          }
         } else {
-          _darkMode = true;
-          _switchController.value = false;
+          print(
+              'ArticleDetailScreen: Gagal mengambil tema: ${themeValue.error}. Menggunakan default.');
         }
       }
-    });
+    } catch (e) {
+      print(
+          'ArticleDetailScreen: Error mengambil tema: $e. Menggunakan default.');
+    }
 
-    return _futureData =
-        ArticleRepository().getMobileArticle(widget.articleId).then((value) {
-      if (value.error != null) {
+    // Then get article data
+    print(
+        'ArticleDetailScreen: Memulai panggilan ArticleRepository().getMobileArticle...');
+    try {
+      final articleResult =
+          await ArticleRepository().getMobileArticle(widget.articleId);
+      if (mounted) {
+        setState(() {
+          // Hanya update articleTitle di sini, _futureData sudah diinisialisasi
+          if (articleResult.data != null) {
+            articleTitle = articleResult.data!.title;
+            print(
+                'ArticleDetailScreen: Data artikel berhasil dimuat. Judul: $articleTitle');
+          } else {
+            print('ArticleDetailScreen: Data artikel null.');
+          }
+        });
+      }
+      return articleResult; // Mengembalikan hasil dari API
+    } catch (e) {
+      print('ArticleDetailScreen: Error saat mengambil artikel: $e');
+      if (mounted) {
         showDialog(
             context: context,
             builder: (_) => AlertDialog(
-                  content: Text(value.error.toString(),
+                  content: Text(
+                      'Terjadi kesalahan saat memuat artikel: ${e.toString()}',
                       style: TextStyle(color: Colors.white)),
                   backgroundColor: Colors.red,
                   elevation: 24.0,
                 ));
       }
-      setState(() {
-        articleTitle = value.data!.title;
-      });
-      return value;
-    });
+      return ResultModel(
+          isSuccess: false,
+          error: e.toString()); // Mengembalikan ResultModel dengan error
+    }
   }
 
   @override
@@ -111,6 +161,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
           backgroundColor: Colors.transparent,
           leading: IconButton(
             onPressed: () {
+              print('ArticleDetailScreen: Tombol kembali ditekan.');
               Navigator.of(context).pop(true);
             },
             icon: Icon(Icons.arrow_back),
@@ -140,8 +191,15 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
         body: Stack(
           children: [
             RefreshIndicator(
-              onRefresh: () {
-                return _refreshData();
+              onRefresh: () async {
+                // Pastikan onRefresh adalah async
+                print('ArticleDetailScreen: RefreshIndicator dipicu.');
+                // Update _futureData dengan Future baru dari _refreshData
+                setState(() {
+                  _futureData = _refreshData();
+                });
+                // Tunggu hingga Future selesai agar indikator refresh hilang
+                await _futureData;
               },
               child: SingleChildScrollView(
                 physics: AlwaysScrollableScrollPhysics(),
@@ -154,274 +212,16 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                             : Color.fromRGBO(38, 38, 38, 1.0)),
                   ),
                   Column(children: [
-                    FutureBuilder(
+                    FutureBuilder<ResultModel<MobileArticleDetailModel>>(
+                        // Tambahkan tipe eksplisit
                         future: _futureData,
                         builder: (BuildContext context,
                             AsyncSnapshot<ResultModel<MobileArticleDetailModel>>
                                 snapshot) {
-                          if (snapshot.hasData) {
-                            if (snapshot.data?.data != null) {
-                              MobileArticleDetailModel data =
-                                  snapshot.data!.data!;
-                              List<String> paragraf =
-                                  splitTextByImageTag(data.content, []);
-                              log('Panjang list paragraf : ' +
-                                  paragraf.length.toString());
-
-                              return Column(
-                                children: [
-                                  Stack(
-                                    children: [
-                                      Container(
-                                        height: screenSize.height * 0.5,
-                                        width: screenSize.width,
-                                        decoration: BoxDecoration(
-                                            image: DecorationImage(
-                                                image: NetworkImage(
-                                                    data.imageUrl.toString()),
-                                                fit: BoxFit.fitHeight)),
-                                      ),
-                                      Container(
-                                        height: screenSize.height * 0.5,
-                                        width: screenSize.width,
-                                        child: Column(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.end,
-                                          children: [
-                                            Container(
-                                              height: 200,
-                                              decoration: BoxDecoration(
-                                                gradient: LinearGradient(
-                                                  colors: [
-                                                    Color.fromRGBO(
-                                                        0, 0, 0, 0.0),
-                                                    Color.fromRGBO(
-                                                        0, 0, 0, 0.1),
-                                                    Color.fromRGBO(
-                                                        0, 0, 0, 0.3),
-                                                    Color.fromRGBO(
-                                                        0, 0, 0, 0.4),
-                                                  ],
-                                                  begin: Alignment.topCenter,
-                                                  end: Alignment.bottomCenter,
-                                                ),
-                                              ),
-                                            )
-                                          ],
-                                        ),
-                                      ),
-                                      Padding(
-                                        padding: EdgeInsets.only(
-                                          left: 20,
-                                          right: 20,
-                                        ),
-                                        child: Container(
-                                          height: screenSize.height * 0.5,
-                                          width: screenSize.width * 0.9,
-                                          child: Column(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.end,
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Row(
-                                                children: [
-                                                  Container(
-                                                    decoration: BoxDecoration(
-                                                        color: Color.fromRGBO(
-                                                            0, 0, 0, 0.7),
-                                                        borderRadius:
-                                                            BorderRadius.all(
-                                                                Radius.circular(
-                                                                    30))),
-                                                    alignment: Alignment.center,
-                                                    padding:
-                                                        EdgeInsets.symmetric(
-                                                            horizontal: 15,
-                                                            vertical: 3),
-                                                    margin: EdgeInsets.only(
-                                                        bottom: 5),
-                                                    child: Text(
-                                                      data.category,
-                                                      style: theme
-                                                          .textTheme.subtitle1
-                                                          ?.copyWith(
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .w600,
-                                                              color:
-                                                                  Colors.white),
-                                                    ),
-                                                  ),
-                                                  Spacer()
-                                                ],
-                                              ),
-                                              Text(
-                                                data.title,
-                                                style: theme.textTheme.headline5
-                                                    ?.copyWith(
-                                                        fontFamily: 'Unna',
-                                                        fontWeight:
-                                                            FontWeight.w600,
-                                                        color: Colors.white,
-                                                        shadows: [
-                                                      // Shadow(
-                                                      //     blurRadius: 10.0,
-                                                      //     color: Colors.black,
-                                                      //     offset:
-                                                      //         Offset(1.0, 1.0))
-                                                    ]),
-                                              ),
-                                              SizedBox(
-                                                height: 30,
-                                              )
-                                            ],
-                                          ),
-                                        ),
-                                      )
-                                    ],
-                                  ),
-                                  SizedBox(
-                                    height: 12.0,
-                                  ),
-                                  Container(
-                                    color: _darkMode
-                                        ? Colors.white
-                                        : Color.fromRGBO(38, 38, 38, 1.0),
-                                    width: screenSize.width,
-                                    child: Column(
-                                      children: [
-                                        SizedBox(
-                                          height: 4.0,
-                                        ),
-                                        Container(
-                                          width: screenSize.width * 0.9,
-                                          child: Row(
-                                            children: [
-                                              Container(
-                                                decoration: BoxDecoration(
-                                                    color: Color.fromRGBO(
-                                                        149, 149, 149, 1.0),
-                                                    borderRadius:
-                                                        BorderRadius.all(
-                                                            Radius.circular(
-                                                                30))),
-                                                alignment: Alignment.center,
-                                                padding: EdgeInsets.only(
-                                                    left: 3,
-                                                    right: 15,
-                                                    top: 3,
-                                                    bottom: 3),
-                                                margin:
-                                                    EdgeInsets.only(bottom: 5),
-                                                child: Row(
-                                                  children: [
-                                                    ClipRRect(
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              50),
-                                                      child: Container(
-                                                        width: 26,
-                                                        color: Colors.white,
-                                                        child: Icon(
-                                                          Icons.person,
-                                                          size: 25,
-                                                          color: Color.fromRGBO(
-                                                              76,
-                                                              168,
-                                                              155,
-                                                              1.0),
-                                                        ),
-                                                      ),
-                                                    ),
-                                                    SizedBox(
-                                                      width: 10.0,
-                                                    ),
-                                                    Text(
-                                                      data.penulis.toString(),
-                                                      style: theme
-                                                          .textTheme.subtitle2
-                                                          ?.copyWith(
-                                                        color: Colors.white,
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                              SizedBox(
-                                                width: 12.0,
-                                              ),
-                                              Text(
-                                                data.tanggal,
-                                                style: theme.textTheme.subtitle2
-                                                    ?.copyWith(
-                                                  color: _darkMode
-                                                      ? Color.fromRGBO(
-                                                          131, 131, 131, 1.0)
-                                                      : Colors.white,
-                                                ),
-                                              ),
-                                              Spacer()
-                                            ],
-                                          ),
-                                        ),
-                                        SizedBox(
-                                          height: 8.0,
-                                        ),
-                                        ...paragraf.map((kalimat) {
-                                          if (kalimat.indexOf('[img') != -1) {
-                                            String imgUrl = kalimat.substring(
-                                                5, kalimat.length - 1);
-                                            log('imgRul : $imgUrl');
-                                            return Container(
-                                              width: screenSize.width * 0.9,
-                                              child: Image.network(
-                                                imgUrl.trim(),
-                                                fit: BoxFit.fitWidth,
-                                              ),
-                                            );
-                                          } else {
-                                            return Container(
-                                              width: screenSize.width * 0.9,
-                                              child: Text(
-                                                kalimat,
-                                                textAlign: TextAlign.justify,
-                                                style: TextStyle(
-                                                    fontFamily: 'Athelas',
-                                                    fontWeight:
-                                                        FontWeight.normal,
-                                                    color: _darkMode
-                                                        ? Color.fromRGBO(
-                                                            61, 61, 61, 1.0)
-                                                        : Colors.white),
-                                              ),
-                                            );
-                                          }
-                                        }),
-                                        SizedBox(
-                                          height: 20,
-                                        ),
-                                      ],
-                                    ),
-                                  )
-                                ],
-                              );
-                            } else {
-                              String errorTitle =
-                                  'Tidak dapat menemukan artikel yang dicari';
-                              // String? errorSubtitle = snapshot.data?.error;
-                              return Column(
-                                children: [
-                                  SizedBox(height: 16),
-                                  ErrorCard(
-                                    title: errorTitle,
-                                    // subtitle: errorSubtitle,
-                                    iconData: Icons.warning_rounded,
-                                  ),
-                                ],
-                              );
-                            }
-                          } else {
+                          print(
+                              'ArticleDetailScreen: FutureBuilder ConnectionState: ${snapshot.connectionState}');
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
                             return Column(
                               children: [
                                 SizedBox(height: screenSize.height * 0.5),
@@ -429,6 +229,302 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                                   child: CircularProgressIndicator(
                                     color: theme.primaryColor,
                                   ),
+                                ),
+                              ],
+                            );
+                          } else if (snapshot.hasError ||
+                              (snapshot.hasData && !snapshot.data!.isSuccess)) {
+                            print(
+                                'ArticleDetailScreen: FutureBuilder Error: ${snapshot.error ?? snapshot.data?.error}');
+                            String errorTitle = 'Gagal memuat artikel';
+                            String? errorSubtitle =
+                                snapshot.error?.toString() ??
+                                    snapshot.data?.error;
+                            return Column(
+                              children: [
+                                SizedBox(height: 16),
+                                ErrorCard(
+                                  title: errorTitle,
+                                  subtitle: errorSubtitle,
+                                  iconData: Icons.warning_rounded,
+                                ),
+                              ],
+                            );
+                          } else if (snapshot.hasData &&
+                              snapshot.data!.data != null) {
+                            print(
+                                'ArticleDetailScreen: FutureBuilder Data tersedia.');
+                            MobileArticleDetailModel data =
+                                snapshot.data!.data!;
+                            // Panggil splitTextByImageTag
+                            print(
+                                'ArticleDetailScreen: Memulai splitTextByImageTag...');
+                            List<String> paragraf =
+                                splitTextByImageTag(data.content, []);
+                            print(
+                                'ArticleDetailScreen: splitTextByImageTag selesai. Panjang list paragraf: ${paragraf.length}');
+
+                            return Column(
+                              children: [
+                                Stack(
+                                  children: [
+                                    Container(
+                                      height: screenSize.height * 0.5,
+                                      width: screenSize.width,
+                                      decoration: BoxDecoration(
+                                        image: DecorationImage(
+                                          image: CachedNetworkImageProvider(
+                                            data.imageUrl.toString(),
+                                          ),
+                                          fit: BoxFit.fitHeight,
+                                        ),
+                                      ),
+                                    ),
+                                    Container(
+                                      height: screenSize.height * 0.5,
+                                      width: screenSize.width,
+                                      child: Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.end,
+                                        children: [
+                                          Container(
+                                            height: 200,
+                                            decoration: BoxDecoration(
+                                              gradient: LinearGradient(
+                                                colors: [
+                                                  Color.fromRGBO(0, 0, 0, 0.0),
+                                                  Color.fromRGBO(0, 0, 0, 0.1),
+                                                  Color.fromRGBO(0, 0, 0, 0.3),
+                                                  Color.fromRGBO(0, 0, 0, 0.4),
+                                                ],
+                                                begin: Alignment.topCenter,
+                                                end: Alignment.bottomCenter,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Padding(
+                                      padding: EdgeInsets.only(
+                                        left: 20,
+                                        right: 20,
+                                      ),
+                                      child: Container(
+                                        height: screenSize.height * 0.5,
+                                        width: screenSize.width * 0.9,
+                                        child: Column(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.end,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              children: [
+                                                Container(
+                                                  decoration: BoxDecoration(
+                                                      color: Color.fromRGBO(
+                                                          149, 149, 149, 1.0),
+                                                      borderRadius:
+                                                          BorderRadius.all(
+                                                              Radius.circular(
+                                                                  30))),
+                                                  alignment: Alignment.center,
+                                                  padding: EdgeInsets.symmetric(
+                                                      horizontal: 15,
+                                                      vertical: 3),
+                                                  margin: EdgeInsets.only(
+                                                      bottom: 5),
+                                                  child: Row(
+                                                    children: [
+                                                      ClipRRect(
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(50),
+                                                      ),
+                                                      Text(
+                                                        data.category
+                                                            .toString(),
+                                                        style: theme
+                                                            .textTheme.subtitle2
+                                                            ?.copyWith(
+                                                                color: Colors
+                                                                    .white),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                                Spacer()
+                                              ],
+                                            ),
+                                            Text(
+                                              data.title,
+                                              style: theme.textTheme.headline5
+                                                  ?.copyWith(
+                                                      fontFamily: 'Unna',
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      color: Colors.white,
+                                                      shadows: [
+                                                    // Shadow(
+                                                    //   blurRadius: 10.0,
+                                                    //   color: Colors.black,
+                                                    //   offset:
+                                                    //       Offset(1.0, 1.0))
+                                                  ]),
+                                            ),
+                                            SizedBox(
+                                              height: 30,
+                                            )
+                                          ],
+                                        ),
+                                      ),
+                                    )
+                                  ],
+                                ),
+                                SizedBox(
+                                  height: 12.0,
+                                ),
+                                Container(
+                                  color: _darkMode
+                                      ? Colors.white
+                                      : Color.fromRGBO(38, 38, 38, 1.0),
+                                  width: screenSize.width,
+                                  child: Column(
+                                    children: [
+                                      SizedBox(
+                                        height: 4.0,
+                                      ),
+                                      Container(
+                                        width: screenSize.width * 0.9,
+                                        child: Row(
+                                          children: [
+                                            Container(
+                                              decoration: BoxDecoration(
+                                                  color: Color.fromRGBO(
+                                                      149, 149, 149, 1.0),
+                                                  borderRadius:
+                                                      BorderRadius.all(
+                                                          Radius.circular(30))),
+                                              alignment: Alignment.center,
+                                              padding: EdgeInsets.only(
+                                                  left: 3,
+                                                  right: 15,
+                                                  top: 3,
+                                                  bottom: 3),
+                                              margin:
+                                                  EdgeInsets.only(bottom: 5),
+                                              child: Row(
+                                                children: [
+                                                  ClipRRect(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            50),
+                                                    child: Container(
+                                                      width: 26,
+                                                      color: Colors.white,
+                                                      child: Icon(
+                                                        Icons.person,
+                                                        size: 25,
+                                                        color: Color.fromRGBO(
+                                                            76, 168, 155, 1.0),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  SizedBox(
+                                                    width: 10.0,
+                                                  ),
+                                                  Text(
+                                                    data.penulis.toString(),
+                                                    style: theme
+                                                        .textTheme.subtitle2
+                                                        ?.copyWith(
+                                                      color: Colors.white,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            SizedBox(
+                                              width: 12.0,
+                                            ),
+                                            Text(
+                                              data.tanggal,
+                                              style: theme.textTheme.subtitle2
+                                                  ?.copyWith(
+                                                color: _darkMode
+                                                    ? Color.fromRGBO(
+                                                        131, 131, 131, 1.0)
+                                                    : Colors.white,
+                                              ),
+                                            ),
+                                            Spacer()
+                                          ],
+                                        ),
+                                      ),
+                                      SizedBox(
+                                        height: 8.0,
+                                      ),
+                                      ...paragraf.map((kalimat) {
+                                        if (kalimat.indexOf('[img') != -1) {
+                                          String imgUrl = kalimat.substring(
+                                              5, kalimat.length - 1);
+                                          print(
+                                              'ArticleDetailScreen: imgUrl dari tag: $imgUrl'); // Menggunakan print
+                                          return Container(
+                                            width: screenSize.width * 0.9,
+                                            child: CachedNetworkImage(
+                                              // Gunakan CachedNetworkImage untuk gambar konten
+                                              imageUrl: imgUrl.trim(),
+                                              fit: BoxFit.fitWidth,
+                                              placeholder: (context, url) => Center(
+                                                  child:
+                                                      CircularProgressIndicator()),
+                                              errorWidget:
+                                                  (context, url, error) =>
+                                                      Icon(Icons.error),
+                                            ),
+                                          );
+                                        } else {
+                                          return Container(
+                                            width: screenSize.width * 0.9,
+                                            child: Text(
+                                              kalimat,
+                                              textAlign: TextAlign.justify,
+                                              style: TextStyle(
+                                                  fontFamily: 'Athelas',
+                                                  fontWeight: FontWeight.normal,
+                                                  color: _darkMode
+                                                      ? Color.fromRGBO(
+                                                          61, 61, 61, 1.0)
+                                                      : Colors.white),
+                                            ),
+                                          );
+                                        }
+                                      }),
+                                      SizedBox(
+                                        height: 20,
+                                      ),
+                                    ],
+                                  ),
+                                )
+                              ],
+                            );
+                          } else {
+                            // Ini akan menangani kasus di mana snapshot.data null atau data di dalamnya null
+                            print(
+                                'ArticleDetailScreen: FutureBuilder Data null atau tidak ada.'); // Menggunakan print
+                            String errorTitle =
+                                'Tidak dapat menemukan artikel yang dicari';
+                            String? errorSubtitle = snapshot.data?.error ??
+                                'Data artikel tidak tersedia.';
+                            return Column(
+                              children: [
+                                SizedBox(height: 16),
+                                ErrorCard(
+                                  title: errorTitle,
+                                  subtitle: errorSubtitle,
+                                  iconData: Icons.warning_rounded,
                                 ),
                               ],
                             );
@@ -477,6 +573,8 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
 
   List<String> splitTextByImageTag(
       String kalimat, List<String> splittedKalimat) {
+    print(
+        'ArticleDetailScreen: splitTextByImageTag dipanggil dengan kalimat awal: ${kalimat.length > 50 ? kalimat.substring(0, 50) + '...' : kalimat}'); // Menggunakan print
     late String firstPart;
     late String nextPart;
     late String lastPart;
@@ -484,7 +582,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
     late int startIndex;
     late int endIndex;
 
-    // if (kalimat != null && kalimat.length > 0) {
+    // if (kalimat != null && kalimat.length > 0) { // Pengecekan null ini tidak diperlukan karena parameter String tidak nullable
     startIndex = kalimat.indexOf('[img=');
     if (startIndex != -1) {
       // there are image in this paragraph
@@ -498,14 +596,27 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
         lastPart = nextPart.substring(endIndex + 1);
         splittedKalimat.add(firstPart);
         splittedKalimat.add(imgUrl);
+        print(
+            'ArticleDetailScreen: Ditemukan tag gambar. FirstPart: ${firstPart.length}, ImgUrl: ${imgUrl.length}, LastPart: ${lastPart.length}'); // Menggunakan print
+      } else {
+        // Handle case where [img= tag is opened but not closed
+        print(
+            'ArticleDetailScreen: Peringatan: Tag [img= tidak ditutup dengan ]. Menambahkan sisa kalimat sebagai teks.'); // Menggunakan print
+        splittedKalimat.add(kalimat);
+        return splittedKalimat;
       }
 
       return splitTextByImageTag(lastPart, splittedKalimat);
     } else {
       //tidak ada image lagi dalam paragraf
-      splittedKalimat.add(kalimat);
+      if (kalimat.isNotEmpty) {
+        // Hanya tambahkan jika tidak kosong
+        splittedKalimat.add(kalimat);
+      }
+      print(
+          'ArticleDetailScreen: Tidak ada tag gambar lagi. Mengembalikan list. Total paragraf: ${splittedKalimat.length}'); // Menggunakan print
       return splittedKalimat;
     }
-    // }
+    // } // Tutup komentar ini
   }
 }

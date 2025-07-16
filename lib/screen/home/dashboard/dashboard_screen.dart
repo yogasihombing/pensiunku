@@ -1003,6 +1003,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
         SizedBox(width: screenWidth * 0.025),
         Expanded(
+          
           child: _isLoadingCheckMemberActionButton
               ? Center(
                   child: CircularProgressIndicator(

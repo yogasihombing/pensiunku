@@ -297,7 +297,7 @@ class ForumRepository extends BaseRepository {
       getFromApi: () async {
         log('Mencoba memeriksa status like dari API.', name: tag);
         // --- PERUBAHAN: Langsung panggil API dan kembalikan http.Response, hapus try-catch di sini ---
-        return await api.checkStatusLike(token!, idPost); // token! karena sudah dicek null
+        return await api.checkStatusLike(token, idPost); // token! karena sudah dicek null
         // --- AKHIR PERUBAHAN ---
       },
       getDataFromApiResponse: (responseJson) {

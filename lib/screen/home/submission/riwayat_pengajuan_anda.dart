@@ -10,6 +10,7 @@ import 'package:pensiunku/widget/dialog_helper.dart';
 class RiwayatPengajuanAndaScreen extends StatefulWidget {
   static const String ROUTE_NAME = '/riwayat_pengajuan_anda';
   final void Function(int index) onChangeBottomNavIndex;
+
   const RiwayatPengajuanAndaScreen({
     Key? key,
     required this.onChangeBottomNavIndex,
@@ -22,115 +23,97 @@ class RiwayatPengajuanAndaScreen extends StatefulWidget {
 
 class _RiwayatPengajuanAndaScreenState
     extends State<RiwayatPengajuanAndaScreen> {
-  final RiwayatPengajuanAndaRepository _repository =
-      RiwayatPengajuanAndaRepository();
-  List<RiwayatPengajuanAndaModel> pengajuanAndaData = [];
-  bool isLoading = true;
-  String telepon = '';
-
-  Future<void> _getProfile() async {
-    String? token = SharedPreferencesUtil()
-        .sharedPreferences
-        .getString(SharedPreferencesUtil.SP_KEY_TOKEN);
-
-    if (token == null || token.isEmpty) {
-      setState(() {
-        isLoading = false;
-      });
-      // Tampilkan pesan error atau arahkan ke login jika token tidak ada
-      DialogHelper.showErrorDialog(
-        context,
-        "Autentikasi Gagal",
-        "Token autentikasi tidak ditemukan. Harap login kembali.",
-        onOk: () {
-          Navigator.pop(context); // Tutup dialog
-          // Contoh: Navigator.pushReplacementNamed(context, '/login');
-        },
-      );
-      return;
-    }
-
-    // Menggunakan try-catch untuk menangani error dari UserRepository().getOne
-    try {
-      final value = await UserRepository().getOne(token);
-      if (value.error != null) {
-        DialogHelper.showErrorDialog(context, "Error", value.error.toString());
-        setState(() {
-          isLoading = false;
-        });
-        return;
-      }
-      telepon = value.data?.phone ?? '';
-      debugPrint('Telepon dari profil: $telepon'); // Menggunakan debugPrint
-      fetchPengajuanAndaData(telepon);
-    } catch (e) {
-      debugPrint('Error fetching profile: $e'); // Menggunakan debugPrint
-      DialogHelper.showErrorDialog(
-          context, "Error", "Gagal memuat profil: ${e.toString()}");
-      setState(() {
-        isLoading = false;
-      });
-    }
-  }
+  final _repository = RiwayatPengajuanAndaRepository();
+  List<RiwayatPengajuanAndaModel> _pengajuanList = [];
+  bool _isLoading = true;
+  String _telepon = '';
 
   @override
   void initState() {
     super.initState();
-    _getProfile();
+    _getProfileAndData();
   }
 
-  Future<void> fetchPengajuanAndaData(String telepon) async {
-    setState(() => isLoading = true);
-    try {
-      debugPrint(
-          'UI: Memulai fetch data untuk telepon $telepon'); // Menggunakan debugPrint
-      final data = await _repository.getRiwayatPengajuanAnda(telepon);
-      debugPrint(
-          'UI: Data diterima dari repository: $data'); // Menggunakan debugPrint
+  Future<void> _getProfileAndData() async {
+    setState(() => _isLoading = true);
+    final token = SharedPreferencesUtil()
+        .sharedPreferences
+        .getString(SharedPreferencesUtil.SP_KEY_TOKEN);
 
+    if (token == null || token.isEmpty) {
+      setState(() => _isLoading = false);
+      DialogHelper.showErrorDialog(
+        context,
+        'Autentikasi Gagal',
+        'Token tidak ditemukan. Harap login kembali.',
+      );
+      return;
+    }
+
+    try {
+      final result = await UserRepository().getOne(token);
+      if (result.error != null) {
+        setState(() => _isLoading = false);
+        DialogHelper.showErrorDialog(context, 'Error', result.error!);
+        return;
+      }
+
+      _telepon = result.data?.phone ?? '';
+      await _fetchPengajuanData();
+    } catch (e) {
+      setState(() => _isLoading = false);
+      DialogHelper.showErrorDialog(
+        context,
+        'Error',
+        'Gagal memuat profil: ${e.toString()}',
+      );
+    }
+  }
+
+  Future<void> _fetchPengajuanData() async {
+    setState(() => _isLoading = true);
+    try {
+      final data = await _repository.getRiwayatPengajuanAnda(_telepon);
       setState(() {
-        pengajuanAndaData = data;
-        isLoading = false;
+        _pengajuanList = data;
+        _isLoading = false;
       });
 
-      if (pengajuanAndaData.isEmpty) {
-        showDialog(
+      if (data.isEmpty) {
+        await showDialog(
           context: context,
-          builder: (context) => DialogHelper(
-            title: "Informasi",
+          builder: (_) => DialogHelper(
+            title: 'Informasi',
             description:
-                "Tidak ada riwayat pengajuan Anda. Ajukan permohonan sekarang.",
-            buttonText: "Ajukan Sekarang", // Pastikan buttonText disediakan
+                'Tidak ada riwayat pengajuan Anda.\nAjukan permohonan sekarang.',
+            buttonText: 'Ajukan Sekarang',
+            dialogType: DialogType.success,
             onButtonPress: () {
-              Navigator.of(context).pop(); // Tutup dialog
+              Navigator.of(context).pop();
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => PengajuanAndaScreen(),
+                  builder: (_) => PengajuanAndaScreen(),
                 ),
               );
             },
-            dialogType: DialogType.info, // Diubah menjadi info
           ),
         );
       }
-    } catch (e, stackTrace) {
-      debugPrint('UI: Error saat fetch data - $e'); // Menggunakan debugPrint
-      debugPrint('UI: StackTrace - $stackTrace'); // Menggunakan debugPrint
-
-      setState(() => isLoading = false);
-      showDialog(
+    } catch (e) {
+      setState(() => _isLoading = false);
+      await showDialog(
         context: context,
-        builder: (context) => DialogHelper(
-          title: "Error Memuat Data",
+        builder: (_) => DialogHelper(
+          title: 'Error Memuat Data',
           description:
-              "Terjadi kesalahan saat memuat riwayat pengajuan Anda: ${e.toString()}",
-          buttonText: "Coba Lagi", // Pastikan buttonText disediakan
-          onButtonPress: () {
-            Navigator.of(context).pop(); // Tutup dialog
-            fetchPengajuanAndaData(telepon); // Coba lagi
-          },
+              'Terjadi kesalahan saat memuat riwayat pengajuan Anda: ${e.toString()}',
+          buttonText: 'Coba Lagi',
           dialogType: DialogType.error,
+          onButtonPress: () {
+            Navigator.of(context).pop();
+            _fetchPengajuanData();
+          },
         ),
       );
     }
@@ -138,208 +121,208 @@ class _RiwayatPengajuanAndaScreenState
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        // Gradient background
-        Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Colors.white,
-                Color(0xFFDCE293),
-              ],
-              stops: [0.6, 1.0],
-            ),
+    return Scaffold(
+      extendBodyBehindAppBar: true,
+      backgroundColor: Colors.transparent,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Color(0xFF017964)),
+          onPressed: () {
+            if (Navigator.canPop(context))
+              Navigator.pop(context);
+            else
+              widget.onChangeBottomNavIndex(0);
+          },
+        ),
+        title: const Text(
+          'Riwayat Pengajuan',
+          style: TextStyle(
+            color: Color(0xFF017964),
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
           ),
         ),
-
-        // Main content with transparent scaffold
-        Scaffold(
-          backgroundColor: Colors.transparent,
-          appBar: AppBar(
-            title: const Text(''),
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back, color: Color(0xFF017964)),
-              onPressed: () {
-                if (Navigator.canPop(context)) {
-                  Navigator.pop(context);
-                } else {
-                  widget.onChangeBottomNavIndex(0);
-                }
-              },
-            ),
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            flexibleSpace: Center(
-              child: Padding(
-                padding: EdgeInsets.only(
-                    top: MediaQuery.of(context).padding.top + 5),
-                child: const Text(
-                  'Riwayat Pengajuan',
-                  style: TextStyle(
-                    color: Color(0xFF017964),
-                    fontWeight: FontWeight.bold,
-                    fontSize: 20,
-                  ),
-                ),
-              ),
-            ),
-          ),
-          body: RefreshIndicator(
-            onRefresh: () async {
-              await fetchPengajuanAndaData(telepon);
-            },
-            child: isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : pengajuanAndaData.isEmpty
-                    ? ListView(children: const [
-                        SizedBox(
-                          height: 300,
-                          child: Center(
-                            child: Text('Tidak ada riwayat pengajuan Anda.'),
-                          ),
-                        ),
-                      ])
-                    : ListView.builder(
-                        itemCount: pengajuanAndaData.length,
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        itemBuilder: (context, index) {
-                          final pengajuanAnda = pengajuanAndaData[index];
-                          return InkWell(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      StatusPengajuanAndaScreen(
-                                    pengajuanAnda: pengajuanAnda,
-                                  ),
-                                ),
-                              );
-                            },
-                            child: Container(
-                              margin: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 8,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(12),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.grey.withOpacity(0.3),
-                                    spreadRadius: 1,
-                                    blurRadius: 6,
-                                    offset: const Offset(0, 3),
-                                  ),
-                                ],
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.all(16.0),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      pengajuanAnda.nama,
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.bold,
-                                        color: Color(0xFF017964),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 12),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 8,
-                                        horizontal: 12,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: Colors.grey[50],
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: Column(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Row(
-                                            children: [
-                                              const Icon(
-                                                Icons
-                                                    .confirmation_number_outlined,
-                                                size: 20,
-                                                color: Colors.black,
-                                              ),
-                                              const SizedBox(width: 8),
-                                              Text(
-                                                'Pengajuan ${pengajuanAnda.tiket}',
-                                                style: const TextStyle(
-                                                  color: Colors.black,
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                          Row(
-                                            children: [
-                                              const Icon(
-                                                Icons.calendar_today_outlined,
-                                                size: 16,
-                                                color: Colors.black,
-                                              ),
-                                              const SizedBox(width: 12),
-                                              Text(
-                                                pengajuanAnda.tanggal,
-                                                style: const TextStyle(
-                                                  color: Colors.black,
-                                                  fontSize: 14,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    Padding(
-                                      padding: const EdgeInsets.only(top: 12),
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.end,
-                                        children: [
-                                          Text(
-                                            'Status: ${pengajuanAnda.statusPengajuan}', // Menampilkan status pengajuan
-                                            style: TextStyle(
-                                              color: _getStatusColor(
-                                                  pengajuanAnda
-                                                      .statusPengajuan),
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                          SizedBox(width: 4),
-                                          Icon(
-                                            Icons.arrow_forward_ios,
-                                            size: 12,
-                                            color: Color(0xFF017964),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
+        centerTitle: true,
+      ),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Colors.white, Color(0xFFDCE293)],
+            stops: [0.6, 1.0],
           ),
         ),
-      ],
+        child: RefreshIndicator(
+          onRefresh: () => _fetchPengajuanData(),
+          child: _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _pengajuanList.isEmpty
+                  ? _buildEmptyState()
+                  : ListView.builder(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      itemCount: _pengajuanList.length,
+                      itemBuilder: (_, index) {
+                        final item = _pengajuanList[index];
+                        return PengajuanCard(
+                          pengajuan: item,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => StatusPengajuanAndaScreen(
+                                  pengajuanAnda: item,
+                                ),
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
+        ),
+      ),
     );
   }
 
-  // Helper function to get status color
+  Widget _buildEmptyState() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: const Center(
+              child: Text(
+                'AJUKAN PINJAMAN SEKARANG!',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black54,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class PengajuanCard extends StatelessWidget {
+  final RiwayatPengajuanAndaModel pengajuan;
+  final VoidCallback onTap;
+
+  const PengajuanCard({
+    Key? key,
+    required this.pengajuan,
+    required this.onTap,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 100),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.3),
+              spreadRadius: 1,
+              blurRadius: 6,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                pengajuan.nama,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF017964),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                decoration: BoxDecoration(
+                  color: Colors.grey[50],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.confirmation_number_outlined,
+                          size: 20,
+                          color: Colors.black,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Pengajuan ${pengajuan.tiket}',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.calendar_today_outlined,
+                          size: 16,
+                          color: Colors.black,
+                        ),
+                        const SizedBox(width: 12),
+                        Text(pengajuan.tanggal),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Text(
+                      'Status: ${pengajuan.statusPengajuan}',
+                      style: TextStyle(
+                        color: _getStatusColor(pengajuan.statusPengajuan),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    const Icon(
+                      Icons.arrow_forward_ios,
+                      size: 12,
+                      color: Color(0xFF017964),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Color _getStatusColor(String status) {
     switch (status.toLowerCase()) {
       case 'pending':
@@ -353,203 +336,3 @@ class _RiwayatPengajuanAndaScreenState
     }
   }
 }
-
-// class RiwayatPengajuanAndaScreen extends StatefulWidget {
-//   static const String ROUTE_NAME = '/riwayat_pengajuan_anda';
-//   final void Function(int index) onChangeBottomNavIndex;
-//   const RiwayatPengajuanAndaScreen({
-//     Key? key,
-//     required this.onChangeBottomNavIndex,
-//   }) : super(key: key);
-
-//   @override
-//   State<RiwayatPengajuanAndaScreen> createState() =>
-//       _RiwayatPengajuanAndaScreenState();
-// }
-
-// class _RiwayatPengajuanAndaScreenState
-//     extends State<RiwayatPengajuanAndaScreen> {
-//   final RiwayatPengajuanAndaRepository _repository =
-//       RiwayatPengajuanAndaRepository();
-//   List<RiwayatPengajuanAndaModel> pengajuanAndaData = [];
-//   bool isLoading = true;
-//   String telepon = '';
-
-//   Future<void> _getProfile() async {
-//     String? token = SharedPreferencesUtil().sharedPreferences.getString(
-//         SharedPreferencesUtil.SP_KEY_TOKEN); // Mendapatkan token pengguna
-
-//     UserRepository().getOne(token!).then((value) {
-//       telepon = value.data?.phone ?? '';
-//       print(value.data);
-//       fetchPengajuanAndaData(telepon);
-//     });
-//   }
-
-//   @override
-//   void initState() {
-//     super.initState();
-//     _getProfile();
-//   }
-
-//   Future<void> fetchPengajuanAndaData(String telepon) async {
-//     setState(() => isLoading = true); // Set loading menjadi true
-//     try {
-//       print('UI: Memulai fetch data untuk telepon $telepon');
-//       final data = await _repository
-//           .getRiwayatPengajuanAnda(telepon); // Panggil data dari repository
-//       print('UI: Data diterima dari repository: $data');
-
-//       setState(() {
-//         pengajuanAndaData = data; // Update data ke state
-//         isLoading = false; // Selesai loading
-//       });
-
-//       if (pengajuanAndaData.isEmpty) {
-//         _showNoPengajuanDialog(
-//           title: 'Informasi',
-//           description:
-//               'Tidak ada riwayat pengajuan Anda. Ajukan permohonan sekarang.',
-//           buttonText: 'Ajukan Sekarang',
-//           onButtonPress: () {
-//             Navigator.pushNamed(context, '/pengajuan_anda');
-//           },
-//           dialogType: DialogType.info,
-//         );
-//       }
-//     } catch (e, stackTrace) {
-//       print('UI: Error saat fetch data - $e');
-//       print('UI: StackTrace - $stackTrace');
-
-//       setState(() => isLoading = false); // Selesaikan loading meski ada error
-//       _showNoPengajuanDialog(
-//         title: 'Gagal Memuat Data',
-//         description:
-//             'Tidak ada riwayat pengajuan Anda. Ajukan permohonan sekarang.',
-//         buttonText: 'Ajukan Sekarang',
-//         onButtonPress: () {
-//           Navigator.pushNamed(context, '/pengajuan_anda');
-//         },
-//         dialogType: DialogType.info,
-//       );
-//     }
-//   }
-
-//   void _showNoPengajuanDialog({
-//     required String title,
-//     required String description,
-//     required String buttonText,
-//     required VoidCallback onButtonPress,
-//     DialogType dialogType = DialogType.info,
-//   }) {
-//     AwesomeDialog(
-//       context: context,
-//       dialogType: dialogType,
-//       animType: AnimType.bottomSlide,
-//       title: title,
-//       desc: description,
-//       btnOkText: buttonText,
-//       btnOkOnPress: onButtonPress,
-//     ).show();
-//   }
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       appBar: AppBar(
-//         title: Text(''), // Judul kosong
-//         leading: IconButton(
-//           icon: Icon(Icons.arrow_back, color: Color(0xFF017964)),
-//           onPressed: () {
-//             if (Navigator.canPop(context)) {
-//               Navigator.pop(context);
-//             } else {
-//               widget.onChangeBottomNavIndex(0);
-//             }
-//           },
-//         ),
-//         backgroundColor: Colors.transparent, // AppBar transparan
-//         elevation: 0, // Menghilangkan bayangan
-//         flexibleSpace: Center(
-//           // Pusatkan teks di tengah layar
-//           child: Padding(
-//             padding: EdgeInsets.only(
-//                 top: MediaQuery.of(context).padding.top +
-//                     5), // Sesuaikan padding atas
-//             child: Text(
-//               'Riwayat Pengajuan',
-//               style: TextStyle(
-//                 color: Color(0xFF017964), // Warna teks
-//                 fontWeight: FontWeight.bold, // Teks bold
-//                 fontSize: 20, // Ukuran teks
-//               ),
-//             ),
-//           ),
-//         ),
-//       ),
-//       body: RefreshIndicator(
-//         onRefresh: () async {
-//           fetchPengajuanAndaData(telepon);
-//         }, // Fungsi refresh saat swipe down
-//         child: isLoading
-//             ? const Center(
-//                 child: CircularProgressIndicator()) // Loader saat loading
-//             : pengajuanAndaData.isEmpty
-//                 ? ListView(children: const [
-//                     SizedBox(
-//                       height: 300,
-//                       child: Center(
-//                         child: Text(
-//                             'Tidak ada riwayat pengajuan Anda.'), // Pesan jika data kosong
-//                       ),
-//                     ),
-//                   ])
-//                 : ListView.builder(
-//                     itemCount: pengajuanAndaData.length, // Jumlah data
-//                     itemBuilder: (context, index) {
-//                       final pengajuanAnda = pengajuanAndaData[
-//                           index]; // Mendefinisikan variabel pengajuan
-//                       return Card(
-//                         margin: const EdgeInsets.all(8.0),
-//                         child: ListTile(
-//                           leading: CircleAvatar(
-//                             child: Text(
-//                               pengajuanAnda.tiket
-//                                   .substring(0, 2)
-//                                   .toUpperCase(), // Inisial dari tiket
-//                             ),
-//                           ),
-//                           title: Text(
-//                             pengajuanAnda.nama,
-//                             style: const TextStyle(
-//                               color: Colors.black,
-//                               fontWeight: FontWeight.bold,
-//                             ),
-//                           ), // Nama pemohon
-//                           subtitle: Text(
-//                               'Tanggal: ${pengajuanAnda.tanggal}'), // Tanggal pengajuan
-//                           trailing: Text(
-//                             'Kode: ${pengajuanAnda.tiket}', // Tiket pengajuan
-//                             style: const TextStyle(
-//                                 color: Colors.blue,
-//                                 fontWeight: FontWeight.bold),
-//                           ),
-//                           onTap: () {
-//                             Navigator.push(
-//                               context,
-//                               MaterialPageRoute(
-//                                 builder: (context) => StatusPengajuanAndaScreen(
-//                                   pengajuanAnda:
-//                                       pengajuanAnda, // Kirim data pengajuan
-//                                 ),
-//                               ),
-//                             );
-//                           },
-//                         ),
-//                       );
-//                     },
-//                   ),
-//       ),
-//     );
-//   }
-// }
