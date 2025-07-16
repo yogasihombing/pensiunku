@@ -6,8 +6,6 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:pensiunku/data/api/pengajuan_anda_api.dart';
-
 import 'package:pensiunku/screen/home/dashboard/article/article_detail_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/article/article_screen.dart';
 import 'package:pensiunku/screen/common/galery_fullscreen.dart';
@@ -17,9 +15,6 @@ import 'package:pensiunku/screen/home/account/customer_support/customer_support_
 import 'package:pensiunku/screen/home/account/faq/faq_detail_screen.dart';
 import 'package:pensiunku/screen/home/account/faq/faq_screen.dart';
 import 'package:pensiunku/screen/home/account/privacy_policy/privacy_policy.dart';
-// import 'package:pensiunku/screen/home/account/referral/confirm_ktp_referral_screen.dart';
-// import 'package:pensiunku/screen/home/account/referral/referral_screen.dart';
-// import 'package:pensiunku/screen/home/account/referral/referral_success_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/ajukan/pengajuan_anda_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/dashboard_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/event/event_screen.dart';

@@ -3,19 +3,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:intl/intl.dart';
 import 'package:pensiunku/model/forum_model.dart';
+import 'package:pensiunku/model/result_model.dart';
 import 'package:pensiunku/repository/forum_repository.dart';
 import 'package:pensiunku/repository/user_repository.dart';
 import 'package:pensiunku/screen/home/dashboard/forum/forum_detail_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/forum/forum_posting_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/forum/photo_view_screen.dart';
 import 'package:like_button/like_button.dart';
+import 'package:pensiunku/util/shared_preferences_util.dart';
+import 'package:pensiunku/widget/sliver_app_bar_sheet_top.dart';
+import 'package:pensiunku/widget/sliver_app_bar_title.dart';
 import 'package:readmore/readmore.dart';
 import 'package:pensiunku/config.dart' show apiHost;
-
-import '../../../../model/result_model.dart';
-import '../../../../util/shared_preferences_util.dart';
-import '../../../../widget/sliver_app_bar_sheet_top.dart';
-import '../../../../widget/sliver_app_bar_title.dart';
 
 class ForumScreen extends StatefulWidget {
   static const String ROUTE_NAME = '/forum';
@@ -42,11 +41,12 @@ class _ForumScreenState extends State<ForumScreen> {
   @override
   void initState() {
     super.initState();
-    _refreshData();
     print('ForumScreen: initState dipanggil.');
+    // Inisialisasi _futureData agar tidak null di awal
+    _futureData = Future.value(ResultModel(isSuccess: true, data: []));
+    _refreshData();
   }
 
-  // --- PERBAIKAN UTAMA: Tambahkan metode dispose() ---
   @override
   void dispose() {
     // Pastikan untuk membuang (dispose) setiap controller atau listener
@@ -58,92 +58,97 @@ class _ForumScreenState extends State<ForumScreen> {
 
     // Penting: Jika Anda menambahkan StreamController atau Timer, pastikan dibatalkan di sini.
     // Misalnya: _someStreamSubscription?.cancel();
-    //           _someTimer?.cancel();
+    //          _someTimer?.cancel();
 
     print('ForumScreen: dispose() dipanggil.');
     super.dispose();
   }
-  // --- AKHIR PERBAIKAN UTAMA ---
 
   _refreshData() async {
     print('ForumScreen: _refreshData dipanggil.');
-    String? token = SharedPreferencesUtil()
-        .sharedPreferences
-        .getString(SharedPreferencesUtil.SP_KEY_TOKEN);
+    final prefs = await SharedPreferencesUtil().sharedPreferences;
+    String? token = prefs.getString(SharedPreferencesUtil.SP_KEY_TOKEN);
+    print('ForumScreen: Token diambil: ${token != null && token.isNotEmpty ? "Ada" : "Tidak Ada"}');
 
-    if (token == null) {
-      print('ForumScreen: Token null, tidak dapat memuat data forum.');
+
+    if (token == null || token.isEmpty) {
+      print('ForumScreen: Token null atau kosong, tidak dapat memuat data forum.');
       if (mounted) {
-        // Periksa mounted sebelum setState
         setState(() {
           _futureData = Future.value(
               ResultModel(isSuccess: false, error: 'Token tidak tersedia.'));
-          dataLength =
-              0; // Atur dataLength agar menampilkan "tidak ada postingan"
+          dataLength = 0; // Atur dataLength agar menampilkan "tidak ada postingan"
         });
       }
       return;
     }
 
     try {
-      int userId = await UserRepository().getOneDb(token).then((value) {
-        if (value.data != null) {
-          return value.data!.id;
+      int? userId;
+      try {
+        final userResult = await UserRepository().getOneDb(token);
+        if (userResult.data != null) {
+          userId = userResult.data!.id;
+          print('ForumScreen: User ID berhasil diambil: $userId');
+        } else {
+          print('ForumScreen: User ID tidak ditemukan atau null dari DB. Error: ${userResult.error}');
+          throw Exception(userResult.error ?? 'User ID tidak tersedia');
         }
-        print('ForumScreen: User ID tidak ditemukan atau null dari DB.');
-        throw Exception('User ID tidak tersedia');
-      }).catchError((e) {
+      } catch (e) {
         print('ForumScreen: Error mengambil user ID dari DB: $e');
-        throw e; // Lanjutkan melempar error agar ditangani oleh FutureBuilder
-      });
+        if (mounted) {
+          setState(() {
+            _futureData = Future.value(ResultModel(isSuccess: false, error: 'Gagal mendapatkan User ID: ${e.toString()}'));
+            dataLength = 0;
+          });
+        }
+        return;
+      }
 
-      print('ForumScreen: User ID: $userId');
 
       Future<ResultModel<List<ForumModel>>> currentFuture;
       if (toggleButtonPostingSelected[0]) {
-        print('ForumScreen: Memuat semua postingan forum.');
+        print('ForumScreen: Memuat semua postingan forum (Terbaru).');
         currentFuture = ForumRepository().getAllForumPost(token);
       } else {
-        print(
-            'ForumScreen: Memuat postingan forum berdasarkan user ID: $userId');
-        currentFuture = ForumRepository().getForumPostbyUserID(token, userId);
+        print('ForumScreen: Memuat postingan forum berdasarkan user ID: $userId (Postingan Saya)');
+        currentFuture = ForumRepository().getForumPostbyUserID(token, userId!); // userId dipastikan tidak null di sini
       }
 
-      // Pastikan Future ini ditangani dalam scope _refreshData
+      // Set _futureData di sini agar FutureBuilder langsung mulai menunggu
+      if (mounted) {
+        setState(() {
+          _futureData = currentFuture;
+        });
+      }
+
+
       currentFuture.then((value) {
         if (mounted) {
-          // Periksa mounted sebelum setState
           setState(() {
             if (value.data != null && value.data!.isNotEmpty) {
               dataLength = value.data!.length;
-              print(
-                  'ForumScreen: Data forum berhasil dimuat. Jumlah: $dataLength');
+              print('ForumScreen: Data forum berhasil dimuat. Jumlah: $dataLength');
             } else {
               dataLength = 0; // Data kosong
               print('ForumScreen: Tidak ada data forum yang dimuat.');
             }
-            _futureData = Future.value(
-                value); // Perbarui _futureData dengan Future yang selesai
+            // _futureData sudah di-set di atas, tidak perlu di-set lagi di sini kecuali ada perubahan state
           });
         }
       }).catchError((error) {
-        print('ForumScreen: Error memuat data forum: $error');
+        print('ForumScreen: Error memuat data forum (catch from future): $error');
         if (mounted) {
-          // Periksa mounted sebelum setState
           setState(() {
             _futureData = Future.value(
                 ResultModel(isSuccess: false, error: error.toString()));
-            dataLength =
-                0; // Set dataLength agar menampilkan "tidak ada postingan" atau pesan error
+            dataLength = 0; // Set dataLength agar menampilkan "tidak ada postingan" atau pesan error
           });
         }
       });
-      // Penting: Set _futureData di sini agar FutureBuilder langsung mulai menunggu
-      _futureData = currentFuture;
     } catch (e) {
-      print('ForumScreen: Error umum di _refreshData: $e');
+      print('ForumScreen: Error umum di _refreshData (outer catch): $e');
       if (mounted) {
-        // Periksa mounted sebelum setState
         setState(() {
           _futureData =
               Future.value(ResultModel(isSuccess: false, error: e.toString()));
@@ -154,34 +159,44 @@ class _ForumScreenState extends State<ForumScreen> {
   }
 
   Future<bool> onLikeButtonTapped(bool isLiked, int id) async {
-    print(
-        'ForumScreen: Like button ditekan untuk ID: $id. Status isLiked: $isLiked');
+    print('ForumScreen: Like button ditekan untuk ID: $id. Status isLiked: $isLiked');
     bool success;
-    String? token = SharedPreferencesUtil()
-        .sharedPreferences
-        .getString(SharedPreferencesUtil.SP_KEY_TOKEN);
+    final prefs = await SharedPreferencesUtil().sharedPreferences;
+    String? token = prefs.getString(SharedPreferencesUtil.SP_KEY_TOKEN);
 
-    if (token == null) {
-      print('ForumScreen: Token null, tidak bisa melakukan like/unlike.');
+    if (token == null || token.isEmpty) {
+      print('ForumScreen: Token null atau kosong, tidak bisa melakukan like/unlike.');
       return isLiked; // Kembalikan status asli karena tidak bisa melakukan operasi
     }
 
-    if (isLiked) {
-      success = await ForumRepository().removeLike(token, id).then((value) {
-        print('ForumScreen: Remove like success: ${value.data}');
-        return value.data ?? false; // Pastikan mengembalikan bool
-      }).catchError((e) {
-        print('ForumScreen: Error remove like: $e');
-        return false; // Gagal
-      });
-    } else {
-      success = await ForumRepository().addPostLike(token, id).then((value) {
-        print('ForumScreen: Add like success: ${value.data}');
-        return value.data ?? false; // Pastikan mengembalikan bool
-      }).catchError((e) {
-        print('ForumScreen: Error add like: $e');
-        return false; // Gagal
-      });
+    try {
+      if (isLiked) {
+        print('ForumScreen: Memanggil ForumRepository().removeLike...');
+        final value = await ForumRepository().removeLike(token, id);
+        success = value.data ?? false; // Pastikan mengembalikan bool
+        print('ForumScreen: Remove like success: $success. Error: ${value.error}');
+      } else {
+        print('ForumScreen: Memanggil ForumRepository().addPostLike...');
+        final value = await ForumRepository().addPostLike(token, id);
+        success = value.data ?? false; // Pastikan mengembalikan bool
+        print('ForumScreen: Add like success: $success. Error: ${value.error}');
+      }
+    } catch (e) {
+      print('ForumScreen: Error saat melakukan like/unlike: $e');
+      success = false; // Gagal
+    }
+
+    if (success) {
+      // Perbarui data secara lokal atau panggil _refreshData() jika diperlukan
+      // Untuk kesederhanaan, kita akan membiarkan like_button package mengurus state visualnya.
+      // Jika Anda ingin data total_like di UI terupdate, Anda perlu memanggil _refreshData()
+      // atau memperbarui list _futureData secara manual.
+      // Namun, memanggil _refreshData() di sini akan memicu refresh seluruh list,
+      // yang mungkin tidak efisien untuk setiap kali like/unlike.
+      // Untuk saat ini, kita hanya mengandalkan LikeButton widget untuk visual.
+      // Jika Anda ingin total_like terupdate secara real-time, Anda mungkin perlu
+      // state management yang lebih kompleks atau API yang mengembalikan total_like terbaru.
+      _refreshData(); // Memaksa refresh seluruh data untuk update total_like
     }
 
     return success ? !isLiked : isLiked;
@@ -190,18 +205,17 @@ class _ForumScreenState extends State<ForumScreen> {
   //Konversi tanggal dan waktu dalam bentuk menit, jam, hari, dan tanggal
   String _getTime(DateTime time) {
     // menyesuaikan jam dengan zona waktu
-    time = time.add(Duration(hours: time.timeZoneOffset.inHours));
-
+    // time = time.add(Duration(hours: time.timeZoneOffset.inHours)); // Hapus ini jika createdAt sudah UTC atau lokal
     DateTime now = DateTime.now();
     Duration diff = now.difference(time);
     if (diff.inSeconds < 60) {
-      return '${diff.inSeconds} detik';
+      return '${diff.inSeconds} detik yang lalu';
     } else if (diff.inMinutes < 60) {
-      return '${diff.inMinutes} menit';
+      return '${diff.inMinutes} menit yang lalu';
     } else if (diff.inHours < 24) {
-      return '${diff.inHours} jam';
+      return '${diff.inHours} jam yang lalu';
     } else if (diff.inDays < 5) {
-      return '${diff.inDays} hari';
+      return '${diff.inDays} hari yang lalu';
     } else {
       final DateFormat dateFormater = DateFormat('dd MMM yyyy');
       return dateFormater.format(time);
@@ -273,7 +287,7 @@ class _ForumScreenState extends State<ForumScreen> {
                     ),
                   ),
                 ),
-                SliverAppBarSheetTop(),
+                SliverAppBarSheetTop(), // Pastikan ini di dalam Stack
               ],
             ),
           ),
@@ -314,8 +328,7 @@ class _ForumScreenState extends State<ForumScreen> {
                         builder: (context) => ForumPostingScreen(),
                       ),
                     ).then((_) {
-                      print(
-                          'ForumScreen: Kembali dari ForumPostingScreen. Memuat ulang data.');
+                      print('ForumScreen: Kembali dari ForumPostingScreen. Memuat ulang data.');
                       _refreshData();
                     });
                   },
@@ -361,13 +374,13 @@ class _ForumScreenState extends State<ForumScreen> {
             onPressed: (int index) {
               print('ForumScreen: ToggleButton ditekan. Indeks: $index');
               // ketika di klik akan mengubah status tombel toggle menjadi true dan yang lainya false.
-              for (int i = 0; i < toggleButtonPostingSelected.length; i++) {
-                toggleButtonPostingSelected[i] = i == index;
-              }
-              _refreshData();
-              if (mounted) {
-                // Periksa mounted sebelum setState
-                setState(() {});
+              if (mounted) { // Pindahkan pengecekan mounted ke sini
+                setState(() {
+                  for (int i = 0; i < toggleButtonPostingSelected.length; i++) {
+                    toggleButtonPostingSelected[i] = i == index;
+                  }
+                  _refreshData(); // Panggil refresh data setelah state berubah
+                });
               }
             },
           ),
@@ -377,60 +390,73 @@ class _ForumScreenState extends State<ForumScreen> {
 
     Widget cardPosting() {
       Widget buildImage(List<ForumFotoModel> foto, int index) {
+        // Pengecekan null-safety untuk path gambar
+        final imageUrl = foto[index].path != null ? "$apiHost/${foto[index].path!}" : null;
+
         if (foto.length <= 3) {
           return Container(
             color: Color.fromRGBO(149, 149, 149, 1.0),
-            child: CachedNetworkImage(
-              imageUrl: "$apiHost/${foto[index].path!}",
-              width: double.infinity,
-              height: double.infinity,
-              fit: BoxFit.cover,
-            ),
+            child: imageUrl != null && Uri.tryParse(imageUrl)?.hasAbsolutePath == true
+                ? CachedNetworkImage(
+                    imageUrl: imageUrl,
+                    width: double.infinity,
+                    height: double.infinity,
+                    fit: BoxFit.cover,
+                    placeholder: (context, url) => const Center(child: CircularProgressIndicator()),
+                    errorWidget: (context, url, error) => Image.asset(
+                      'assets/placeholder_image.png', // Fallback image
+                      width: double.infinity,
+                      height: double.infinity,
+                      fit: BoxFit.cover,
+                    ),
+                  )
+                : Image.asset(
+                    'assets/placeholder_image.png', // Fallback if URL is invalid or null
+                    width: double.infinity,
+                    height: double.infinity,
+                    fit: BoxFit.cover,
+                  ),
           );
         } else {
           return Stack(
             children: [
               Container(
-                  color: Color.fromRGBO(149, 149, 149, 1.0),
-                  child: CachedNetworkImage(
-                    imageUrl: "$apiHost/${foto[index].path!}",
-                    width: double.infinity,
-                    height: double.infinity,
-                    fit: BoxFit.cover,
-                  )),
-              index == 2
-                  ? Container(
-                      width: double.infinity,
-                      height: double.infinity,
-                      color: Colors.black.withOpacity(0.50),
-                      child: Center(
-                        child: Text(
-                          '+ ${foto.length - 3}',
-                          style: whiteTextStyle.copyWith(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w600,
-                          ),
+                color: Color.fromRGBO(149, 149, 149, 1.0),
+                child: imageUrl != null && Uri.tryParse(imageUrl)?.hasAbsolutePath == true
+                    ? CachedNetworkImage(
+                        imageUrl: imageUrl,
+                        width: double.infinity,
+                        height: double.infinity,
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) => const Center(child: CircularProgressIndicator()),
+                        errorWidget: (context, url, error) => Image.asset(
+                          'assets/placeholder_image.png', // Fallback image
+                          width: double.infinity,
+                          height: double.infinity,
+                          fit: BoxFit.cover,
                         ),
+                      )
+                    : Image.asset(
+                        'assets/placeholder_image.png', // Fallback if URL is invalid or null
+                        width: double.infinity,
+                        height: double.infinity,
+                        fit: BoxFit.cover,
                       ),
-                    )
-                  : Container()
+              ),
             ],
           );
         }
       }
 
       Widget imageGallery(List<ForumFotoModel> foto) {
-        print(
-            'ForumScreen: Membangun imageGallery. Jumlah foto: ${foto.length}');
+        print('ForumScreen: Membangun imageGallery. Jumlah foto: ${foto.length}');
         if (foto.isEmpty) {
-          // Tambahkan pengecekan jika foto kosong
-          print(
-              'ForumScreen: foto list kosong, mengembalikan Container kosong.');
+          print('ForumScreen: foto list kosong, mengembalikan Container kosong.');
           return Container();
         }
 
         List<String> fotos =
-            foto.map((item) => "$apiHost/${item.path!}").toList();
+            foto.map((item) => "$apiHost/${item.path!}").toList(); // Pastikan path tidak null
         return StaggeredGrid.count(
           crossAxisCount: 4,
           mainAxisSpacing: 4,
@@ -442,13 +468,13 @@ class _ForumScreenState extends State<ForumScreen> {
                 mainAxisCellCount: 3,
                 child: InkWell(
                   onTap: () {
-                    print(
-                        'ForumScreen: Image diklik (1 foto). Navigasi ke PhotoViewScreen.');
+                    print('ForumScreen: Image diklik (1 foto). Navigasi ke PhotoViewScreen.');
                     Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (context) => PhotoViewScreen(
                             images: fotos,
+                            selectedIndex: item.key,
                           ),
                         ));
                   },
@@ -461,16 +487,13 @@ class _ForumScreenState extends State<ForumScreen> {
                 mainAxisCellCount: 2,
                 child: InkWell(
                   onTap: () {
-                    print(
-                        'ForumScreen: Image diklik (2 foto). Navigasi ke PhotoViewScreen.');
+                    print('ForumScreen: Image diklik (2 foto). Navigasi ke PhotoViewScreen.');
                     Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (context) => PhotoViewScreen(
                             images: fotos,
-                            selectedIndex: item.key == 2
-                                ? 2
-                                : item.key, // Perlu dicek lagi logika indexnya
+                            selectedIndex: item.key,
                           ),
                         ));
                   },
@@ -484,17 +507,13 @@ class _ForumScreenState extends State<ForumScreen> {
                 mainAxisCellCount: item.key == 0 ? 2 : 1,
                 child: InkWell(
                   onTap: () {
-                    print(
-                        'ForumScreen: Image diklik (>2 foto). Navigasi ke PhotoViewScreen.');
+                    print('ForumScreen: Image diklik (>2 foto). Navigasi ke PhotoViewScreen.');
                     Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (context) => PhotoViewScreen(
                               images: fotos,
-                              selectedIndex: item.key == 2
-                                  ? 2
-                                  : item
-                                      .key), // Perlu dicek lagi logika indexnya
+                              selectedIndex: item.key),
                         ));
                   },
                   child: buildImage(foto, item.key),
@@ -506,15 +525,15 @@ class _ForumScreenState extends State<ForumScreen> {
       }
 
       Widget itemPost(ForumModel post) {
-        print('ForumScreen: Membangun itemPost untuk ID: ${post.id_forum}.');
+        print('ForumScreen: Membangun itemPost untuk ID: ${post.idForum}.'); // Menggunakan idForum
         // Pengecekan null-safety tambahan untuk properti yang mungkin null
         final String displayName = post.nama ?? 'Anonim';
         final String displayContent = post.content ?? 'Tidak ada konten.';
         final DateTime displayTime =
-            post.created_at ?? DateTime.now(); // Default jika null
+            post.createdAt ?? DateTime.now(); // Menggunakan createdAt
         final List<ForumFotoModel> displayFotos = post.foto ?? [];
-        final int displayTotalLike = post.total_like ?? 0;
-        final int displayTotalComment = post.total_comment ?? 0;
+        final int displayTotalLike = post.totalLike ?? 0; // Menggunakan totalLike
+        final int displayTotalComment = post.totalComment ?? 0; // Menggunakan totalComment
 
         return Container(
           margin: EdgeInsets.only(left: 16, right: 16, bottom: 16),
@@ -590,9 +609,9 @@ class _ForumScreenState extends State<ForumScreen> {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   FutureBuilder<ResultModel<String>>(
-                    // PENTING: Pastikan post.id_forum tidak null sebelum dilewatkan
-                    future: post.id_forum != null
-                        ? ForumRepository().checkStatusLike(post.id_forum!)
+                    // PENTING: Pastikan post.idForum tidak null sebelum dilewatkan
+                    future: post.idForum != null // Menggunakan idForum
+                        ? ForumRepository().checkStatusLike(post.idForum!) // Menggunakan idForum
                         : Future.value(ResultModel(
                             isSuccess: false, error: 'ID Forum null')),
                     builder: (context, snapshot) {
@@ -606,14 +625,12 @@ class _ForumScreenState extends State<ForumScreen> {
                       }
                       // Log error dari checkStatusLike
                       if (snapshot.hasError) {
-                        print(
-                            'ForumScreen: Error checkStatusLike for ID ${post.id_forum}: ${snapshot.error}');
+                        print('ForumScreen: Error checkStatusLike for ID ${post.idForum}: ${snapshot.error}'); // Menggunakan idForum
                       }
                       if (!snapshot.hasData ||
                           snapshot.data?.data == null ||
                           !snapshot.data!.isSuccess) {
-                        print(
-                            'ForumScreen: checkStatusLike: No data or error. Defaulting to unliked. IsSuccess: ${snapshot.data?.isSuccess}, Error: ${snapshot.data?.error}');
+                        print('ForumScreen: checkStatusLike: No data or error. Defaulting to unliked. IsSuccess: ${snapshot.data?.isSuccess}, Error: ${snapshot.data?.error}');
                         return LikeButton(
                           isLiked: false,
                           likeCount:
@@ -621,19 +638,18 @@ class _ForumScreenState extends State<ForumScreen> {
                           likeBuilder: (isLiked) =>
                               Icon(Icons.favorite, color: Colors.grey[400]),
                           onTap: (isLiked) =>
-                              onLikeButtonTapped(isLiked, post.id_forum!),
+                              onLikeButtonTapped(isLiked, post.idForum!), // Menggunakan idForum
                         );
                       }
                       bool isLike = snapshot.data!.data == "1";
-                      print(
-                          'ForumScreen: checkStatusLike for ID ${post.id_forum}: isLiked: $isLike');
+                      print('ForumScreen: checkStatusLike for ID ${post.idForum}: isLiked: $isLike'); // Menggunakan idForum
                       return LikeButton(
                         isLiked: isLike,
                         likeCount: displayTotalLike, // Gunakan displayTotalLike
                         likeBuilder: (liked) => Icon(Icons.favorite,
                             color: liked ? Colors.red[500] : Colors.grey[400]),
                         onTap: (liked) =>
-                            onLikeButtonTapped(liked, post.id_forum!),
+                            onLikeButtonTapped(liked, post.idForum!), // Menggunakan idForum
                       );
                     },
                   ),
@@ -641,8 +657,7 @@ class _ForumScreenState extends State<ForumScreen> {
                     children: [
                       IconButton(
                         onPressed: () {
-                          print(
-                              'ForumScreen: Tombol komentar ditekan untuk ID: ${post.id_forum}.');
+                          print('ForumScreen: Tombol komentar ditekan untuk ID: ${post.idForum}.'); // Menggunakan idForum
                           Navigator.push(
                             context,
                             MaterialPageRoute(
@@ -650,8 +665,7 @@ class _ForumScreenState extends State<ForumScreen> {
                                   ForumDetailScreen(forum: post),
                             ),
                           ).then((_) {
-                            print(
-                                'ForumScreen: Kembali dari ForumDetailScreen. Memuat ulang data.');
+                            print('ForumScreen: Kembali dari ForumDetailScreen. Memuat ulang data.');
                             _refreshData();
                           });
                         },
@@ -709,16 +723,14 @@ class _ForumScreenState extends State<ForumScreen> {
               ),
               ElevatedButton(
                 onPressed: () {
-                  print(
-                      'ForumScreen: Tombol "Tulis sesuatu" (tidak ada postingan) ditekan.');
+                  print('ForumScreen: Tombol "Tulis sesuatu" (tidak ada postingan) ditekan.');
                   Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) => ForumPostingScreen(),
                     ),
                   ).then((_) {
-                    print(
-                        'ForumScreen: Kembali dari ForumPostingScreen. Memuat ulang data.');
+                    print('ForumScreen: Kembali dari ForumPostingScreen. Memuat ulang data.');
                     _refreshData();
                   });
                 },
@@ -736,10 +748,8 @@ class _ForumScreenState extends State<ForumScreen> {
       return FutureBuilder<ResultModel<List<ForumModel>>>(
         future: _futureData,
         builder: (context, snapshot) {
-          print(
-              'ForumScreen: FutureBuilder (data forum) - ConnectionState: ${snapshot.connectionState}');
-          if (snapshot.connectionState == ConnectionState.waiting ||
-              snapshot.connectionState == ConnectionState.none) {
+          print('ForumScreen: FutureBuilder (data forum) - ConnectionState: ${snapshot.connectionState}');
+          if (snapshot.connectionState == ConnectionState.waiting) {
             return SliverToBoxAdapter(
               child: Container(
                 height: 200,
@@ -752,9 +762,8 @@ class _ForumScreenState extends State<ForumScreen> {
             );
           } else if (snapshot.connectionState == ConnectionState.done) {
             // --- Penanganan Error dari ResultModel ---
-            if (snapshot.hasError || !snapshot.data!.isSuccess) {
-              print(
-                  'ForumScreen: FutureBuilder (data forum) - Ada error atau isSuccess: false. Error: ${snapshot.error ?? snapshot.data?.error}');
+            if (snapshot.hasError || (snapshot.hasData && !snapshot.data!.isSuccess)) {
+              print('ForumScreen: FutureBuilder (data forum) - Ada error atau isSuccess: false. Error: ${snapshot.error ?? snapshot.data?.error}');
               // Tampilkan pesan error jika Future gagal atau ResultModel mengindikasikan error
               return SliverToBoxAdapter(
                 child: Center(
@@ -773,10 +782,14 @@ class _ForumScreenState extends State<ForumScreen> {
 
             List<ForumModel>? data = snapshot.data?.data;
             if (data != null && data.isNotEmpty) {
-              print(
-                  'ForumScreen: FutureBuilder (data forum) - Data berhasil dimuat. Jumlah: ${data.length}');
-              data.sort((a, b) => b.created_at!.compareTo(
-                  a.created_at!)); // Perlu pastikan created_at tidak null
+              print('ForumScreen: FutureBuilder (data forum) - Data berhasil dimuat. Jumlah: ${data.length}');
+              // Pastikan createdAt tidak null sebelum sorting
+              data.sort((a, b) {
+                if (a.createdAt == null && b.createdAt == null) return 0;
+                if (a.createdAt == null) return 1; // Nulls last
+                if (b.createdAt == null) return -1; // Nulls last
+                return b.createdAt!.compareTo(a.createdAt!);
+              });
               return SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {
@@ -786,14 +799,12 @@ class _ForumScreenState extends State<ForumScreen> {
                 ),
               );
             } else {
-              print(
-                  'ForumScreen: FutureBuilder (data forum) - Data kosong atau null.');
+              print('ForumScreen: FutureBuilder (data forum) - Data kosong atau null.');
               return SliverToBoxAdapter(child: tidakAdaPost());
             }
           } else {
             // Ini adalah kondisi fallback jika state bukan waiting/none/done (seharusnya tidak terjadi)
-            print(
-                'ForumScreen: FutureBuilder (data forum) - ConnectionState tidak terduga: ${snapshot.connectionState}');
+            print('ForumScreen: FutureBuilder (data forum) - ConnectionState tidak terduga: ${snapshot.connectionState}');
             return SliverToBoxAdapter(child: tidakAdaPost());
           }
         },

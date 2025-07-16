@@ -7,7 +7,6 @@ import 'package:pensiunku/repository/riwayat_pengajuan_orang_lain_repository.dar
 import 'package:pensiunku/repository/user_repository.dart';
 import 'package:pensiunku/screen/home/submission/status_pengajuan_orang_lain.dart';
 import 'package:pensiunku/util/shared_preferences_util.dart';
-import 'package:pensiunku/util/widget_util.dart';
 
 class RiwayatPengajuanOrangLainScreen extends StatefulWidget {
   static const String ROUTE_NAME =
@@ -155,178 +154,173 @@ class _RiwayatPengajuanOrangLainScreenState
         });
   }
 
- @override
-Widget build(BuildContext context) {
-  return Stack(
-    fit: StackFit.expand,
-    children: [
-      // 🎨 Background Gradient
-      Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Colors.white,
-              Color(0xFFDCE293),
-            ],
-            stops: [0.6, 1.0],
-          ),
-        ),
-      ),
-
-      Scaffold(
-        backgroundColor: Colors.transparent,
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          centerTitle: true,
-          title: const Text(
-            'Riwayat Pengajuan',
-            style: TextStyle(
-              color: Color(0xFF017964),
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: Color(0xFF017964)),
-            onPressed: () {
-              if (Navigator.canPop(context)) {
-                Navigator.pop(context);
-              } else {
-                widget.onChangeBottomNavIndex(0); // Kembali ke HOME
-              }
-            },
-          ),
-        ),
-
-        body: RefreshIndicator(
-          onRefresh: () async {
-            fetchPengajuanOrangLainData(telepon);
-          },
-          child: pengajuanOrangLainData.isEmpty
-              ? LayoutBuilder(
-                  builder: (context, constraints) {
-                    return SingleChildScrollView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(
-                          minHeight: constraints.maxHeight,
-                        ),
-                        child: const Center(
-                          child: Text(
-                            'AJUKAN PINJAMAN SEKARANG!',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black54,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                )
-              : ListView.builder(
-                  itemCount: pengajuanOrangLainData.length,
-                  itemBuilder: (context, index) {
-                    final pengajuan = pengajuanOrangLainData[index];
-                    return Card(
-                      margin: const EdgeInsets.all(10.0),
-                      child: ListTile(
-                        leading: CircleAvatar(
-                          child: Text(
-                            pengajuan.tiket
-                                .substring(0, 2)
-                                .toUpperCase(),
-                          ),
-                        ),
-                        title: Text(
-                          pengajuan.nama,
-                          style: const TextStyle(
-                              color: Colors.black,
-                              fontWeight: FontWeight.bold),
-                        ),
-                        subtitle: Text('Tanggal: ${pengajuan.tanggal}'),
-                        trailing: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(
-                              'Kode: ${pengajuan.tiket}',
-                              style: const TextStyle(
-                                  color: Colors.blue,
-                                  fontWeight: FontWeight.bold),
-                            ),
-                            const SizedBox(height: 5),
-                            Text(
-                              'ID: ${_userModel?.id ?? 'Tidak tersedia'}',
-                              style: const TextStyle(
-                                fontSize: 10,
-                                color: Colors.black87,
-                              ),
-                            ),
-                          ],
-                        ),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  StatusPengajuanOrangLainScreen(
-                                pengajuanOrangLain: pengajuan,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    );
-                  },
-                ),
-        ),
-      ),
-
-      if (_isLoadingOverlay)
-        Positioned.fill(
-          child: ModalBarrier(
-            color: Colors.black.withOpacity(0.5),
-            dismissible: false,
-          ),
-        ),
-      if (_isLoadingOverlay)
-        Center(
-          child: Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: const [
-                CircularProgressIndicator(
-                  valueColor:
-                      AlwaysStoppedAnimation<Color>(Color(0xFF017964)),
-                ),
-                SizedBox(height: 16),
-                Text(
-                  'Mohon tunggu...',
-                  style: TextStyle(
-                    color: Color(0xFF017964),
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        // 🎨 Background Gradient
+        Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Colors.white,
+                Color(0xFFDCE293),
               ],
+              stops: [0.6, 1.0],
             ),
           ),
         ),
-    ],
-  );
-}
 
-}
+        Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            centerTitle: true,
+            title: const Text(
+              'Riwayat Pengajuan',
+              style: TextStyle(
+                color: Color(0xFF017964),
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back, color: Color(0xFF017964)),
+              onPressed: () {
+                if (Navigator.canPop(context)) {
+                  Navigator.pop(context);
+                } else {
+                  widget.onChangeBottomNavIndex(0); // Kembali ke HOME
+                }
+              },
+            ),
+          ),
+          body: RefreshIndicator(
+            onRefresh: () async {
+              fetchPengajuanOrangLainData(telepon);
+            },
+            child: pengajuanOrangLainData.isEmpty
+                ? LayoutBuilder(
+                    builder: (context, constraints) {
+                      return SingleChildScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(
+                            minHeight: constraints.maxHeight,
+                          ),
+                          child: const Center(
+                            child: Text(
+                              'AJUKAN PINJAMAN SEKARANG!',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black54,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  )
+                : ListView.builder(
+                    itemCount: pengajuanOrangLainData.length,
+                    itemBuilder: (context, index) {
+                      final pengajuan = pengajuanOrangLainData[index];
+                      return Card(
+                        margin: const EdgeInsets.all(10.0),
+                        child: ListTile(
+                          leading: CircleAvatar(
+                            child: Text(
+                              pengajuan.tiket.substring(0, 2).toUpperCase(),
+                            ),
+                          ),
+                          title: Text(
+                            pengajuan.nama,
+                            style: const TextStyle(
+                                color: Colors.black,
+                                fontWeight: FontWeight.bold),
+                          ),
+                          subtitle: Text('Tanggal: ${pengajuan.tanggal}'),
+                          trailing: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(
+                                'Kode: ${pengajuan.tiket}',
+                                style: const TextStyle(
+                                    color: Colors.blue,
+                                    fontWeight: FontWeight.bold),
+                              ),
+                              const SizedBox(height: 5),
+                              Text(
+                                'ID: ${_userModel?.id ?? 'Tidak tersedia'}',
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                            ],
+                          ),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    StatusPengajuanOrangLainScreen(
+                                  pengajuanOrangLain: pengajuan,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ),
 
+        if (_isLoadingOverlay)
+          Positioned.fill(
+            child: ModalBarrier(
+              color: Colors.black.withOpacity(0.5),
+              dismissible: false,
+            ),
+          ),
+        if (_isLoadingOverlay)
+          Center(
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: const [
+                  CircularProgressIndicator(
+                    valueColor:
+                        AlwaysStoppedAnimation<Color>(Color(0xFF017964)),
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    'Mohon tunggu...',
+                    style: TextStyle(
+                      color: Color(0xFF017964),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
 
 // // menampilkan data melalui state management. Data diambil dari repository. dev by Yoga
 // class RiwayatPengajuanOrangLainScreen extends StatefulWidget {

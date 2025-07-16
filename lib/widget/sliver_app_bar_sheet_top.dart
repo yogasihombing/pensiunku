@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+// ignore: must_be_immutable
 class SliverAppBarSheetTop extends StatefulWidget {
   Key? key;
   Color? colorx;
@@ -13,7 +14,7 @@ class SliverAppBarSheetTop extends StatefulWidget {
 class _SliverAppBarSheetTopState extends State<SliverAppBarSheetTop> {
   ScrollPosition? _position;
   double _borderRadius = 20.0;
-  double _height = 40.0;
+  double _height = 12.0;
   @override
   void dispose() {
     _removeListener();

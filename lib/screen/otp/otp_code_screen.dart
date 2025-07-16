@@ -62,14 +62,16 @@ class _OtpCodeScreenState extends State<OtpCodeScreen> {
   @override
   void initState() {
     super.initState();
+    print('OTPCodeScreen: initState dipanggil.');
 
     // Bungkus dengan try-catch untuk menangkap error inisialisasi
     try {
       _inputOtpController = TextEditingController();
       _startResendTimer();
       _isInitialized = true;
+      print('OTPCodeScreen: Inisialisasi berhasil.');
     } catch (e) {
-      print('Error initializing OTP screen: $e');
+      print('OTPCodeScreen: Error initializing OTP screen: $e');
       // Tampilkan pesan error jika terjadi masalah saat inisialisasi
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
@@ -82,22 +84,30 @@ class _OtpCodeScreenState extends State<OtpCodeScreen> {
 
   @override
   void dispose() {
+    print('OTPCodeScreen: dispose dipanggil.');
     _resendTimer?.cancel();
-
-    // Hentikan listener dan clear teks agar tidak error
-    _inputOtpController.clear();
-
-    _inputOtpController.dispose();
+    print('OTPCodeScreen: Timer dibatalkan.');
+    // PENTING: Dispose controller setelah membatalkan timer dan membersihkan teks
+    _inputOtpController.dispose(); // <-- Pastikan ini ada dan di sini
+    print('OTPCodeScreen: _inputOtpController di-dispose.');
     super.dispose();
   }
 
   /// Start resend OTP timer with improved error handling
   void _startResendTimer() {
+    print('OTPCodeScreen: _startResendTimer dipanggil.');
     try {
+      if (!mounted) {
+        print(
+            'OTPCodeScreen: _startResendTimer: Widget tidak mounted, timer tidak dimulai.');
+        return; // Tambahkan pemeriksaan mounted di awal
+      }
+
       setState(() {
         _resendCounter = RESEND_COUNTDOWN_SECOND;
         _canResendOtp = false;
       });
+      print('OTPCodeScreen: Resend timer dimulai. Counter: $_resendCounter');
 
       _resendTimer?.cancel(); // Cancel any existing timer
       _resendTimer = Timer.periodic(
@@ -109,84 +119,116 @@ class _OtpCodeScreenState extends State<OtpCodeScreen> {
                 timer.cancel();
                 _canResendOtp = true;
               });
+              print(
+                  'OTPCodeScreen: Resend timer selesai, _canResendOtp = true.');
             } else {
               setState(() {
                 _resendCounter--;
               });
+              print('OTPCodeScreen: Resend counter: $_resendCounter');
             }
           } else {
             // Stop timer if widget is no longer mounted
             timer.cancel();
+            print(
+                'OTPCodeScreen: _startResendTimer: Widget tidak mounted saat timer berjalan, timer dibatalkan.');
           }
         },
       );
     } catch (e) {
-      print('Error starting resend timer: $e');
+      print('OTPCodeScreen: Error starting resend timer: $e');
     }
   }
 
   /// Verify user OTP code with improved error handling
   Future<void> _verify() async {
+    print('OTPCodeScreen: _verify dipanggil.');
     try {
       if (!_validateInputCode(_inputOtpController.text)) {
+        print(
+            'OTPCodeScreen: Validasi kode OTP gagal: ${_inputOtpController.text}');
         _showErrorDialog('Kode OTP harus 5 digit');
         return;
       }
+      print('OTPCodeScreen: Kode OTP valid: ${_inputOtpController.text}');
 
-      if (!mounted) return;
+      if (!mounted) {
+        print('OTPCodeScreen: _verify: Widget tidak mounted, berhenti.');
+        return;
+      }
 
       setState(() {
         _isLoadingVerify = true;
       });
+      print('OTPCodeScreen: _isLoadingVerify = true.');
 
       try {
+        print('OTPCodeScreen: Memulai panggilan UserRepository().verifyOtp...');
         final result = await UserRepository()
             .verifyOtp(widget.phone, _inputOtpController.text);
+        print('OTPCodeScreen: Panggilan UserRepository().verifyOtp selesai.');
 
-        if (!mounted) return;
+        if (!mounted) {
+          print(
+              'OTPCodeScreen: _verify (setelah verifyOtp): Widget tidak mounted, berhenti.');
+          return;
+        }
 
         setState(() {
           _isLoadingVerify = false;
         });
+        print('OTPCodeScreen: _isLoadingVerify = false.');
 
         if (result.isSuccess && result.data != null) {
+          print('OTPCodeScreen: Verifikasi OTP berhasil.');
           // Save token
           try {
+            print('OTPCodeScreen: Mencoba menyimpan token...');
             final prefs = await SharedPreferencesUtil().sharedPreferences;
             await prefs.setString(
                 SharedPreferencesUtil.SP_KEY_TOKEN, result.data!);
+            print('OTPCodeScreen: Token berhasil disimpan.');
 
-            if (!mounted) return;
+            if (!mounted) {
+              print(
+                  'OTPCodeScreen: _verify (setelah simpan token): Widget tidak mounted, berhenti.');
+              return;
+            }
 
             _resendTimer?.cancel();
+            print(
+                'OTPCodeScreen: Timer resend dibatalkan setelah verifikasi berhasil.');
 
             // Navigasi dengan safe call
             try {
+              print('OTPCodeScreen: Navigasi ke PrepareRegisterScreen...');
               Navigator.of(context).pushNamedAndRemoveUntil(
                 PrepareRegisterScreen.ROUTE_NAME,
                 (route) => false,
               );
+              print('OTPCodeScreen: Navigasi berhasil.');
             } catch (e) {
-              print('Navigation error: $e');
+              print('OTPCodeScreen: Navigation error: $e');
               if (mounted) {
                 _showErrorDialog(
                     'Terjadi kesalahan saat membuka halaman selanjutnya. Silakan coba lagi.');
               }
             }
           } catch (e) {
-            print('Error saving token: $e');
+            print('OTPCodeScreen: Error saving token: $e');
             if (mounted) {
               _showErrorDialog('Gagal menyimpan token: ${e.toString()}');
             }
           }
         } else {
+          print('OTPCodeScreen: Verifikasi OTP gagal. Error: ${result.error}');
           if (mounted) {
             _showErrorDialog(result.error ??
                 'Gagal memverifikasi OTP. Pastikan kode yang dimasukkan benar.');
           }
         }
       } catch (e) {
-        print('Error verifying OTP: $e');
+        print('OTPCodeScreen: Error verifying OTP (inner catch): $e');
         if (mounted) {
           setState(() {
             _isLoadingVerify = false;
@@ -196,7 +238,7 @@ class _OtpCodeScreenState extends State<OtpCodeScreen> {
         }
       }
     } catch (e) {
-      print('Uncaught error in _verify: $e');
+      print('OTPCodeScreen: Uncaught error in _verify (outer catch): $e');
       if (mounted) {
         setState(() {
           _isLoadingVerify = false;
@@ -208,48 +250,68 @@ class _OtpCodeScreenState extends State<OtpCodeScreen> {
 
   /// Validate user OTP code. Returns true if code is valid.
   bool _validateInputCode(String? inputCode) {
+    print('OTPCodeScreen: _validateInputCode dipanggil dengan: $inputCode');
     if (inputCode == null) {
+      print('OTPCodeScreen: Input code null.');
       return false;
     }
     if (inputCode.isNotEmpty && inputCode.trim().length == 5) {
       // Pastikan hanya berisi angka
       if (RegExp(r'^\d{5}$').hasMatch(inputCode.trim())) {
+        print('OTPCodeScreen: Input code valid.');
         return true;
       }
     }
+    print('OTPCodeScreen: Input code tidak valid.');
     return false;
   }
 
   /// Resend OTP code with improved error handling
   Future<void> _resendOtp() async {
+    print('OTPCodeScreen: _resendOtp dipanggil.');
     try {
-      if (!mounted) return;
+      if (!mounted) {
+        print('OTPCodeScreen: _resendOtp: Widget tidak mounted, berhenti.');
+        return;
+      }
 
       setState(() {
         _isLoadingResend = true;
       });
+      print('OTPCodeScreen: _isLoadingResend = true.');
 
       try {
+        print(
+            'OTPCodeScreen: Memulai panggilan UserRepository().sendOtp (untuk resend)...');
         final result = await UserRepository().sendOtp(widget.phone);
+        print(
+            'OTPCodeScreen: Panggilan UserRepository().sendOtp (untuk resend) selesai.');
 
-        if (!mounted) return;
+        if (!mounted) {
+          print(
+              'OTPCodeScreen: _resendOtp (setelah sendOtp): Widget tidak mounted, berhenti.');
+          return;
+        }
 
         setState(() {
           _isLoadingResend = false;
         });
+        print('OTPCodeScreen: _isLoadingResend = false.');
 
         if (result.isSuccess) {
+          print('OTPCodeScreen: Resend OTP berhasil.');
           if (mounted) {
             _showSuccessDialog('OTP sudah berhasil dikirim ulang!');
             _startResendTimer();
           }
         } else {
+          print('OTPCodeScreen: Resend OTP gagal. Error: ${result.error}');
           if (mounted) {
             _showErrorDialog(result.error ?? 'Gagal mengirim ulang OTP');
           }
         }
       } catch (e) {
-        print('Error resending OTP: $e');
+        print('OTPCodeScreen: Error resending OTP (inner catch): $e');
         if (mounted) {
           setState(() {
             _isLoadingResend = false;
@@ -259,7 +321,7 @@ class _OtpCodeScreenState extends State<OtpCodeScreen> {
         }
       }
     } catch (e) {
-      print('Uncaught error in _resendOtp: $e');
+      print('OTPCodeScreen: Uncaught error in _resendOtp (outer catch): $e');
       if (mounted) {
         setState(() {
           _isLoadingResend = false;
@@ -271,6 +333,7 @@ class _OtpCodeScreenState extends State<OtpCodeScreen> {
 
   /// Show error dialog with improved UI
   void _showErrorDialog(String message) {
+    print('OTPCodeScreen: Menampilkan error dialog: $message');
     if (!mounted) return;
 
     showDialog(
@@ -295,6 +358,7 @@ class _OtpCodeScreenState extends State<OtpCodeScreen> {
 
   /// Show success dialog
   void _showSuccessDialog(String message) {
+    print('OTPCodeScreen: Menampilkan success dialog: $message');
     if (!mounted) return;
 
     showDialog(
@@ -351,7 +415,8 @@ class _OtpCodeScreenState extends State<OtpCodeScreen> {
                       Color.fromARGB(255, 255, 255, 255),
                       Color.fromARGB(255, 255, 255, 255),
                       Color.fromARGB(255, 255, 255, 255),
-                      Color.fromARGB(255, 170, 231, 170), // Hijau muda (pinggir kanan)
+                      Color.fromARGB(
+                          255, 170, 231, 170), // Hijau muda (pinggir kanan)
                     ],
                     stops: [
                       0.0,

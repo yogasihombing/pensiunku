@@ -1,7 +1,5 @@
-import 'dart:convert'; // Tetap diperlukan untuk json.decode jika parsing manual di getDataFromApiResponse
 import 'dart:developer';
-import 'dart:io'; // Tetap diperlukan jika ada penanganan SocketException di luar getResultModel, tapi idealnya tidak
-import 'package:http/http.dart' as http; // Menggunakan paket http
+import 'dart:io';
 import 'package:pensiunku/data/api/forum_api.dart'; // Pastikan path ini benar
 import 'package:pensiunku/model/forum_model.dart'; // Pastikan semua model di sini
 import 'package:pensiunku/repository/base_repository.dart';
@@ -177,7 +175,7 @@ class ForumRepository extends BaseRepository {
     );
   }
 
-  // Menghapus like pada postingan
+  // Menghapus like dari postingan
   Future<ResultModel<bool>> removeLike(String token, int id) {
     assert(() {
       log('removeLike Repository dipanggil.', name: tag);
@@ -240,7 +238,8 @@ class ForumRepository extends BaseRepository {
   }
 
   // Menambahkan postingan forum baru
-  Future<ResultModel<bool>> addForumPost(String token, dynamic data) {
+  // Mengubah parameter `data` menjadi `content` dan `photos` (List<File>)
+  Future<ResultModel<bool>> addForumPost(String token, String content, List<File> photos) {
     assert(() {
       log('addForumPost Repository dipanggil.', name: tag);
       return true;
@@ -250,9 +249,8 @@ class ForumRepository extends BaseRepository {
       getFromDb: () async => null,
       getFromApi: () async {
         log('Mencoba menambahkan postingan forum baru dari API.', name: tag);
-        // --- PERUBAHAN: Langsung panggil API dan kembalikan http.Response, hapus try-catch di sini ---
-        return await api.addForumPost(token, data);
-        // --- AKHIR PERUBAHAN ---
+        // Memanggil API dengan content dan photos terpisah
+        return await api.addForumPost(token, content, photos);
       },
       getDataFromApiResponse: (responseJson) {
         log('Mengolah respons API untuk addForumPost: $responseJson', name: tag);
@@ -277,10 +275,15 @@ class ForumRepository extends BaseRepository {
       return true;
     }());
     String finalErrorMessage = 'Gagal mengambil data forum. Tolong periksa Internet Anda.';
-    String? token = SharedPreferencesUtil().sharedPreferences.getString(SharedPreferencesUtil.SP_KEY_TOKEN);
+    
+    // Perbaikan: await SharedPreferencesUtil().sharedPreferences
+    final prefs = await SharedPreferencesUtil().sharedPreferences;
+    String? token = prefs.getString(SharedPreferencesUtil.SP_KEY_TOKEN);
+    log('checkStatusLike: Token diambil: ${token != null && token.isNotEmpty ? "Ada" : "Tidak Ada"}', name: tag);
+
 
     // Periksa jika token null sebelum melanjutkan
-    if (token == null) {
+    if (token == null || token.isEmpty) {
       log('Token tidak ditemukan di SharedPreferences. Mengembalikan error.', name: tag);
       return ResultModel(
         isSuccess: false,
@@ -294,7 +297,7 @@ class ForumRepository extends BaseRepository {
       getFromApi: () async {
         log('Mencoba memeriksa status like dari API.', name: tag);
         // --- PERUBAHAN: Langsung panggil API dan kembalikan http.Response, hapus try-catch di sini ---
-        return await api.checkStatusLike(token, idPost);
+        return await api.checkStatusLike(token!, idPost); // token! karena sudah dicek null
         // --- AKHIR PERUBAHAN ---
       },
       getDataFromApiResponse: (responseJson) {

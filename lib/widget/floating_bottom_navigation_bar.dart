@@ -1,16 +1,6 @@
-// ini fitur bar dibawah yg sebelumnya untuk beranda,
-// riwayat pengajuan dan profil sudah dinonaktifkan dan ada dibeberapa file integrasinya
-// yaitu difile confirm_ktp..., referral_screen, home_screen, prepare_karip../ sudah dinonaktifkan code ini
-// FloatingBottomNavigationBar(
-//             isVisible: _isBottomNavBarVisible,
-//             currentIndex: 2,
-//             onTapItem: (newIndex) {
-//               Navigator.of(context).pop(newIndex);
-//             },
-//           ),
-
 import 'package:flutter/material.dart';
 import 'package:pensiunku/widget/floating_bottom_navigation_bar_item.dart';
+import 'package:showcaseview/showcaseview.dart';
 
 class FloatingBottomNavigationBar extends StatelessWidget {
   final int currentIndex;
@@ -97,9 +87,35 @@ class FloatingBottomNavigationBar extends StatelessWidget {
   }
 }
 
+ // Jika ada item navigasi ketiga (misalnya Akun), tambahkan di sini
+      // Expanded(
+      //   child: Showcase(
+      //     key: (showcaseKeys != null && showcaseKeys!.length > 2)
+      //         ? showcaseKeys![2] // Kunci untuk item Akun
+      //         : GlobalKey(),
+      //     description: 'Akses pengaturan akun Anda.',
+      //     child: FloatingBottomNavigationBarItem(
+      //       onTap: () {
+      //         onTapItem(2);
+      //       },
+      //       text: 'Akun',
+      //       assetNameInactive: 'assets/icon/account_icon.png',
+      //       assetNameActive: 'assets/icon/account_icon_active.png',
+      //       isActive: currentIndex == 2,
+      //     ),
+      //   ),
+      // ),
 
-
-
+// ini fitur bar dibawah yg sebelumnya untuk beranda,
+// riwayat pengajuan dan profil sudah dinonaktifkan dan ada dibeberapa file integrasinya
+// yaitu difile confirm_ktp..., referral_screen, home_screen, prepare_karip../ sudah dinonaktifkan code ini
+// FloatingBottomNavigationBar(
+//             isVisible: _isBottomNavBarVisible,
+//             currentIndex: 2,
+//             onTapItem: (newIndex) {
+//               Navigator.of(context).pop(newIndex);
+//             },
+//           ),
 
 
 // class FloatingBottomNavigationBar extends StatelessWidget {

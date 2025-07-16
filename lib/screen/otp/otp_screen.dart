@@ -1,7 +1,5 @@
 import 'dart:convert';
 import 'dart:ui';
-
-import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:pensiunku/repository/user_repository.dart';
 import 'package:pensiunku/screen/otp/account_recovery_screen.dart';
@@ -25,24 +23,30 @@ class _OtpScreenState extends State<OtpScreen> {
   @override
   void initState() {
     super.initState();
+    print('OtpScreen: initState dipanggil.');
     _inputPhoneController = TextEditingController()
       ..addListener(() {
         setState(() {
           _inputPhone = _inputPhoneController.text;
           _inputPhoneTouched = true;
         });
+        // print('OtpScreen: _inputPhone berubah: $_inputPhone'); // Hindari print ini terlalu sering
       });
   }
 
   @override
   void dispose() {
+    print('OtpScreen: dispose dipanggil.');
     _inputPhoneController.dispose();
+    print('OtpScreen: _inputPhoneController di-dispose.');
     super.dispose();
   }
 
   Future<bool?> _checkPhoneNumber() async {
+    print('OtpScreen: _checkPhoneNumber dipanggil untuk nomor: $_inputPhone');
     final url = Uri.parse('https://api.pensiunku.id/new.php/cekNomorTelepon');
     final body = json.encode({'phone': _inputPhone});
+    print('OtpScreen: Memulai panggilan HTTP POST ke $url dengan body: $body');
 
     try {
       final response = await http
@@ -51,15 +55,25 @@ class _OtpScreenState extends State<OtpScreen> {
             headers: {'Content-Type': 'application/json'},
             body: body,
           )
-          .timeout(Duration(seconds: 10));
+          .timeout(Duration(seconds: 10)); // Batas waktu 10 detik
+
+      print(
+          'OtpScreen: Panggilan HTTP POST selesai. Status Code: ${response.statusCode}');
+      print('OtpScreen: Response Body: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body) as Map<String, dynamic>;
         final message = data['text']?['message'];
+        print('OtpScreen: Server message: $message');
 
         if (message == 'success') {
+          print('OtpScreen: Nomor sudah terdaftar.');
           if (_isLoginMode) return true;
-          if (!mounted) return false;
+          if (!mounted) {
+            print(
+                'OtpScreen: _checkPhoneNumber (setelah success): Widget tidak mounted, berhenti.');
+            return false;
+          }
           _showScrollableDialog(
             title: 'Nomor Sudah Terdaftar',
             description:
@@ -69,8 +83,13 @@ class _OtpScreenState extends State<OtpScreen> {
           );
           return false;
         } else {
+          print('OtpScreen: Nomor belum terdaftar.');
           if (_isLoginMode) {
-            if (!mounted) return false;
+            if (!mounted) {
+              print(
+                  'OtpScreen: _checkPhoneNumber (setelah else): Widget tidak mounted, berhenti.');
+              return false;
+            }
             _showScrollableDialog(
               title: 'Nomor Belum Terdaftar',
               description: 'Silakan pilih menu DAFTAR untuk membuat akun baru.',
@@ -82,10 +101,17 @@ class _OtpScreenState extends State<OtpScreen> {
           return true;
         }
       } else {
+        print(
+            'OtpScreen: Kesalahan Server: Status Code ${response.statusCode}');
         throw Exception('Kesalahan Server: ${response.statusCode}');
       }
     } catch (e) {
-      if (!mounted) return null;
+      print('OtpScreen: Catch block di _checkPhoneNumber: ${e.toString()}');
+      if (!mounted) {
+        print(
+            'OtpScreen: _checkPhoneNumber (catch): Widget tidak mounted, berhenti.');
+        return null;
+      }
       _showScrollableDialog(
         title: 'Kesalahan',
         description:
@@ -98,24 +124,47 @@ class _OtpScreenState extends State<OtpScreen> {
   }
 
   Future<void> _sendOtp() async {
+    print('OtpScreen: _sendOtp dipanggil.');
     setState(() => _inputPhoneTouched = true);
-    if (_getInputPhoneError() != null) return;
+    if (_getInputPhoneError() != null) {
+      print(
+          'OtpScreen: Validasi nomor telepon gagal: ${_getInputPhoneError()}');
+      return;
+    }
+    print('OtpScreen: Nomor telepon valid.');
 
     setState(() => _isLoading = true);
+    print('OtpScreen: _isLoading = true.');
+
     final isRegistered = await _checkPhoneNumber();
-    if (!mounted) return;
+    if (!mounted) {
+      print(
+          'OtpScreen: _sendOtp (setelah _checkPhoneNumber): Widget tidak mounted, berhenti.');
+      return;
+    }
     setState(() => _isLoading = false);
+    print('OtpScreen: _isLoading = false.');
 
     if (isRegistered == true) {
       try {
+        print('OtpScreen: Memulai panggilan UserRepository().sendOtp...');
         final result = await UserRepository().sendOtp(_inputPhone);
-        if (!mounted) return;
+        print('OtpScreen: Panggilan UserRepository().sendOtp selesai.');
+
+        if (!mounted) {
+          print(
+              'OtpScreen: _sendOtp (setelah sendOtp): Widget tidak mounted, berhenti.');
+          return;
+        }
         if (result.isSuccess) {
+          print(
+              'OtpScreen: Pengiriman OTP berhasil, navigasi ke OtpCodeScreen.');
           Navigator.of(context).pushNamed(
             OtpCodeScreen.ROUTE_NAME,
             arguments: OtpCodeScreenArgs(phone: _inputPhone),
           );
         } else {
+          print('OtpScreen: Pengiriman OTP gagal. Error: ${result.error}');
           _showScrollableDialog(
             title: 'Error',
             description: result.error ?? 'Gagal mengirimkan OTP',
@@ -124,6 +173,8 @@ class _OtpScreenState extends State<OtpScreen> {
           );
         }
       } catch (e) {
+        print(
+            'OtpScreen: Catch block di _sendOtp (UserRepository().sendOtp): ${e.toString()}');
         if (!mounted) return;
         _showScrollableDialog(
           title: 'Error',
@@ -132,6 +183,9 @@ class _OtpScreenState extends State<OtpScreen> {
           isError: true,
         );
       }
+    } else {
+      print(
+          'OtpScreen: Nomor tidak terdaftar atau _checkPhoneNumber mengembalikan null/false.');
     }
   }
 
@@ -142,6 +196,7 @@ class _OtpScreenState extends State<OtpScreen> {
     VoidCallback? onConfirm,
     bool isError = false,
   }) {
+    print('OtpScreen: Menampilkan dialog: $title - $description');
     showDialog(
       context: context,
       barrierDismissible: true,
@@ -208,6 +263,7 @@ class _OtpScreenState extends State<OtpScreen> {
   }
 
   String? _getInputPhoneError() {
+    // print('OtpScreen: _getInputPhoneError dipanggil.'); // Hindari print ini terlalu sering
     if (!_inputPhoneTouched) return null;
     if (_inputPhone.isEmpty) return "Nomor telepon harus diisi";
     if (!_inputPhone.trim().startsWith('0'))
@@ -241,9 +297,15 @@ class _OtpScreenState extends State<OtpScreen> {
                     Color.fromARGB(255, 255, 255, 255),
                     Color.fromARGB(255, 255, 255, 255),
                     Color.fromARGB(255, 255, 255, 255),
-                    Color.fromARGB(255, 170, 231, 170), // Hijau muda (pinggir kanan)
+                    Color.fromARGB(
+                        255, 170, 231, 170), // Hijau muda (pinggir kanan)
                   ],
-                  stops: [0.0, 0.25, 0.5, 1.0], // Titik berhenti warna di gradient
+                  stops: [
+                    0.0,
+                    0.25,
+                    0.5,
+                    1.0
+                  ], // Titik berhenti warna di gradient
                 ),
               ),
             ),
@@ -260,7 +322,7 @@ class _OtpScreenState extends State<OtpScreen> {
                       'assets/otp_screen/pensiunku.png',
                       height: size.height * 0.05,
                     ),
-                     SizedBox(height: bottomSpace),
+                    SizedBox(height: bottomSpace),
                     _buildModeToggle(),
                     SizedBox(height: 8),
                     Text(

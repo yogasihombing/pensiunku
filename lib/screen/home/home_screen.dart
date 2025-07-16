@@ -1,32 +1,25 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:developer';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:pensiunku/data/api/riwayat_pengajuan_orang_lain_api.dart';
 import 'package:pensiunku/model/monitoring_pengajuan_model.dart';
 import 'package:pensiunku/model/submission_model.dart';
-import 'package:pensiunku/repository/monitoring_repository.dart';
 import 'package:pensiunku/repository/user_repository.dart';
 import 'package:pensiunku/screen/home/account/account_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/dashboard_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/usaha/usaha_screen.dart';
 import 'package:pensiunku/screen/home/submission/riwayat_pengajuan_orang_lain.dart';
-import 'package:pensiunku/screen/home/test.dart';
 import 'package:pensiunku/screen/home/update_dialog.dart';
 import 'package:pensiunku/screen/notification/notification_screen.dart';
 import 'package:pensiunku/screen/web_view/web_view_screen.dart';
 import 'package:pensiunku/util/shared_preferences_util.dart';
 import 'package:pensiunku/widget/floating_bottom_navigation_bar.dart';
 import 'package:new_version/new_version.dart';
+import 'package:showcaseview/showcaseview.dart';
 
-/// Home Screen
-/// Layar ini adalah layar utama aplikasi.
-///
 class HomeScreen extends StatefulWidget {
   static const String ROUTE_NAME = '/home';
 

@@ -27,6 +27,8 @@ class _HalopensiunScreenState extends State<HalopensiunScreen> {
   final TextEditingController editingController = TextEditingController();
   late List<Categories> _categories = [];
   late List<ListHalopensiun> _listHalopensiun = [];
+  late List<ListHalopensiun> _allHalopensiunData =
+      []; // Menyimpan semua data mentah
   late int _selectedCategoryId;
 
   final dataKey = GlobalKey();
@@ -34,21 +36,41 @@ class _HalopensiunScreenState extends State<HalopensiunScreen> {
   @override
   void initState() {
     super.initState();
-    _selectedCategoryId = 1;
+    print('HalopensiunScreen: initState dipanggil.');
+    _selectedCategoryId = 1; // Default category ID
     _searchText = '';
-    // --- PERUBAHAN: Inisialisasi _futureData dengan data kosong yang sukses, bukan error dummy ---
+    // Inisialisasi _futureData dengan data kosong yang sukses agar FutureBuilder tidak error diawal
     _futureData = Future.value(ResultModel(
         isSuccess: true, data: HalopensiunModel(categories: [], list: [])));
-    // --- AKHIR PERUBAHAN ---
-    _refreshData();
+    _refreshData(); // Panggil refresh data saat inisialisasi
+  }
+
+  // Fungsi untuk memfilter dan mencari data setelah data mentah diterima
+  void _filterAndSearchData() {
+    print('HalopensiunScreen: _filterAndSearchData dipanggil.');
+    setState(() {
+      _listHalopensiun = _allHalopensiunData.where((item) {
+        final bool matchesCategory = item.idKategori == _selectedCategoryId;
+        final bool matchesSearch =
+            item.judul.toLowerCase().contains(_searchText.toLowerCase());
+        return matchesCategory && matchesSearch;
+      }).toList();
+      print(
+          'HalopensiunScreen: Data difilter. Jumlah item: ${_listHalopensiun.length}');
+    });
   }
 
   Future<void> _refreshData() async {
-    String? token = SharedPreferencesUtil()
-        .sharedPreferences
-        .getString(SharedPreferencesUtil.SP_KEY_TOKEN);
+    print('HalopensiunScreen: _refreshData dipanggil.');
+    // Ambil token dengan benar menggunakan await
+    final prefs = await SharedPreferencesUtil().sharedPreferences;
+    String? token = prefs.getString(SharedPreferencesUtil.SP_KEY_TOKEN);
+    print(
+        'HalopensiunScreen: Token diambil: ${token != null && token.isNotEmpty ? "Ada" : "Tidak Ada"}');
 
     if (token == null || token.isEmpty) {
+      print(
+          'HalopensiunScreen: Token tidak ditemukan atau kosong. Mengarahkan ke WelcomeScreen.');
       if (mounted) {
         showDialog(
           context: context,
@@ -67,20 +89,23 @@ class _HalopensiunScreenState extends State<HalopensiunScreen> {
           );
         });
       }
-      // --- PERUBAHAN: Set _futureData ke error jika token tidak ada ---
       setState(() {
         _futureData = Future.error('Token otentikasi tidak ditemukan.');
       });
       return;
-      // --- AKHIR PERUBAHAN ---
     }
 
     try {
+      print('HalopensiunScreen: Memulai panggilan API getAllHalopensiuns...');
       final value = await HalopensiunRepository().getAllHalopensiuns(token);
+      print(
+          'HalopensiunScreen: Panggilan API selesai. isSuccess: ${value.isSuccess}, error: ${value.error}');
+
       if (mounted) {
         setState(() {
           _futureData = Future.value(value); // Selesaikan Future
           if (value.error != null) {
+            print('HalopensiunScreen: API mengembalikan error: ${value.error}');
             if (value.error!.contains('Sesi Anda telah berakhir') ||
                 value.error!.contains('Unauthorized')) {
               showDialog(
@@ -110,26 +135,15 @@ class _HalopensiunScreenState extends State<HalopensiunScreen> {
               );
             }
           } else if (value.data != null) {
-            _categories = [];
-            _listHalopensiun = [];
-
-            value.data!.categories.asMap().forEach((key, categoryValue) {
-              _categories.add(categoryValue);
-            });
-
-            value.data!.list.asMap().forEach((key, halopensiunItem) {
-              if (halopensiunItem.idKategori == _selectedCategoryId &&
-                  halopensiunItem.judul
-                      .toLowerCase()
-                      .contains(_searchText.toLowerCase())) {
-                _listHalopensiun.add(halopensiunItem);
-              }
-            });
+            print('HalopensiunScreen: Data berhasil diterima dari API.');
+            _categories = value.data!.categories;
+            _allHalopensiunData = value.data!.list; // Simpan semua data mentah
+            _filterAndSearchData(); // Filter dan search setelah data mentah diterima
           }
         });
       }
     } catch (e) {
-      print('Error during _refreshData: $e');
+      print('HalopensiunScreen: Error during _refreshData (catch block): $e');
       if (mounted) {
         setState(() {
           _futureData = Future.error(e); // Selesaikan Future dengan error
@@ -173,10 +187,11 @@ class _HalopensiunScreenState extends State<HalopensiunScreen> {
         ),
         Scaffold(
           backgroundColor: Colors.transparent,
-          extendBodyBehindAppBar: true,
+          // extendBodyBehindAppBar: true,
           body: RefreshIndicator(
-            onRefresh: () =>
-                _refreshData(), // onRefresh akan await Future<void>
+            onRefresh: () async {
+              await _refreshData(); // Pastikan onRefresh menunggu _refreshData selesai
+            },
             child: CustomScrollView(
               controller: scrollController,
               physics:
@@ -194,10 +209,6 @@ class _HalopensiunScreenState extends State<HalopensiunScreen> {
                         child: Text('Halo Pensiun'),
                       ),
                     ),
-                    titlePadding: const EdgeInsets.only(
-                      left: 46.0,
-                      bottom: 16.0,
-                    ),
                     background: Stack(
                       children: [
                         Positioned.fill(
@@ -213,8 +224,6 @@ class _HalopensiunScreenState extends State<HalopensiunScreen> {
                               ),
                             ),
                             child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
                                 Container(
                                   child: InkWell(
@@ -244,54 +253,50 @@ class _HalopensiunScreenState extends State<HalopensiunScreen> {
                     ),
                   ),
                 ),
-                // --- PERUBAHAN: Membungkus SliverAppBarSheetTop dengan SliverToBoxAdapter ---
-                SliverToBoxAdapter(
-                  child: SliverAppBarSheetTop(),
-                ),
-                // --- AKHIR PERUBAHAN ---
+                SliverToBoxAdapter(child: SliverAppBarSheetTop()),
                 SliverToBoxAdapter(
                   child: FutureBuilder<ResultModel<HalopensiunModel>>(
                     future: _futureData,
                     builder: (BuildContext context,
                         AsyncSnapshot<ResultModel<HalopensiunModel>> snapshot) {
-                      // --- PERUBAHAN: Logika loading dan error yang lebih cerdas ---
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        // Tampilkan loading hanya jika belum ada data yang dimuat sebelumnya
-                        if (_categories.isEmpty && _listHalopensiun.isEmpty) {
-                          return _buildLoadingIndicator(screenSize, theme);
-                        } else {
-                          // Jika sudah ada data, sembunyikan indikator loading di sini
-                          // (animasi refresh indicator di atas sudah cukup)
-                          return const SizedBox.shrink();
-                        }
-                      } else if (snapshot.hasError ||
-                          !snapshot.hasData ||
+                      // Tampilkan loading hanya jika belum ada data yang dimuat sebelumnya
+                      if (snapshot.connectionState == ConnectionState.waiting &&
+                          _allHalopensiunData.isEmpty) {
+                        print(
+                            'HalopensiunScreen: FutureBuilder: ConnectionState.waiting dan _allHalopensiunData kosong, menampilkan loading.');
+                        return _buildLoadingIndicator(screenSize, theme);
+                      } else if (snapshot.hasError &&
+                          _allHalopensiunData.isEmpty) {
+                        print(
+                            'HalopensiunScreen: FutureBuilder: snapshot.hasError dan _allHalopensiunData kosong, menampilkan error.');
+                        return _buildErrorWidget(snapshot.error?.toString() ??
+                            'Terjadi kesalahan tidak dikenal.');
+                      } else if (!snapshot.hasData ||
                           !snapshot.data!.isSuccess) {
-                        // Tampilkan error hanya jika tidak ada data sama sekali untuk ditampilkan
-                        if (_categories.isEmpty && _listHalopensiun.isEmpty) {
-                          return _buildErrorWidget(snapshot.error?.toString() ??
-                              snapshot.data?.error ??
+                        // Jika ada data lama, jangan tampilkan error card, cukup pesan toast (sudah di _refreshData)
+                        print(
+                            'HalopensiunScreen: FutureBuilder: Data tidak ada atau tidak sukses, tapi _allHalopensiunData mungkin ada.');
+                        if (_allHalopensiunData.isEmpty) {
+                          return _buildErrorWidget(snapshot.data?.error ??
                               'Terjadi kesalahan tidak dikenal.');
-                        } else {
-                          // Jika ada data lama, jangan tampilkan error card, cukup pesan toast (sudah di _refreshData)
-                          return const SizedBox.shrink();
                         }
+                        return const SizedBox.shrink();
                       }
-                      // --- AKHIR PERUBAHAN ---
 
                       // Data berhasil dimuat dan sudah diproses di _refreshData
-                      // Sekarang, cukup tampilkan UI menggunakan _categories dan _listHalopensiun
+                      // Sekarang, tampilkan UI menggunakan _categories dan _listHalopensiun
                       if (_categories.isNotEmpty) {
-                        // Pastikan kategori tidak kosong
+                        print(
+                            'HalopensiunScreen: FutureBuilder: Data kategori tidak kosong, menampilkan UI.');
                         return Container(
                           child: Padding(
                             padding: EdgeInsets.only(
-                                left: 20.0,
-                                right: 20.0,
-                                bottom: 12.0,
-                                top: 12.0),
+                              left: 20.0,
+                              right: 20.0,
+                              bottom: 12.0,
+                            ),
                             child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                              // crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Container(
                                   height: 36.0,
@@ -300,7 +305,9 @@ class _HalopensiunScreenState extends State<HalopensiunScreen> {
                                       setState(() {
                                         _searchText = value;
                                       });
-                                      _refreshData();
+                                      _filterAndSearchData(); // Hanya filter, tidak perlu refresh API
+                                      print(
+                                          'HalopensiunScreen: Search text disubmit: $_searchText');
                                     },
                                     controller: editingController,
                                     decoration: InputDecoration(
@@ -335,13 +342,17 @@ class _HalopensiunScreenState extends State<HalopensiunScreen> {
                                               ChipTab(
                                                 text: halopensiunCategory.nama,
                                                 isActive: _selectedCategoryId ==
-                                                    index + 1,
+                                                    halopensiunCategory
+                                                        .id, // Gunakan ID kategori
                                                 onTap: () {
                                                   setState(() {
                                                     _selectedCategoryId =
-                                                        index + 1;
+                                                        halopensiunCategory
+                                                            .id; // Set ID kategori
                                                   });
-                                                  _refreshData();
+                                                  _filterAndSearchData(); // Hanya filter, tidak perlu refresh API
+                                                  print(
+                                                      'HalopensiunScreen: Kategori dipilih: ${halopensiunCategory.nama} (ID: ${halopensiunCategory.id})');
                                                 },
                                                 backgroundColor:
                                                     const Color(0xFFFEC842),
@@ -359,6 +370,8 @@ class _HalopensiunScreenState extends State<HalopensiunScreen> {
                           ),
                         );
                       } else {
+                        print(
+                            'HalopensiunScreen: FutureBuilder: Kategori kosong, menampilkan noData().');
                         return noData(); // Tampilkan noData jika kategori kosong
                       }
                     },
@@ -371,7 +384,7 @@ class _HalopensiunScreenState extends State<HalopensiunScreen> {
                       (BuildContext context, int index) {
                         final item = _listHalopensiun[index];
                         return Card(
-                          margin: const EdgeInsets.symmetric(vertical: 8.0),
+                          margin: const EdgeInsets.symmetric(vertical: 4.0),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
