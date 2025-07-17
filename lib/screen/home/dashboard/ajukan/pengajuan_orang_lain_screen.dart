@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -52,6 +54,11 @@ class _PengajuanOrangLainScreenState extends State<PengajuanOrangLainScreen> {
   String? fileKarip;
   String? id; // #1 Fungsi untuk menyisipkan id user yang input data di Form
 
+  // Tambahkan variabel untuk nama file
+  String? namaFotoKTP;
+  String? namaFotoNPWP;
+  String? namaFotoKarip;
+
   @override
   void initState() {
     super.initState();
@@ -104,10 +111,6 @@ class _PengajuanOrangLainScreenState extends State<PengajuanOrangLainScreen> {
     });
   }
 
-// Tambahkan variabel untuk nama file
-  String? namaFotoKTP;
-  String? namaFotoNPWP;
-  String? namaFotoKarip;
   //Fungsi untuk memilih file dan modifikasi tombol upload untuk simulasi progres upload
   Future<void> _pickImage(String label) async {
     // Tampilkan pilihan sumber gambar
@@ -153,21 +156,14 @@ class _PengajuanOrangLainScreenState extends State<PengajuanOrangLainScreen> {
       }
     });
 
+    // Tambahkan logging untuk path file yang dipilih
+    debugPrint('File $label dipilih: ${image.path}');
+    debugPrint('Nama file $label: $fileName');
+
     await _simulateUpload(label);
   }
 
   Future<void> _submitPengajuanOrangLain() async {
-    // if (idController.text.isEmpty) {
-    //   debugPrint(idController.text);
-    //   debugPrint('Error: ID User tidak ditemukan.');
-    //   _showCustomDialog(
-    //       'Gagal',
-    //       'ID User tidak ditemukan. Silahkan coba lagi. ',
-    //       Icons.error,
-    //       Colors.red);
-    //   return;
-    // }
-
     if (_formKey.currentState!.validate() &&
         fileKTP != null &&
         fileNPWP != null &&
@@ -176,16 +172,52 @@ class _PengajuanOrangLainScreenState extends State<PengajuanOrangLainScreen> {
         setState(() {
           _isLoadingOverlay = true; // Aktifkan loading
         });
-        // cetak data yang akan dikirim untuk logging
-        debugPrint('Submitting pengajuan with data:');
 
-        // Cetak data yang akan dikirim untuk logging
-        print('Submitting pengajuan with data:');
-        debugPrint('id_usersssss: ${_userModel?.id}');
-        print('Nama: ${namaController.text}');
-        print('Telepon: ${teleponController.text}');
-        print('Domisili: ${domisiliController.text}');
-        print('NIP: ${nipController.text}');
+        debugPrint('Submitting pengajuan with data:');
+        debugPrint('id_user: ${_userModel?.id}');
+        debugPrint('Nama: ${namaController.text}');
+        debugPrint('Telepon: ${teleponController.text}');
+        debugPrint('Domisili: ${domisiliController.text}');
+        debugPrint('NIP: ${nipController.text}');
+
+        // Tambahkan logging untuk memastikan file paths tidak null sebelum dikirim
+        debugPrint('Path Foto KTP: $fileKTP');
+        debugPrint('Nama Foto KTP: $namaFotoKTP');
+        debugPrint('Path Foto NPWP: $fileNPWP');
+        debugPrint('Nama Foto NPWP: $namaFotoNPWP');
+        debugPrint('Path Foto Karip: $fileKarip');
+        debugPrint('Nama Foto Karip: $namaFotoKarip');
+
+        // Pastikan file gambar ada dan dapat dibaca sebelum dikirim
+        String? base64KTP;
+        String? base64NPWP;
+        String? base64Karip;
+
+        try {
+          if (fileKTP != null) {
+            final bytes = await File(fileKTP!).readAsBytes();
+            base64KTP = base64Encode(bytes);
+            debugPrint('Ukuran Base64 KTP: ${base64KTP.length} bytes');
+          }
+          if (fileNPWP != null) {
+            final bytes = await File(fileNPWP!).readAsBytes();
+            base64NPWP = base64Encode(bytes);
+            debugPrint('Ukuran Base64 NPWP: ${base64NPWP.length} bytes');
+          }
+          if (fileKarip != null) {
+            final bytes = await File(fileKarip!).readAsBytes();
+            base64Karip = base64Encode(bytes);
+            debugPrint('Ukuran Base64 Karip: ${base64Karip.length} bytes');
+          }
+        } catch (e) {
+          debugPrint('Error saat mengonversi gambar ke Base64: $e');
+          _showCustomDialog(
+              'Error', 'Gagal memproses gambar. Pastikan file valid.');
+          setState(() {
+            _isLoadingOverlay = false;
+          });
+          return;
+        }
 
         // Kirim pengajuan melalui DAO
         bool success = await PengajuanOrangLainDao.kirimPengajuanOrangLain(
@@ -194,19 +226,15 @@ class _PengajuanOrangLainScreenState extends State<PengajuanOrangLainScreen> {
           telepon: teleponController.text,
           domisili: domisiliController.text,
           nip: nipController.text,
-          fotoKTP: fileKTP!,
-          // namaFotoKTP: fileKTP!.split('/').last,
-          fotoNPWP: fileNPWP!,
-          // namaFotoNPWP: fileNPWP!.split('/').last,
-          fotoKarip: fileKarip!,
-          // namaFotoKarip: fileKarip!.split('/').last,
+          // Kirim Base64 string, bukan path
+          fotoKTP: base64KTP!,
+          fotoNPWP: base64NPWP!,
+          fotoKarip: base64Karip!,
           namaFotoKTP: namaFotoKTP!,
           namaFotoNPWP: namaFotoNPWP!,
           namaFotoKarip: namaFotoKarip!,
         );
-        print('Pengajuan berhasil: $success');
-
-        // Set loading state to false
+        debugPrint('Pengajuan berhasil: $success');
 
         if (success) {
           _showCustomDialog('Sukses', 'Pengajuan Orang Lain berhasil dikirim');
@@ -215,7 +243,7 @@ class _PengajuanOrangLainScreenState extends State<PengajuanOrangLainScreen> {
               'Gagal', 'Nomor telepon harus beda dengan nomor telepon anda!');
         }
       } catch (e) {
-        print('Error during submission: $e');
+        debugPrint('Error during submission: $e');
         _showCustomDialog('Error', 'Terjadi kesalahan saat mengirim pengajuan');
       } finally {
         if (mounted) {
@@ -224,6 +252,14 @@ class _PengajuanOrangLainScreenState extends State<PengajuanOrangLainScreen> {
           });
         }
       }
+    } else {
+      // Tambahkan debug print jika validasi form gagal atau file belum lengkap
+      debugPrint('Validasi form gagal atau file belum lengkap.');
+      if (fileKTP == null) debugPrint('KTP belum diupload.');
+      if (fileNPWP == null) debugPrint('NPWP belum diupload.');
+      if (fileKarip == null) debugPrint('SK Pensiun belum diupload.');
+      _showCustomDialog('Perhatian',
+          'Harap lengkapi semua data dan upload dokumen yang diperlukan.');
     }
   }
 

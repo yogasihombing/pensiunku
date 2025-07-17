@@ -276,11 +276,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _fetchBalance(String userId) async {
     if (!mounted) return;
-    // --- PERUBAHAN: Menghapus setState(_isLoadingBalance = true) di awal ---
-    // setState(() {
-    //   _isLoadingBalance = true;
-    // });
-    // --- AKHIR PERUBAHAN ---
     try {
       const String url = 'https://api.pensiunku.id/new.php/getBalance';
       final response = await http.post(
@@ -288,7 +283,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'id_user': userId}),
       );
-
       debugPrint(
           'Respons API Get Balance (Status: ${response.statusCode}): ${response.body}');
 
@@ -302,27 +296,46 @@ class _DashboardScreenState extends State<DashboardScreen> {
         }
 
         final data = jsonDecode(response.body);
-        if (data != null &&
-            data['text'] != null &&
-            data['text']['balance'] != null) {
-          String balanceStr = data['text']['balance'].toString();
-          balanceStr = balanceStr
-              .replaceAll('Rp ', '')
-              .replaceAll('.', '')
-              .replaceAll(',', '')
-              .trim();
+        if (data != null && data['text'] != null) {
+          // Periksa jika ada 'balance' atau 'message'
+          if (data['text']['balance'] != null) {
+            String balanceStr = data['text']['balance'].toString();
+            balanceStr = balanceStr
+                .replaceAll('Rp ', '')
+                .replaceAll('.', '')
+                .replaceAll(',', '')
+                .trim();
 
-          final formatter = NumberFormat.currency(
-              locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
-          if (mounted) {
-            setState(() {
-              _userBalance = formatter.format(double.tryParse(balanceStr) ?? 0);
-              debugPrint('Saldo diterima dan diformat: $_userBalance');
-            });
+            final formatter = NumberFormat.currency(
+                locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
+            if (mounted) {
+              setState(() {
+                _userBalance =
+                    formatter.format(double.tryParse(balanceStr) ?? 0);
+                debugPrint('Saldo diterima dan diformat: $_userBalance');
+              });
+            }
+          } else if (data['text']['message'] != null &&
+              data['text']['message'] == 'Wallet tidak ditemukan!') {
+            // Jika wallet tidak ditemukan, set saldo ke Rp 0
+            debugPrint("Wallet tidak ditemukan, setting saldo ke Rp 0.");
+            if (mounted) {
+              setState(() {
+                _userBalance = 'Rp 0';
+              });
+            }
+          } else {
+            debugPrint(
+                "Error: Field 'balance' tidak ditemukan atau response tidak dikenal: ${response.body}");
+            if (mounted) {
+              setState(() {
+                _userBalance = 'Error'; // Atau 'Tidak Tersedia'
+              });
+            }
           }
         } else {
           debugPrint(
-              "Error: Field 'balance' tidak ditemukan dalam response: ${response.body}");
+              "Error: Struktur respons 'text' tidak ditemukan: ${response.body}");
           if (mounted) {
             setState(() {
               _userBalance = 'Error';
@@ -342,11 +355,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       }
     } finally {
       if (mounted) {
-        // --- PERUBAHAN: Menghapus setState(_isLoadingBalance = false) di finally ---
-        // setState(() {
-        //   _isLoadingBalance = false;
-        // });
-        // --- AKHIR PERUBAHAN ---
+        // Tidak ada perubahan di sini karena _isLoadingBalance sudah dihapus
       }
     }
   }
@@ -530,18 +539,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
         return AktifkanPensiunkuPlusScreen();
     }
   }
-
-  final List<String> programList = [
-    'Pra-Pensiun',
-    'Pensiun',
-    'Platinum',
-  ];
-
-  final List<String> imageList = [
-    'assets/application_screen/SLIDER-01.png',
-    'assets/application_screen/SLIDER-02.png',
-    'assets/application_screen/SLIDER-03.png',
-  ];
 
   @override
   Widget build(BuildContext context) {
@@ -1003,7 +1000,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
         SizedBox(width: screenWidth * 0.025),
         Expanded(
-          
           child: _isLoadingCheckMemberActionButton
               ? Center(
                   child: CircularProgressIndicator(
@@ -1104,6 +1100,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           fit: BoxFit.cover,
                           filterQuality: FilterQuality.high,
                           gaplessPlayback: true,
+                          // Tambahkan errorBuilder untuk fallback visual jika aset gagal dimuat
+                          errorBuilder: (context, error, stackTrace) {
+                            debugPrint(
+                                'Error memuat aset ${images[index]}: $error');
+                            // Tampilkan placeholder abu-abu dengan ikon gambar rusak
+                            return Container(
+                              color: Colors.grey[
+                                  200], // Warna latar belakang placeholder
+                              child: Center(
+                                child: Icon(
+                                  Icons.broken_image, // Ikon gambar rusak
+                                  size: screenWidth * 0.1,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            );
+                          },
                         ),
                       ),
                       Positioned.fill(
@@ -1390,364 +1403,3 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 }
-
-
-
-// // Widget Balance Card: Menampilkan informasi dompet dan tombol aksi
-//   Widget _buildBalanceCard(double screenWidth, double screenHeight) {
-//     return Container(
-//       width: double.infinity,
-//       padding: EdgeInsets.all(screenWidth * 0.04),
-//       decoration: BoxDecoration(
-//         borderRadius: BorderRadius.circular(screenWidth * 0.03),
-//         color: Colors.white.withOpacity(0.5),
-//         boxShadow: [
-//           BoxShadow(
-//             color: Colors.black.withOpacity(0.1),
-//             blurRadius: 1,
-//             offset: const Offset(0, 5),
-//           ),
-//         ],
-//       ),
-//       child: Column(
-//         crossAxisAlignment: CrossAxisAlignment.start,
-//         children: [
-//           Row(
-//             children: [
-//               Icon(Icons.account_balance_wallet_outlined,
-//                   color: Colors.black, size: screenWidth * 0.05),
-//               SizedBox(width: screenWidth * 0.02),
-//               Text(
-//                 'Dompet Anda',
-//                 style: TextStyle(
-//                   fontSize: screenWidth * 0.035,
-//                   fontWeight: FontWeight.bold,
-//                   color: Colors.black,
-//                 ),
-//               ),
-//               Spacer(),
-//               Text(
-//                 'Rp 0',
-//                 style: TextStyle(
-//                     fontSize: screenWidth * 0.03,
-//                     fontWeight: FontWeight.bold,
-//                     color: Colors.black87),
-//               ),
-//             ],
-//           ),
-//           SizedBox(height: screenHeight * 0.01),
-//           _isLoadingCheckMemberBalanceCard
-//               ? Center(
-//                   child: CircularProgressIndicator(
-//                   strokeWidth: screenWidth * 0.008,
-//                 ))
-//               : ElevatedButton(
-//                   onPressed: () {
-//                     _handleCheckMemberAndNavigateFromBalanceCard(context);
-//                   },
-//                   style: ElevatedButton.styleFrom(
-//                     backgroundColor: const Color(0xFFFFC950),
-//                     minimumSize: Size(double.infinity, screenHeight * 0.035),
-//                     shape: RoundedRectangleBorder(
-//                       borderRadius: BorderRadius.circular(screenWidth * 0.05),
-//                     ),
-//                     shadowColor: Colors.grey.withOpacity(0.5),
-//                     elevation: 5,
-//                   ),
-//                   child: RichText(
-//                     text: TextSpan(
-//                       text: 'Aktifkan ',
-//                       style: TextStyle(
-//                         fontSize: screenWidth * 0.035,
-//                         fontWeight: FontWeight.normal,
-//                         color: Colors.green[900],
-//                       ),
-//                       children: [
-//                         TextSpan(
-//                             text: 'Pensiunku+',
-//                             style: TextStyle(fontWeight: FontWeight.bold)),
-//                         TextSpan(
-//                             text: ' Sekarang',
-//                             style: TextStyle(fontWeight: FontWeight.normal)),
-//                       ],
-//                     ),
-//                   ),
-//                 ),
-//         ],
-//       ),
-//     );
-//   }
-
-// // Widget Carousel Slider: Menampilkan produk menggunakan carousel
-//   Widget _buildCarouselSlider(
-//       BuildContext context, double screenWidth, double screenHeight) {
-//     return Column(
-//       crossAxisAlignment: CrossAxisAlignment.start,
-//       children: [
-//         Padding(
-//           padding: EdgeInsets.only(
-//               left: screenWidth * 0.075, bottom: screenHeight * 0.01),
-//           child: Text(
-//             'Produk',
-//             style: TextStyle(
-//                 fontSize: screenWidth * 0.035,
-//                 fontWeight: FontWeight.bold,
-//                 color: Colors.black),
-//           ),
-//         ),
-//         Padding(
-//           padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.002),
-//           child: CarouselSlider.builder(
-//             options: CarouselOptions(
-//               height: screenHeight * 0.30,
-//               autoPlay: true,
-//               enlargeCenterPage: true,
-//               aspectRatio: 0.8,
-//               autoPlayCurve: Curves.fastOutSlowIn,
-//               enableInfiniteScroll: true,
-//               autoPlayAnimationDuration: const Duration(milliseconds: 800),
-//               viewportFraction: 0.45,
-//             ),
-//             itemCount: programList.length,
-//             itemBuilder: (BuildContext context, int index, int realIndex) {
-//               return Container(
-//                 margin: EdgeInsets.all(screenWidth * 0.001),
-//                 decoration: BoxDecoration(
-//                   borderRadius: BorderRadius.circular(screenWidth * 0.035),
-//                   image: DecorationImage(
-//                     image: AssetImage(imageList[index]),
-//                     fit: BoxFit.cover,
-//                   ),
-//                 ),
-//                 child: Stack(
-//                   children: [
-//                     Positioned(
-//                       top: screenHeight * 0.025,
-//                       left: 0,
-//                       right: 0,
-//                       child: Center(
-//                         child: Text(
-//                           programList[index],
-//                           style: TextStyle(
-//                             fontSize: screenWidth * 0.038,
-//                             fontWeight: FontWeight.bold,
-//                             color: Colors.black,
-//                             shadows: [
-//                               Shadow(
-//                                 blurRadius: 5.0,
-//                                 color: Colors.black38,
-//                                 offset: Offset(2.0, 2.0),
-//                               ),
-//                             ],
-//                           ),
-//                         ),
-//                       ),
-//                     ),
-//                   ],
-//                 ),
-//               );
-//             },
-//           ),
-//         ),
-//       ],
-//     );
-//   }
-
-////Aktifkan kalo E-WALLET SUDAH SIAP DIGUNAKAN
-  // // Handler untuk mengecek member dan menavigasi dari balance card
-  // void _handleCheckMemberAndNavigateFromBalanceCard(
-  //     BuildContext context) async {
-  //   if (_userModel == null || _userModel!.id == null) {
-  //     print("Error: User tidak terautentikasi atau ID tidak tersedia");
-  //     return;
-  //   }
-  //   setState(() {
-  //     _isLoadingOverlay = true;
-  //   });
-  //   try {
-  //     int status = await cekMember(_userModel!.id.toString());
-  //     print("Status member (Balance Card): $status");
-  //     final submission = SubmissionModel(
-  //       id: _userModel!.id,
-  //       produk: 'Produk Default',
-  //       name: _userModel!.username ?? 'Nama Default',
-  //       phone: _userModel!.phone,
-  //       birthDate: DateTime.now(),
-  //       salary: 0,
-  //       tenor: 0,
-  //       plafond: 0,
-  //       bankName: 'Bank Default',
-  //     );
-  //     if (mounted) {
-  //       setState(() {
-  //         _isLoadingOverlay = false;
-  //       });
-  //     }
-  //     Widget nextScreen =
-  //         _decideNextScreen(status, submission, isFromBalanceCard: true);
-  //     Navigator.push(
-  //         context, MaterialPageRoute(builder: (context) => nextScreen));
-  //   } catch (error) {
-  //     print("Error (Balance Card): $error");
-  //     if (mounted) {
-  //       setState(() {
-  //         _isLoadingOverlay = false;
-  //       });
-  //     }
-  //   }
-  // }
-
-////Aktifkan kalo E-WALLET SUDAH SIAP DIGUNAKAN
-  // // Menentukan screen selanjutnya berdasarkan status member
-  // Widget _decideNextScreen(int status, SubmissionModel submission,
-  //     {bool isFromBalanceCard = false}) {
-  //   switch (status) {
-  //     case 0:
-  //       return AktifkanPensiunkuPlusScreen();
-  //     case 1:
-  //       return PrepareKtpScreen(
-  //         onSuccess: (ctx) {
-  //           print("PrepareKtpScreen onSuccess callback dipanggil");
-  //         },
-  //         submissionModel: submission,
-  //       );
-  //     case 2:
-  //       return DaftarkanPinPensiunkuPlusScreen();
-  //     case 3:
-  //       return MemberWaitingScreen();
-  //     case 4:
-  //       return isFromBalanceCard ? EWalletScreen() : PengajuanOrangLainScreen();
-  //     case 5:
-  //       return MemberRejectScreen();
-  //     default:
-  //       print("Error: Status member tidak dikenal: $status");
-  //       return AktifkanPensiunkuPlusScreen(); // fallback
-  //   }
-  // }
-
-
-// void _showUnderDevelopmentDialog(BuildContext context) {
-//     showDialog(
-//       context: context,
-//       barrierDismissible: true,
-//       builder: (BuildContext context) {
-//         return BackdropFilter(
-//           filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-//           child: AlertDialog(
-//             shape: RoundedRectangleBorder(
-//               borderRadius: BorderRadius.circular(15),
-//             ),
-//             backgroundColor: Colors
-//                 .transparent, // Make the AlertDialog background transparent
-//             insetPadding: EdgeInsets.symmetric(horizontal: 15),
-//             content: Container(
-//               decoration: BoxDecoration(
-//                 color: Color(0XFFF017964), // Set the background color to green
-//                 borderRadius: BorderRadius.circular(15),
-//               ),
-//               padding: EdgeInsets.all(16),
-//               child: Column(
-//                 mainAxisSize: MainAxisSize.min,
-//                 children: [
-//                   Text(
-//                     'Untuk mengakses Fitur ini Anda diwajibkan untuk Bergabung menjadi mitra pensiunku+ !',
-//                     textAlign: TextAlign.center,
-//                     style: TextStyle(
-//                       fontSize: 14,
-//                       color: Colors
-//                           .white, // Set the text color to white for better contrast
-//                     ),
-//                   ),
-//                   SizedBox(height: 20),
-//                   ElevatedButton(
-//                     style: ElevatedButton.styleFrom(
-//                       foregroundColor: Color(0xFF017964),
-//                       backgroundColor:
-//                           Colors.white, // Set the text color to green
-//                       shape: RoundedRectangleBorder(
-//                         borderRadius: BorderRadius.circular(10),
-//                       ),
-//                     ),
-//                     onPressed: () {
-//                       Navigator.of(context).pop(); // Close the dialog
-//                       Navigator.of(context).push(
-//                         MaterialPageRoute(
-//                           builder: (context) => AktifkanPensiunkuPlusScreen(),
-//                         ),
-//                       );
-//                     },
-//                     child: Text('Aktifkan Pensiunku+'),
-//                   ),
-//                 ],
-//               ),
-//             ),
-//           ),
-//         );
-//       },
-//     );
-//   }
-
-// Widget _buildBottomSectionTitle() {
-  //   return Container(
-  //     width: double.infinity, // Menyamakan lebar dengan _buildBalanceCard
-  //     decoration: BoxDecoration(
-  //       color: Color.fromARGB(255, 0, 0, 0), // Latar hijau tua
-  //       borderRadius: BorderRadius.circular(24), // Radius sudut kontainer
-  //     ),
-  //     child: Padding(
-  //       padding: const EdgeInsets.symmetric(
-  //         vertical: 8, // Padding atas-bawah
-  //         horizontal: 16, // Padding kiri-kanan
-  //       ),
-  //       child: const Center(
-  //         // Menengahkan teks secara horizontal dan vertikal
-  //         child: Text(
-  //           'BUTUH UANG UNTUK MASA PENSIUNMU?',
-  //           style: TextStyle(
-  //             fontSize: 11,
-  //             fontWeight: FontWeight.bold,
-  //             color: Colors.white, // Warna teks putih
-  //           ),
-  //           textAlign: TextAlign.center, // Teks rata tengah horizontal
-  //         ),
-  //       ),
-  //     ),
-  //   );
-  // }
-
-   // Widget _buildDialogHelper(BuildContext context) {
-  //   return GestureDetector(
-  //     onTap: () {
-  //       // Navigasi ke EWalletScreen
-  //       Navigator.push(
-  //         context,
-  //         MaterialPageRoute(builder: (context) => DialoghelperContoh()),
-  //       );
-  //     },
-  //     child: Container(
-  //       width: double.infinity, // Menyamakan lebar dengan _buildBalanceCard
-  //       decoration: BoxDecoration(
-  //         color: const Color(0xFF017964), // Latar hijau tua
-  //         borderRadius: BorderRadius.circular(24), // Radius sudut kontainer
-  //       ),
-  //       child: Padding(
-  //         padding: const EdgeInsets.symmetric(
-  //           vertical: 8, // Padding atas-bawah
-  //           horizontal: 16, // Padding kiri-kanan
-  //         ),
-  //         child: const Center(
-  //           // Menengahkan teks secara horizontal dan vertikal
-  //           child: Text(
-  //             'Dialog Helper Contoh',
-  //             style: TextStyle(
-  //               fontSize: 11,
-  //               fontWeight: FontWeight.bold,
-  //               color: Colors.white, // Warna teks putih
-  //             ),
-  //             textAlign: TextAlign.center, // Teks rata tengah horizontal
-  //           ),
-  //         ),
-  //       ),
-  //     ),
-  //   );
-  // }

@@ -12,14 +12,16 @@ class PencairanBerhasilScreen extends StatefulWidget {
   final double amount;
   final DateTime transactionDate;
   final String referenceNumber;
-  final UserBankDetail? bankDetail; // Sekarang opsional
+  final UserBankDetail bankDetail; // Ini tidak lagi opsional
+  final String status; // Tambahkan status transaksi
 
   const PencairanBerhasilScreen({
     Key? key,
     required this.amount,
     required this.transactionDate,
     required this.referenceNumber,
-    this.bankDetail, // Detail bank bisa diberikan atau akan diambil via API
+    required this.bankDetail, // Pastikan ini selalu ada
+    this.status = 'Berhasil', // Default status
   }) : super(key: key);
 
   @override
@@ -28,76 +30,19 @@ class PencairanBerhasilScreen extends StatefulWidget {
 }
 
 class _PencairanBerhasilScreenState extends State<PencairanBerhasilScreen> {
-  UserBankDetail? _bankDetail;
-  bool _isLoading = true;
-  String? _errorMessage;
+  // _bankDetail, _isLoading, _errorMessage tidak lagi dibutuhkan sebagai state
+  // karena data sudah dari widget.bankDetail
+  // UserBankDetail? _bankDetail;
+  // bool _isLoading = true;
+  // String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
-    // Jika detail bank sudah disediakan melalui konstruktor, gunakan itu.
-    // Jika tidak, panggil API untuk mengambilnya.
-    if (widget.bankDetail != null) {
-      _bankDetail = widget.bankDetail;
-      _isLoading = false;
-    } else {
-      _fetchBankDetail();
-    }
+    // Tidak perlu _fetchBankDetail lagi karena bankDetail sudah diterima via constructor
   }
 
-  // Fungsi untuk memanggil API dan mengambil detail bank
-  Future<void> _fetchBankDetail() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-
-    const String apiUrl = 'https://api.pensiunku.id/new.php/getDetailWithdraw';
-    const Map<String, String> requestBody = {
-      'id': '3'
-    }; // ID hardcode sesuai permintaan
-
-    try {
-      final response = await http.post(
-        Uri.parse(apiUrl),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode(requestBody),
-      );
-
-      debugPrint('API Response Status Code: ${response.statusCode}');
-      debugPrint('API Response Body: ${response.body}');
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> responseData = json.decode(response.body);
-        // Asumsi struktur respons API:
-        // { "success": true, "data": { ...data bank... } }
-        if (responseData['success'] == true && responseData['data'] != null) {
-          setState(() {
-            _bankDetail = UserBankDetail.fromJson(responseData['data']);
-            _isLoading = false;
-          });
-        } else {
-          setState(() {
-            _errorMessage = responseData['message'] ??
-                'Gagal mengambil detail bank. Data tidak valid.';
-            _isLoading = false;
-          });
-        }
-      } else {
-        setState(() {
-          _errorMessage =
-              'Gagal terhubung ke server: Status ${response.statusCode}';
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      setState(() {
-        _errorMessage = 'Terjadi kesalahan jaringan: $e';
-        _isLoading = false;
-      });
-      debugPrint('Error fetching bank detail: $e');
-    }
-  }
+  // _fetchBankDetail function is no longer needed here
 
   @override
   Widget build(BuildContext context) {
@@ -114,8 +59,8 @@ class _PencairanBerhasilScreenState extends State<PencairanBerhasilScreen> {
     final formattedAmount = amountFormatter.format(widget.amount);
 
     // Format tanggal dan waktu
-    final dateTimeFormatter = DateFormat(
-        'dd MMMM HH:mm:ss \'WIB\'', 'id_ID'); // Menggunakan id_ID untuk bulan
+    final dateTimeFormatter = DateFormat('dd MMMM yyyy • HH:mm:ss \'WIB\'',
+        'id_ID'); // Menggunakan id_ID untuk bulan
     final formattedDateTime = dateTimeFormatter.format(widget.transactionDate);
 
     return Scaffold(
@@ -165,20 +110,6 @@ class _PencairanBerhasilScreenState extends State<PencairanBerhasilScreen> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   SizedBox(height: screenHeight * 0.04),
-                  // // AppBar (back button)
-                  // Align(
-                  //   alignment: Alignment.centerLeft,
-                  //   child: IconButton(
-                  //     icon: Icon(
-                  //       Icons.arrow_back,
-                  //       color: const Color(0xFF017964),
-                  //       size: screenWidth * 0.06,
-                  //     ),
-                  //     onPressed: () => Navigator.pop(context),
-                  //   ),
-                  // ),
-                  SizedBox(height: screenHeight * 0.03),
-
                   // Ilustrasi
                   Container(
                     width: screenWidth * 0.6,
@@ -220,7 +151,8 @@ class _PencairanBerhasilScreenState extends State<PencairanBerhasilScreen> {
                           style: TextStyle(
                             fontSize: screenWidth * 0.07,
                             fontWeight: FontWeight.bold,
-                            color: const Color(0xFF3F3F3F),
+                            color: const Color(
+                                0xFF017964), // Warna hijau untuk nominal berhasil
                           ),
                           textAlign: TextAlign.center,
                         ),
@@ -256,104 +188,80 @@ class _PencairanBerhasilScreenState extends State<PencairanBerhasilScreen> {
                       child: Text(
                         "Rekening Pencairan",
                         style: TextStyle(
-                          fontSize: screenWidth * 0.040,
+                          fontSize: screenWidth * 0.045,
                           fontWeight: FontWeight.bold,
                           color: Colors.black,
                         ),
                       ),
                     ),
                   ),
-                  _isLoading
-                      ? const Padding(
-                          padding: EdgeInsets.all(16.0),
-                          child: CircularProgressIndicator(
-                              color: Color(0xFFFFC950)),
+                  // Karena bankDetail sekarang wajib, kita bisa langsung menampilkannya
+                  Container(
+                    width: double.infinity,
+                    padding: EdgeInsets.all(screenWidth * 0.04),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(screenWidth * 0.04),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Colors.black12,
+                          blurRadius: 8,
+                          offset: Offset(0, 4),
                         )
-                      : _errorMessage != null
-                          ? Padding(
-                              padding: const EdgeInsets.all(16.0),
-                              child: Text(
-                                _errorMessage!,
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        // Logo Bank
+                        Container(
+                          width: screenWidth * 0.15,
+                          height: screenWidth * 0.15,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(8),
+                            image: DecorationImage(
+                              image: NetworkImage(widget
+                                      .bankDetail.bankLogoUrl ??
+                                  'https://placehold.co/${(screenWidth * 0.15).toInt()}x${(screenWidth * 0.15).toInt()}/000000/FFFFFF?text=BANK'),
+                              fit: BoxFit.contain,
+                              onError: (exception, stackTrace) {
+                                debugPrint(
+                                    'Error loading bank logo: $exception');
+                              },
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: screenWidth * 0.03),
+                        // Detail Bank
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                widget.bankDetail.bankName,
+                                style: TextStyle(
+                                  fontSize: screenWidth * 0.04,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              SizedBox(height: screenHeight * 0.005),
+                              Text(
+                                '${widget.bankDetail.maskedAccountNumber} - ${widget.bankDetail.accountHolderName}',
                                 style: TextStyle(
                                   fontSize: screenWidth * 0.035,
-                                  color: Colors.red,
+                                  color: Colors.grey[700],
                                 ),
-                                textAlign: TextAlign.center,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
-                            )
-                          : _bankDetail != null
-                              ? Container(
-                                  width: double.infinity,
-                                  padding: EdgeInsets.all(screenWidth * 0.04),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(
-                                        screenWidth * 0.04),
-                                    boxShadow: const [
-                                      BoxShadow(
-                                        color: Colors.black12,
-                                        blurRadius: 8,
-                                        offset: Offset(0, 4),
-                                      )
-                                    ],
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      // Logo Bank
-                                      Container(
-                                        width: screenWidth * 0.15,
-                                        height: screenWidth * 0.15,
-                                        decoration: BoxDecoration(
-                                          borderRadius:
-                                              BorderRadius.circular(8),
-                                          image: DecorationImage(
-                                            image: NetworkImage(_bankDetail!
-                                                    .bankLogoUrl ??
-                                                'https://placehold.co/${(screenWidth * 0.15).toInt()}x${(screenWidth * 0.15).toInt()}/000000/FFFFFF?text=BANK'),
-                                            fit: BoxFit.contain,
-                                            onError: (exception, stackTrace) {
-                                              debugPrint(
-                                                  'Error loading bank logo: $exception');
-                                            },
-                                          ),
-                                        ),
-                                      ),
-                                      SizedBox(width: screenWidth * 0.03),
-                                      // Detail Bank
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              _bankDetail!.bankName,
-                                              style: TextStyle(
-                                                fontSize: screenWidth * 0.04,
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.black,
-                                              ),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                            SizedBox(
-                                                height: screenHeight * 0.005),
-                                            Text(
-                                              '${_bankDetail!.maskedAccountNumber} - ${_bankDetail!.accountHolderName}',
-                                              style: TextStyle(
-                                                fontSize: screenWidth * 0.035,
-                                                color: Colors.grey[700],
-                                              ),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                )
-                              : const SizedBox
-                                  .shrink(), // Jika tidak ada data atau error, sembunyikan card
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                   SizedBox(height: screenHeight * 0.05),
 
                   // Tombol "Kembali ke Beranda"
@@ -362,8 +270,9 @@ class _PencairanBerhasilScreenState extends State<PencairanBerhasilScreen> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFFFC950),
                         padding: EdgeInsets.symmetric(
-                            vertical: screenHeight * 0.015,
-                            horizontal: screenHeight * 0.02),
+                          vertical: screenHeight * 0.015,
+                          horizontal: screenHeight * 0.02,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(22),
                         ),

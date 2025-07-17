@@ -12,13 +12,15 @@ class PencairanDiprosesScreen extends StatefulWidget {
 
   final DateTime transactionDate;
   final String referenceNumber;
-  final UserBankDetail bankDetail;
+  final UserBankDetail bankDetail; // Ini tidak lagi opsional, harus selalu ada
+  final String nominal; // Tambahkan nominal
 
   const PencairanDiprosesScreen({
     Key? key,
     required this.transactionDate,
     required this.referenceNumber,
-    required this.bankDetail,
+    required this.bankDetail, // Pastikan ini selalu ada dari KonfirmasiPinEWalletScreen
+    required this.nominal, // Pastikan ini selalu ada
   }) : super(key: key);
 
   @override
@@ -26,76 +28,19 @@ class PencairanDiprosesScreen extends StatefulWidget {
 }
 
 class _PencairanDiprosesScreenState extends State<PencairanDiprosesScreen> {
-  UserBankDetail? _bankDetail;
-  bool _isLoading = true;
-  String? _errorMessage;
+  // _bankDetail tidak lagi dibutuhkan sebagai state karena sudah dari widget.bankDetail
+  // bool _isLoading = true; // Tidak lagi dibutuhkan
+  // String? _errorMessage; // Tidak lagi dibutuhkan
 
   @override
   void initState() {
     super.initState();
-    // Jika detail bank sudah disediakan melalui konstruktor, gunakan itu.
-    // Jika tidak, panggil API untuk mengambilnya.
-    if (widget.bankDetail != null) {
-      _bankDetail = widget.bankDetail;
-      _isLoading = false;
-    } else {
-      _fetchBankDetail();
-    }
+    // Tidak perlu _fetchBankDetail lagi karena bankDetail sudah diterima via constructor
+    // _bankDetail = widget.bankDetail; // Ini sudah diakses langsung via widget.bankDetail
   }
 
-  // Fungsi untuk memanggil API dan mengambil detail bank
-  Future<void> _fetchBankDetail() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
+  // _fetchBankDetail function is no longer needed here as data is passed via constructor
 
-    const String apiUrl = 'https://api.pensiunku.id/new.php/getDetailWithdraw';
-    const Map<String, String> requestBody = {
-      'id': '3'
-    }; // ID hardcode sesuai permintaan
-
-    try {
-      final response = await http.post(
-        Uri.parse(apiUrl),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode(requestBody),
-      );
-
-      debugPrint('API Response Status Code: ${response.statusCode}');
-      debugPrint('API Response Body: ${response.body}');
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> responseData = json.decode(response.body);
-        // Asumsi struktur respons API:
-        // { "success": true, "data": { ...data bank... } }
-        if (responseData['success'] == true && responseData['data'] != null) {
-          setState(() {
-            _bankDetail = UserBankDetail.fromJson(responseData['data']);
-            _isLoading = false;
-          });
-        } else {
-          setState(() {
-            _errorMessage = responseData['message'] ??
-                'Gagal mengambil detail bank. Data tidak valid.';
-            _isLoading = false;
-          });
-        }
-      } else {
-        setState(() {
-          _errorMessage =
-              'Gagal terhubung ke server: Status ${response.statusCode}';
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      setState(() {
-        _errorMessage = 'Terjadi kesalahan jaringan: $e';
-        _isLoading = false;
-      });
-      debugPrint('Error fetching bank detail: $e');
-    }
-  }
   @override
   Widget build(BuildContext context) {
     final mediaQuery = MediaQuery.of(context);
@@ -105,6 +50,15 @@ class _PencairanDiprosesScreenState extends State<PencairanDiprosesScreen> {
     // Format tanggal dan waktu
     final dateTimeFormatter = DateFormat('dd MMMM yyyy • HH:mm:ss \'WIB\'', 'id_ID'); // Menggunakan id_ID untuk bulan
     final formattedDateTime = dateTimeFormatter.format(widget.transactionDate);
+
+    // Format nominal
+    final nominalFormatter = NumberFormat.currency(
+      locale: 'id_ID',
+      symbol: 'Rp ',
+      decimalDigits: 0,
+    );
+    final formattedNominal = nominalFormatter.format(double.tryParse(widget.nominal) ?? 0.0);
+
 
     return Scaffold(
       body: Stack(
@@ -138,8 +92,10 @@ class _PencairanDiprosesScreenState extends State<PencairanDiprosesScreen> {
               decoration: BoxDecoration(
                 color: const Color(0xFFFFC950),
                 borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(screenWidth * 0.08),
-                  bottomRight: Radius.circular(screenWidth * 0.08),
+                  bottomLeft: Radius.circular(screenWidth *
+                      0.08), // Menggunakan screenWidth untuk responsif
+                  bottomRight: Radius.circular(screenWidth *
+                      0.08), // Menggunakan screenWidth untuk responsif
                 ),
               ),
             ),
@@ -153,30 +109,11 @@ class _PencairanDiprosesScreenState extends State<PencairanDiprosesScreen> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   SizedBox(height: screenHeight * 0.03),
-                  // AppBar (back button dan judul)
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    // child: IconButton(
-                    //   icon: Icon(
-                    //     Icons.arrow_back,
-                    //     color: Color.transparent,
-                    //     size: screenWidth * 0.06,
-                    //   ),
-                    //   onPressed: () => Navigator.pop(context),
-                    // ),
-                  ),
-                  SizedBox(height: screenHeight * 0.02),
-
                   // Ilustrasi (Ganti dengan aset PNG/SVG Anda)
-                  // Pastikan Anda menambahkan aset gambar ini ke pubspec.yaml
-                  // Contoh: assets/images/pencairan_diproses_illustration.png
-                  // Untuk demo, menggunakan placeholder dari NetworkImage
                   Container(
                     width: screenWidth * 0.8, // Ukuran responsif untuk ilustrasi
                     height: screenHeight * 0.27,
                     child: Image.asset('assets/pensiunkuplus/e_wallet/pencairan_diproses.png')
-                  
-                    
                   ),
                   SizedBox(height: screenHeight * 0.03),
 
@@ -213,6 +150,16 @@ class _PencairanDiprosesScreenState extends State<PencairanDiprosesScreen> {
                             fontSize: screenWidth * 0.07,
                             fontWeight: FontWeight.bold,
                             color: const Color(0xFF3F3F3F),
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        SizedBox(height: screenHeight * 0.01), // Tambah spasi untuk nominal
+                        Text(
+                          formattedNominal, // Tampilkan nominal di sini
+                          style: TextStyle(
+                            fontSize: screenWidth * 0.06,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFF017964), // Warna hijau untuk nominal
                           ),
                           textAlign: TextAlign.center,
                         ),
@@ -279,9 +226,10 @@ class _PencairanDiprosesScreenState extends State<PencairanDiprosesScreen> {
                               image: NetworkImage(widget.bankDetail.bankLogoUrl ??
                                   'https://placehold.co/${(screenWidth * 0.15).toInt()}x${(screenWidth * 0.15).toInt()}/000000/FFFFFF?text=BANK'),
                               fit: BoxFit.contain,
-                              // onError: (context, error, stackTrace) {
-                              //   debugPrint('Error loading bank logo: $error');
-                              // },
+                              onError: (exception, stackTrace) {
+                                debugPrint(
+                                    'Error loading bank logo: $exception');
+                              },
                             ),
                           ),
                         ),
@@ -322,7 +270,6 @@ class _PencairanDiprosesScreenState extends State<PencairanDiprosesScreen> {
 
                   // Tombol "Kembali ke Beranda"
                   SizedBox(
-                    
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFFFC950),
@@ -346,7 +293,7 @@ class _PencairanDiprosesScreenState extends State<PencairanDiprosesScreen> {
                       child: Text(
                         'Kembali ke Beranda',
                         style: TextStyle(
-                          color: Color(0xFF3F3F3F),
+                          color: Colors.black,
                           fontSize: screenWidth * 0.045,
                           fontWeight: FontWeight.bold,
                         ),

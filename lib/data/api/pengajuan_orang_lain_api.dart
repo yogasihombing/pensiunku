@@ -30,29 +30,30 @@ class PengajuanOrangLainApi {
     required String telepon,
     required String domisili,
     required String nip,
-    required String fotoKTPPath,
+    required String fotoKTPPath, // Ini sekarang adalah string Base64
     required String namaFotoKTP,
-    required String fotoNPWPPath,
+    required String fotoNPWPPath, // Ini sekarang adalah string Base64
     required String namaFotoNPWP,
-    required String fotoKaripPath,
+    required String fotoKaripPath, // Ini sekarang adalah string Base64
     required String namaFotoKarip,
   }) async {
     try {
-      // String id = await getLoggedInId();
-      // if (id.isEmpty) {
-      //   print('Error: ID User tidak boleh kosong.');
-      //   return false;
-      // }
-
       print('Memulai proses kirim pengajuan Orang Lain...');
-      // Encode file ke Base64
-      String base64KTP = base64Encode(await File(fotoKTPPath).readAsBytes());
-      String base64NPWP = base64Encode(await File(fotoNPWPPath).readAsBytes());
-      String base64Karip =
-          base64Encode(await File(fotoKaripPath).readAsBytes());
 
-      // print('ini yoga: ${jsonEncode(_userModel)}');
-      // String id = "${_userModel?.id}";
+      // --- PERBAIKAN PENTING DI SINI ---
+      // fotoKTPPath, fotoNPWPPath, dan fotoKaripPath sudah berisi string Base64
+      // dari PengajuanOrangLainScreen. Tidak perlu encode ulang.
+      String base64KTP = fotoKTPPath;
+      String base64NPWP = fotoNPWPPath;
+      String base64Karip = fotoKaripPath;
+      // --- AKHIR PERBAIKAN ---
+
+      // Tambahkan logging untuk memastikan panjang string Base64 yang diterima
+      print('Panjang Base64 KTP yang diterima: ${base64KTP.length} karakter');
+      print('Panjang Base64 NPWP yang diterima: ${base64NPWP.length} karakter');
+      print(
+          'Panjang Base64 Karip yang diterima: ${base64Karip.length} karakter');
+
       // Buat payload JSON
       Map<String, dynamic> formData = {
         // kiri adalah prameter API kanan value yg akan dikirim
@@ -61,11 +62,11 @@ class PengajuanOrangLainApi {
         'telepon': telepon,
         'domisili': domisili,
         'nip': nip,
-        'foto_ktp': base64KTP,
+        'foto_ktp': base64KTP, // Gunakan langsung string Base64
         'nama_foto_ktp': namaFotoKTP,
-        'foto_npwp': base64NPWP,
+        'foto_npwp': base64NPWP, // Gunakan langsung string Base64
         'nama_foto_npwp': namaFotoNPWP,
-        'foto_karip': base64Karip,
+        'foto_karip': base64Karip, // Gunakan langsung string Base64
         'nama_foto_karip': namaFotoKarip,
       };
 
@@ -97,8 +98,16 @@ class PengajuanOrangLainApi {
     } on DioError catch (e) {
       print('Error Dio: ${e.message}');
       print('Respons Data: ${e.response?.data}');
+      // Tambahkan detail error yang lebih baik jika ada
+      if (e.type == DioErrorType.connectionTimeout) {
+        print(
+            'Connection Timeout Error: Pastikan koneksi internet stabil dan URL API benar.');
+      } else if (e.type == DioErrorType.badResponse) {
+        print(
+            'Bad Response Error: Status code ${e.response?.statusCode}, Data: ${e.response?.data}');
+      }
     } catch (e) {
-      print('Error: $e');
+      print('Error umum: $e');
     }
     return false;
   }

@@ -10,8 +10,6 @@ import 'package:pensiunku/model/user_model.dart';
 import 'package:pensiunku/repository/user_repository.dart';
 import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/wallet/bank_tujuan/e_wallet_bank_tujuan.dart';
 import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/wallet/pencairan/konfirmasi_pin_e_wallet_screen.dart';
-import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/wallet/pencairan/pencairan_berhasil.dart';
-import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/wallet/pencairan/pencairan_diproses.dart';
 import 'package:pensiunku/util/shared_preferences_util.dart';
 
 class EWalletPencairan extends StatefulWidget {
@@ -126,9 +124,6 @@ class _EWalletPencairanState extends State<EWalletPencairan> {
   /// PENTING: Fungsi untuk mengambil saldo pengguna dari API
   Future<void> _fetchBalance(String userId) async {
     if (!mounted) return;
-    setState(() {
-      _isLoadingBalance = true; // Set status loading true
-    });
     try {
       const String url = 'https://api.pensiunku.id/new.php/getBalance';
       final response = await http.post(
@@ -136,38 +131,62 @@ class _EWalletPencairanState extends State<EWalletPencairan> {
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'id_user': userId}),
       );
-
       debugPrint(
           'Respons API Get Balance (Status: ${response.statusCode}): ${response.body}');
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (data != null &&
-            data['text'] != null &&
-            data['text']['balance'] != null) {
-          String balanceStr = data['text']['balance'].toString();
-          // Hapus "Rp ", titik (ribuan), dan koma (desimal) sebelum parsing
-          balanceStr = balanceStr
-              .replaceAll('Rp ', '')
-              .replaceAll('.', '')
-              .replaceAll(',', '')
-              .trim();
+        if (response.body.contains('One moment, please...') ||
+            response.body
+                .contains('Access denied by Imunify360 bot-protection') ||
+            response.body.trim().startsWith('<!DOCTYPE html>')) {
+          throw Exception(
+              'Deteksi tantangan keamanan (Cloudflare/Imunify360). Mohon coba lagi.');
+        }
 
-          final formatter = NumberFormat.currency(
-              locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
-          if (mounted) {
-            setState(() {
-              _userBalance = formatter.format(double.tryParse(balanceStr) ?? 0);
-              debugPrint('Saldo diterima dan diformat: $_userBalance');
-            });
+        final data = jsonDecode(response.body);
+        if (data != null && data['text'] != null) {
+          // Periksa jika ada 'balance' atau 'message'
+          if (data['text']['balance'] != null) {
+            String balanceStr = data['text']['balance'].toString();
+            balanceStr = balanceStr
+                .replaceAll('Rp ', '')
+                .replaceAll('.', '')
+                .replaceAll(',', '')
+                .trim();
+
+            final formatter = NumberFormat.currency(
+                locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
+            if (mounted) {
+              setState(() {
+                _userBalance =
+                    formatter.format(double.tryParse(balanceStr) ?? 0);
+                debugPrint('Saldo diterima dan diformat: $_userBalance');
+              });
+            }
+          } else if (data['text']['message'] != null &&
+              data['text']['message'] == 'Wallet tidak ditemukan!') {
+            // Jika wallet tidak ditemukan, set saldo ke Rp 0
+            debugPrint("Wallet tidak ditemukan, setting saldo ke Rp 0.");
+            if (mounted) {
+              setState(() {
+                _userBalance = 'Rp 0';
+              });
+            }
+          } else {
+            debugPrint(
+                "Error: Field 'balance' tidak ditemukan atau response tidak dikenal: ${response.body}");
+            if (mounted) {
+              setState(() {
+                _userBalance = 'Error'; // Atau 'Tidak Tersedia'
+              });
+            }
           }
         } else {
           debugPrint(
-              "Error: Field 'balance' tidak ditemukan dalam response: ${response.body}");
+              "Error: Struktur respons 'text' tidak ditemukan: ${response.body}");
           if (mounted) {
             setState(() {
-              _userBalance =
-                  'Error'; // Tampilkan error jika field tidak ditemukan
+              _userBalance = 'Error';
             });
           }
         }
@@ -179,15 +198,11 @@ class _EWalletPencairanState extends State<EWalletPencairan> {
       debugPrint("Error fetching balance: $e");
       if (mounted) {
         setState(() {
-          _userBalance = 'Error'; // Tampilkan error jika ada exception
+          _userBalance = 'Error';
         });
       }
     } finally {
-      if (mounted) {
-        setState(() {
-          _isLoadingBalance = false; // Set status loading false setelah selesai
-        });
-      }
+      if (mounted) {}
     }
   }
 
@@ -335,6 +350,7 @@ class _EWalletPencairanState extends State<EWalletPencairan> {
           rekeningId: _selectedWithdrawalAccount!.id,
           userId: _userModel!.id.toString(),
           nominal: _jumlahController.text,
+          selectedBankDetail: _selectedWithdrawalAccount!,
         ),
       ),
     );
@@ -849,69 +865,11 @@ class _EWalletPencairanState extends State<EWalletPencairan> {
                     ),
                   ),
                 ),
-                Text(
-                  'Tombol Demo (Hapus di Produksi):',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                SizedBox(height: 8),
-
-// Tombol Demo: Ke Pencairan Diproses Screen
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => PencairanDiprosesScreen(
-                          // Memberikan data dummy yang relevan untuk demo
-                          bankDetail: UserBankDetail(
-                            bankName: 'Bank Demo Proses',
-                            accountNumber: '1122334455', // Nomor rekening dummy
-                            accountHolderName: 'Pengguna Demo Proses',
-                            id: 'dummy_id_proses',
-                          ),
-                          referenceNumber:
-                              'DEMO-PROC-${DateTime.now().millisecondsSinceEpoch}', // Nomor referensi dummy
-                          transactionDate:
-                              DateTime.now(), // Tanggal transaksi saat ini
-                        ),
-                      ),
-                    );
-                  },
-                  // Pastikan child berisi Text widget
-                  child: Text('Demo: Ke Pencairan Diproses'),
-                ),
-                SizedBox(height: 8),
-
-                // Tombol Demo: Ke Pencairan Berhasil Screen
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => PencairanBerhasilScreen(
-                          transactionDate:
-                              DateTime.now(), // Tanggal transaksi saat ini
-                          referenceNumber:
-                              'DEMO-DONE-${DateTime.now().millisecondsSinceEpoch}', // Nomor referensi dummy
-                          bankDetail: _selectedWithdrawalAccount ??
-                              UserBankDetail(
-                                // Menggunakan _selectedWithdrawalAccount jika tersedia, atau dummy jika belum ada yang terpilih
-                                bankName: 'Bank Demo Sukses',
-                                accountNumber:
-                                    '9876543210', // Nomor rekening dummy
-                                accountHolderName: 'Pengguna Demo Sukses',
-                                id: 'dummy_id_sukses',
-                              ),
-                          // Mengambil nominal dari controller, jika null default ke 0.0
-                          amount:
-                              double.tryParse(_jumlahController.text) ?? 0.0,
-                        ),
-                      ),
-                    );
-                  },
-                  // Pastikan child berisi Text widget
-                  child: Text('Demo: Ke Pencairan Berhasil'),
-                ),
+                // Text(
+                //   'Tombol Demo (Hapus di Produksi):',
+                //   style: TextStyle(fontWeight: FontWeight.bold),
+                // ),
+                // SizedBox(height: 8),
               ],
             ),
           ),
@@ -920,3 +878,61 @@ class _EWalletPencairanState extends State<EWalletPencairan> {
     );
   }
 }
+
+// // Tombol Demo: Ke Pencairan Diproses Screen
+//                 ElevatedButton(
+//                   onPressed: () {
+//                     Navigator.push(
+//                       context,
+//                       MaterialPageRoute(
+//                         builder: (context) => PencairanDiprosesScreen(
+//                           // Memberikan data dummy yang relevan untuk demo
+//                           bankDetail: UserBankDetail(
+//                             bankName: 'Bank Demo Proses',
+//                             accountNumber: '1122334455', // Nomor rekening dummy
+//                             accountHolderName: 'Pengguna Demo Proses',
+//                             id: 'dummy_id_proses',
+//                           ),
+//                           referenceNumber:
+//                               'DEMO-PROC-${DateTime.now().millisecondsSinceEpoch}', // Nomor referensi dummy
+//                           transactionDate:
+//                               DateTime.now(), // Tanggal transaksi saat ini
+//                         ),
+//                       ),
+//                     );
+//                   },
+//                   // Pastikan child berisi Text widget
+//                   child: Text('Demo: Ke Pencairan Diproses'),
+//                 ),
+//                 SizedBox(height: 8),
+
+//                 // Tombol Demo: Ke Pencairan Berhasil Screen
+//                 ElevatedButton(
+//                   onPressed: () {
+//                     Navigator.push(
+//                       context,
+//                       MaterialPageRoute(
+//                         builder: (context) => PencairanBerhasilScreen(
+//                           transactionDate:
+//                               DateTime.now(), // Tanggal transaksi saat ini
+//                           referenceNumber:
+//                               'DEMO-DONE-${DateTime.now().millisecondsSinceEpoch}', // Nomor referensi dummy
+//                           bankDetail: _selectedWithdrawalAccount ??
+//                               UserBankDetail(
+//                                 // Menggunakan _selectedWithdrawalAccount jika tersedia, atau dummy jika belum ada yang terpilih
+//                                 bankName: 'Bank Demo Sukses',
+//                                 accountNumber:
+//                                     '9876543210', // Nomor rekening dummy
+//                                 accountHolderName: 'Pengguna Demo Sukses',
+//                                 id: 'dummy_id_sukses',
+//                               ),
+//                           // Mengambil nominal dari controller, jika null default ke 0.0
+//                           amount:
+//                               double.tryParse(_jumlahController.text) ?? 0.0,
+//                         ),
+//                       ),
+//                     );
+//                   },
+//                   // Pastikan child berisi Text widget
+//                   child: Text('Demo: Ke Pencairan Berhasil'),
+//                 ),

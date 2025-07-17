@@ -4,23 +4,28 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 
 import 'package:flutter/material.dart';
+import 'package:pensiunku/model/e_wallet/user_bank_detail_model.dart';
 import 'package:pensiunku/model/user_model.dart';
 import 'package:pensiunku/repository/user_repository.dart';
+import 'package:pensiunku/screen/home/dashboard/pensiunku_plus/wallet/pencairan/pencairan_diproses.dart';
 import 'package:pensiunku/util/shared_preferences_util.dart';
 
 class KonfirmasiPinEWalletScreen extends StatefulWidget {
   static const String ROUTE_NAME = '/konfirmasi-pin-ewallet';
 
-  // NEW: Parameter yang diterima dari halaman EWalletPencairan
+  // Parameter yang diterima dari halaman EWalletPencairan
   final String rekeningId;
   final String userId;
   final String nominal;
+  final UserBankDetail
+      selectedBankDetail; // TIDAK LAGI OPSIONAL, karena PencairanDiprosesScreen memerlukannya
 
   const KonfirmasiPinEWalletScreen({
     Key? key,
     required this.rekeningId,
     required this.userId,
     required this.nominal,
+    required this.selectedBankDetail, // Pastikan ini selalu diberikan dari EWalletPencairan
   }) : super(key: key);
 
   @override
@@ -79,8 +84,8 @@ class _KonfirmasiPinEWalletScreenState
       if (token == null || token.isEmpty) {
         print('Error: Token is null or empty, cannot fetch user data.');
         // Beri tahu user atau arahkan ke login jika token tidak ada
-        _showCustomDialog(
-            context, 'Autentikasi gagal. Harap login kembali.', Colors.red);
+        _showCustomDialog('Autentikasi Gagal',
+            'Autentikasi gagal. Harap login kembali.', Colors.red);
         return;
       }
 
@@ -92,14 +97,14 @@ class _KonfirmasiPinEWalletScreenState
         });
       } else {
         print('Error fetching user data: ${userResult.error}');
-        _showCustomDialog(context,
+        _showCustomDialog('Gagal Memuat Data',
             'Gagal memuat data pengguna: ${userResult.error}', Colors.red);
       }
     } catch (e, stackTrace) {
       print('Error in _refreshData (Konfirmasi PIN E-Wallet): $e');
       print('Stack trace: $stackTrace');
-      _showCustomDialog(
-          context, 'Terjadi kesalahan saat memuat data: $e', Colors.red);
+      _showCustomDialog('Terjadi Kesalahan',
+          'Terjadi kesalahan saat memuat data: $e', Colors.red);
     }
   }
 
@@ -110,11 +115,13 @@ class _KonfirmasiPinEWalletScreenState
     });
 
     try {
-      print('=== Memulai proses verifikasi PIN & Pengajuan Withdraw ===');
+      print(
+          '=== Memulai proses pengajuan Withdraw (dengan validasi PIN di backend) ===');
 
       if (_userModel == null || _userModel!.id.toString() != widget.userId) {
         print('Error: User model is null or ID mismatch.');
-        _showCustomDialog(context, 'Data pengguna tidak valid.', Colors.red);
+        _showCustomDialog(
+            'Data Tidak Valid', 'Data pengguna tidak valid.', Colors.red);
         return;
       }
 
@@ -123,115 +130,87 @@ class _KonfirmasiPinEWalletScreenState
           .getString(SharedPreferencesUtil.SP_KEY_TOKEN);
       if (token == null || token.isEmpty) {
         print('Error: Token is null or empty.');
-        _showCustomDialog(
-            context, 'Token autentikasi tidak tersedia.', Colors.red);
+        _showCustomDialog('Token Tidak Tersedia',
+            'Token autentikasi tidak tersedia.', Colors.red);
         return;
       }
 
-      // Langkah 1: Verifikasi PIN
-      var pinRequestBody = {
-        'id_user': _userModel?.id,
-        'pin': pin,
+      // LANGSUNG PANGGIL API pengajuanWithdraw
+      var withdrawRequestBody = {
+        "id_rekening": widget.rekeningId,
+        "userid": widget.userId,
+        "nominal": widget.nominal,
+        "pin": pin, // PIN dikirim langsung ke endpoint withdraw
       };
-      print('Request body KonfirmasiPIN: ${jsonEncode(pinRequestBody)}');
-      var pinResponse = await http
+      print(
+          'Request body pengajuanWithdraw: ${jsonEncode(withdrawRequestBody)}');
+      var withdrawResponse = await http
           .post(
-            Uri.parse('https://api.pensiunku.id/new.php/KonfirmasiPIN'),
+            Uri.parse('https://api.pensiunku.id/new.php/pengajuanWithdraw'),
             headers: {
               'Content-Type': 'application/json',
               'Authorization': 'Bearer $token',
             },
-            body: jsonEncode(pinRequestBody),
+            body: jsonEncode(withdrawRequestBody),
           )
           .timeout(const Duration(seconds: 15));
 
-      print('KonfirmasiPIN Status Code: ${pinResponse.statusCode}');
-      print('KonfirmasiPIN Response Body: ${pinResponse.body}');
+      print('pengajuanWithdraw Status Code: ${withdrawResponse.statusCode}');
+      print('pengajuanWithdraw Response Body: ${withdrawResponse.body}');
 
-      if (pinResponse.statusCode == 200) {
-        var pinResponseBody = jsonDecode(pinResponse.body);
-        if (pinResponseBody['text']['message'] != "PIN Anda Belum Sesuai!") {
-          // Asumsi "PIN Anda Belum Sesuai!" berarti gagal
-          print(
-              'PIN berhasil diverifikasi. Melanjutkan ke pengajuan withdraw...');
-
-          // Langkah 2: Pengajuan Withdraw
-          var withdrawRequestBody = {
-            "id_rekening": widget.rekeningId,
-            "userid": widget.userId,
-            "nominal": widget.nominal,
-            "pin": pin, // Menggunakan PIN yang sudah diverifikasi
-          };
-          print(
-              'Request body pengajuanWithdraw: ${jsonEncode(withdrawRequestBody)}');
-          var withdrawResponse = await http
-              .post(
-                Uri.parse('https://api.pensiunku.id/new.php/pengajuanWithdraw'),
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': 'Bearer $token',
-                },
-                body: jsonEncode(withdrawRequestBody),
-              )
-              .timeout(const Duration(seconds: 15));
-
-          print(
-              'pengajuanWithdraw Status Code: ${withdrawResponse.statusCode}');
-          print('pengajuanWithdraw Response Body: ${withdrawResponse.body}');
-
-          if (withdrawResponse.statusCode == 200) {
-            var withdrawResponseBody = jsonDecode(withdrawResponse.body);
-            if (withdrawResponseBody['text']['message'] == "success") {
-              // Sesuaikan dengan pesan sukses API pengajuanWithdraw
-              print('Pengajuan withdraw berhasil!');
-              _showCustomDialog(
-                  context, 'Pengajuan pencairan berhasil!', Colors.green, () {
-                Navigator.pop(context,
-                    true); // Kembali ke EWalletPencairan dengan hasil true (sukses)
-              });
-            } else {
-              print(
-                  'Pengajuan withdraw gagal: ${withdrawResponseBody['text']['message']}');
-              _showCustomDialog(
-                  context,
-                  'Pengajuan pencairan gagal: ${withdrawResponseBody['text']['message'] ?? 'Pesan tidak diketahui'}',
-                  Colors.red);
-            }
-          } else {
-            print(
-                'Gagal pengajuan withdraw: Status Code ${withdrawResponse.statusCode}');
-            _showCustomDialog(context,
-                'Gagal mengajukan pencairan. Silakan coba lagi.', Colors.red);
-          }
+      if (withdrawResponse.statusCode == 200) {
+        var withdrawResponseBody = jsonDecode(withdrawResponse.body);
+        // Asumsi: API pengajuanWithdraw akan mengembalikan 'success' jika berhasil,
+        // atau pesan error yang jelas jika PIN salah/saldo tidak cukup/dll.
+        if (withdrawResponseBody['text']['message'] == "success") {
+          print('Pengajuan withdraw berhasil!');
+          // Navigasi ke PencairanDiprosesScreen
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => PencairanDiprosesScreen(
+                transactionDate: DateTime.now(), // Waktu transaksi
+                referenceNumber:
+                    'REF-${DateTime.now().millisecondsSinceEpoch}', // Dummy reference
+                bankDetail: widget
+                    .selectedBankDetail, // Teruskan detail bank yang dipilih
+                nominal: widget.nominal, // Teruskan nominal
+              ),
+            ),
+          );
         } else {
+          // Jika API mengembalikan pesan error (misal: "PIN Anda salah", "Saldo tidak mencukupi")
           print(
-              'Gagal memverifikasi PIN: ${pinResponseBody['text']['message']}');
+              'Pengajuan withdraw gagal: ${withdrawResponseBody['text']['message']}');
           _showCustomDialog(
-              context, 'PIN Anda salah. Silakan coba lagi.', Colors.red);
+              'Pencairan Gagal',
+              'Pencairan gagal: ${withdrawResponseBody['text']['message'] ?? 'Pesan tidak diketahui'}',
+              Colors.red);
         }
       } else {
-        print('Gagal memverifikasi PIN: Status Code ${pinResponse.statusCode}');
-        _showCustomDialog(
-            context, 'Gagal memverifikasi PIN. Silakan coba lagi.', Colors.red);
+        print(
+            'Gagal pengajuan withdraw: Status Code ${withdrawResponse.statusCode}');
+        _showCustomDialog('Pencairan Gagal',
+            'Gagal mengajukan pencairan. Silakan coba lagi.', Colors.red);
       }
     } on TimeoutException {
-      print('Koneksi timeout saat verifikasi PIN atau pengajuan withdraw.');
+      print('Koneksi timeout saat pengajuan withdraw.');
       _showCustomDialog(
-          context, 'Koneksi timeout. Silakan coba lagi.', Colors.red);
+          'Koneksi Timeout', 'Koneksi timeout. Silakan coba lagi.', Colors.red);
     } on SocketException {
-      print(
-          'Tidak ada koneksi internet saat verifikasi PIN atau pengajuan withdraw.');
-      _showCustomDialog(context, 'Tidak ada koneksi internet.', Colors.red);
+      print('Tidak ada koneksi internet saat pengajuan withdraw.');
+      _showCustomDialog(
+          'Tidak Ada Koneksi', 'Tidak ada koneksi internet.', Colors.red);
     } on HttpException {
-      print(
-          'Gagal berkomunikasi dengan server saat verifikasi PIN atau pengajuan withdraw.');
-      _showCustomDialog(context, 'Gagal terhubung ke server.', Colors.red);
+      print('Gagal berkomunikasi dengan server saat pengajuan withdraw.');
+      _showCustomDialog(
+          'Server Error', 'Gagal terhubung ke server.', Colors.red);
     } catch (e, stackTrace) {
       print('=== Error Detail di _verifyAndWithdraw ===');
       print('Pesan kesalahan: $e');
       print('Jejak tumpukan: $stackTrace');
       _showCustomDialog(
-          context, 'Terjadi kesalahan tak terduga: $e', Colors.red);
+          'Terjadi Kesalahan', 'Terjadi kesalahan tak terduga: $e', Colors.red);
     } finally {
       if (mounted) {
         setState(() {
@@ -241,32 +220,41 @@ class _KonfirmasiPinEWalletScreenState
     }
   }
 
-  void _showCustomDialog(BuildContext context, String message, Color color,
-      [VoidCallback? onDismiss]) {
+  // Perbaikan pada _showCustomDialog
+  void _showCustomDialog(String title, String message, Color color,
+      [VoidCallback? onOkPressed]) {
     showDialog(
       context: context,
-      barrierDismissible: false,
+      barrierDismissible: false, // Dialog tidak bisa ditutup dengan tap di luar
       builder: (BuildContext context) {
-        Future.delayed(const Duration(seconds: 3), () {
-          if (mounted) {
-            // Pastikan widget masih ada sebelum pop
-            Navigator.of(context).pop(true);
-            if (onDismiss != null) {
-              onDismiss();
-            }
-          }
-        });
         return Center(
           child: AlertDialog(
-            content: Text(
-              message,
-              textAlign: TextAlign.center,
-            ),
             backgroundColor: color,
-            contentTextStyle: const TextStyle(color: Colors.white),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10.0),
             ),
+            title: Text(
+              title,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                  color: Colors.white, fontWeight: FontWeight.bold),
+            ),
+            content: Text(
+              message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.white70),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop(); // Tutup dialog
+                  if (onOkPressed != null) {
+                    onOkPressed(); // Jalankan callback jika ada
+                  }
+                },
+                child: const Text('OK', style: TextStyle(color: Colors.white)),
+              ),
+            ],
           ),
         );
       },
@@ -290,9 +278,9 @@ class _KonfirmasiPinEWalletScreenState
         screenWidth * 0.01; // Padding antar field PIN
     final double pinBorderRadius =
         screenWidth * 0.02; // Radius border field PIN
-   final double buttonHeight = screenHeight * 0.06; // Tinggi tombol responsif
-    final double buttonPaddingVertical = screenHeight * 0.015; // Padding vertikal tombol
-        
+    final double buttonHeight = screenHeight * 0.06; // Tinggi tombol responsif
+    final double buttonPaddingVertical =
+        screenHeight * 0.015; // Padding vertikal tombol
 
     return Scaffold(
       body: Stack(
@@ -326,8 +314,9 @@ class _KonfirmasiPinEWalletScreenState
                       Align(
                         alignment: Alignment.topLeft,
                         child: IconButton(
-                          icon:
-                              const Icon(Icons.arrow_back, color: Colors.transparent),
+                          icon: const Icon(Icons.arrow_back,
+                              color: Colors
+                                  .transparent), // Warna transparan agar tidak terlihat
                           onPressed: () => Navigator.pop(context, false),
                         ),
                       ),
@@ -402,10 +391,14 @@ class _KonfirmasiPinEWalletScreenState
                                       },
                                       onChanged: (value) {
                                         // Pindah fokus ke field berikutnya jika digit dimasukkan
-                                        if (value.isNotEmpty && index < pinControllers.length - 1) {
-                                          pinFocusNodes[index + 1].requestFocus();
-                                        } else if (value.isEmpty && index > 0) { // Pindah fokus ke field sebelumnya jika digit dihapus
-                                          pinFocusNodes[index - 1].requestFocus();
+                                        if (value.isNotEmpty &&
+                                            index < pinControllers.length - 1) {
+                                          pinFocusNodes[index + 1]
+                                              .requestFocus();
+                                        } else if (value.isEmpty && index > 0) {
+                                          // Pindah fokus ke field sebelumnya jika digit dihapus
+                                          pinFocusNodes[index - 1]
+                                              .requestFocus();
                                         }
                                       },
                                     ),
@@ -419,8 +412,6 @@ class _KonfirmasiPinEWalletScreenState
                       SizedBox(height: screenHeight * 0.03),
                       // Tombol Konfirmasi
                       Center(
-                        // width: double.infinity, // Tombol full width
-                        
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFFFFC950),
@@ -430,8 +421,10 @@ class _KonfirmasiPinEWalletScreenState
                                   buttonHeight / 2), // Radius responsif
                             ),
                             padding: EdgeInsets.symmetric(
-                                vertical: buttonPaddingVertical, // Gunakan padding vertikal responsif
-                                horizontal: screenWidth * 0.1), // Sesuaikan horizontal padding untuk mengatur lebar
+                                vertical:
+                                    buttonPaddingVertical, // Gunakan padding vertikal responsif
+                                horizontal: screenWidth *
+                                    0.1), // Sesuaikan horizontal padding untuk mengatur lebar
                           ),
                           onPressed: _isLoadingOverlay
                               ? null

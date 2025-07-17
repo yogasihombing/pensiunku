@@ -143,11 +143,7 @@ class _EWalletBankTujuanState extends State<EWalletBankTujuan> {
 
   /// Mengambil saldo pengguna dari API
   Future<void> _fetchBalance(String userId) async {
-    debugPrint('Memulai _fetchBalance untuk userId: $userId');
     if (!mounted) return;
-    setState(() {
-      _isLoadingBalance = true;
-    });
     try {
       const String url = 'https://api.pensiunku.id/new.php/getBalance';
       final response = await http.post(
@@ -155,33 +151,59 @@ class _EWalletBankTujuanState extends State<EWalletBankTujuan> {
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'id_user': userId}),
       );
-
       debugPrint(
           'Respons API Get Balance (Status: ${response.statusCode}): ${response.body}');
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (data != null &&
-            data['text'] != null &&
-            data['text']['balance'] != null) {
-          String balanceStr = data['text']['balance'].toString();
-          balanceStr = balanceStr
-              .replaceAll('Rp ', '')
-              .replaceAll('.', '')
-              .replaceAll(',', '')
-              .trim();
+        if (response.body.contains('One moment, please...') ||
+            response.body
+                .contains('Access denied by Imunify360 bot-protection') ||
+            response.body.trim().startsWith('<!DOCTYPE html>')) {
+          throw Exception(
+              'Deteksi tantangan keamanan (Cloudflare/Imunify360). Mohon coba lagi.');
+        }
 
-          final formatter = NumberFormat.currency(
-              locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
-          if (mounted) {
-            setState(() {
-              _userBalance = formatter.format(double.tryParse(balanceStr) ?? 0);
-              debugPrint('Saldo diterima dan diformat: $_userBalance');
-            });
+        final data = jsonDecode(response.body);
+        if (data != null && data['text'] != null) {
+          // Periksa jika ada 'balance' atau 'message'
+          if (data['text']['balance'] != null) {
+            String balanceStr = data['text']['balance'].toString();
+            balanceStr = balanceStr
+                .replaceAll('Rp ', '')
+                .replaceAll('.', '')
+                .replaceAll(',', '')
+                .trim();
+
+            final formatter = NumberFormat.currency(
+                locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
+            if (mounted) {
+              setState(() {
+                _userBalance =
+                    formatter.format(double.tryParse(balanceStr) ?? 0);
+                debugPrint('Saldo diterima dan diformat: $_userBalance');
+              });
+            }
+          } else if (data['text']['message'] != null &&
+              data['text']['message'] == 'Wallet tidak ditemukan!') {
+            // Jika wallet tidak ditemukan, set saldo ke Rp 0
+            debugPrint("Wallet tidak ditemukan, setting saldo ke Rp 0.");
+            if (mounted) {
+              setState(() {
+                _userBalance = 'Rp 0';
+              });
+            }
+          } else {
+            debugPrint(
+                "Error: Field 'balance' tidak ditemukan atau response tidak dikenal: ${response.body}");
+            if (mounted) {
+              setState(() {
+                _userBalance = 'Error'; // Atau 'Tidak Tersedia'
+              });
+            }
           }
         } else {
           debugPrint(
-              "Error: Field 'balance' tidak ditemukan dalam response: ${response.body}");
+              "Error: Struktur respons 'text' tidak ditemukan: ${response.body}");
           if (mounted) {
             setState(() {
               _userBalance = 'Error';
@@ -200,11 +222,7 @@ class _EWalletBankTujuanState extends State<EWalletBankTujuan> {
         });
       }
     } finally {
-      if (mounted) {
-        setState(() {
-          _isLoadingBalance = false;
-        });
-      }
+      if (mounted) {}
     }
   }
 

@@ -50,18 +50,25 @@ class _EWalletScreenState extends State<EWalletScreen> {
   late double iconSize;
   late double cardPadding;
 
+  // GlobalKey untuk mengukur tinggi Wallet Card
+  final GlobalKey _walletCardKey = GlobalKey();
+  double _walletCardHeight = 0.0;
+
   @override
   void initState() {
     super.initState();
     print('EWalletScreen initialized');
     // Inisialisasi data lokal untuk DateFormat
-    // Sangat penting untuk memanggil ini sebelum menggunakan DateFormat dengan locale spesifik
     initializeDateFormatting().then((_) {
-      // Set default locale atau pastikan locale 'en_US' dan 'id_ID' terdaftar
-      // Opsional: Intl.defaultLocale = 'id_ID';
       _refreshData(); // Memuat data pengguna dan saldo saat inisialisasi
     });
     _futureGreeting = _fetchGreeting(); // Memuat greeting
+
+    // Tambahkan listener untuk mendapatkan tinggi wallet card setelah render pertama
+    // Ini penting agar perhitungan posisi wallet card akurat
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _getWalletCardHeight();
+    });
   }
 
   @override
@@ -81,11 +88,22 @@ class _EWalletScreenState extends State<EWalletScreen> {
     verticalPadding = screenHeight * 0.01; // 1% dari tinggi layar
 
     // Responsive sizes
-    headerHeight =
-        screenHeight * 0.25; // 34% dari tinggi layar (diperkecil agar pas)
+    headerHeight = screenHeight * 0.25; // 25% dari tinggi layar
     avatarRadius = screenWidth * 0.08; // 8% dari lebar layar
     iconSize = screenWidth * 0.18; // 18% dari lebar layar
     cardPadding = screenWidth * 0.04; // 4% dari lebar layar
+  }
+
+  /// Fungsi untuk mendapatkan tinggi _buildWalletCard setelah dirender
+  void _getWalletCardHeight() {
+    if (_walletCardKey.currentContext != null) {
+      final RenderBox renderBox =
+          _walletCardKey.currentContext!.findRenderObject() as RenderBox;
+      setState(() {
+        _walletCardHeight = renderBox.size.height;
+        debugPrint('Wallet Card Height: $_walletCardHeight');
+      });
+    }
   }
 
   /// Fungsi untuk refresh data pengguna dan saldo
@@ -280,60 +298,78 @@ class _EWalletScreenState extends State<EWalletScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Pastikan dimensi responsif diinisialisasi
+    _initializeResponsiveDimensions();
+
+    // Hitung posisi top untuk _buildWalletCard
+    // Posisi top = tinggi header - (setengah tinggi wallet card)
+    final double walletCardTopPosition = headerHeight -
+        (_walletCardHeight / 2) +
+        (screenHeight * 0.05); // Diubah dari 0.02 menjadi 0.05
+
     return Scaffold(
       body: Stack(
         children: [
+          // 1. Background gradient penuh layar
           _buildBackgroundGradient(),
+
+          // 2. Header berwarna di bagian atas (fixed)
           _buildColoredHeader(),
-          // PENTING: Menempatkan RefreshIndicator di sekitar SingleChildScrollView
-          // yang membungkus seluruh konten layar. Ini memastikan pull-to-refresh
-          // berfungsi di mana pun pengguna menarik layar.
-          SafeArea(
+
+          // 3. Konten header tetap (tombol kembali, profil greeting)
+          // Ditempatkan di sini agar tidak ikut scroll
+          Positioned(
+            top: MediaQuery.of(context).padding.top +
+                screenHeight * 0.01, // Padding dari atas layar + sedikit ruang
+            left: horizontalPadding,
+            right: horizontalPadding,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildBackButton(),
+                SizedBox(height: screenHeight * 0.02),
+                Center(child: _buildProfileGreeting()),
+              ],
+            ),
+          ),
+
+          // 4. Wallet Card yang di-positioning secara absolut (fixed, overlapping)
+          Positioned(
+            top: walletCardTopPosition,
+            left: horizontalPadding,
+            right: horizontalPadding,
+            child: _buildWalletCard(),
+          ),
+
+          // 5. Konten utama yang bisa di-scroll (menu icons dan menu boxes)
+          // Dimulai setelah area header dan setengah wallet card
+          Positioned.fill(
+            // Menggunakan Positioned.fill untuk mengisi sisa ruang
+            top: headerHeight +
+                (_walletCardHeight /
+                    2), // Mulai di bawah header + setengah wallet card + sedikit ruang
             child: RefreshIndicator(
               onRefresh: _refreshData, // Memanggil fungsi refresh data
               child: SingleChildScrollView(
                 physics:
                     const AlwaysScrollableScrollPhysics(), // Memastikan scroll selalu aktif
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Bagian header yang tidak bisa di-scroll (sebelumnya di _buildHeaderSection)
-                    Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: horizontalPadding,
-                        vertical: verticalPadding,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          SizedBox(height: screenHeight * 0.01),
-                          _buildBackButton(),
-                          SizedBox(height: screenHeight * 0.02),
-                          Center(child: _buildProfileGreeting()),
-                          SizedBox(height: screenHeight * 0.03),
-                          _buildWalletCard(), // Widget kartu dompet
-                        ],
-                      ),
-                    ),
-                    // Bagian menu yang sebelumnya di _buildScrollableMenuSection
-                    SizedBox(height: screenHeight * 0.03),
-                    Padding(
-                      padding:
-                          EdgeInsets.symmetric(horizontal: horizontalPadding),
-                      child: Column(
-                        children: [
-                          _buildMenuIcons(),
-                          SizedBox(height: screenHeight * 0.03),
-                          _buildMenuBoxesFirstRow(),
-                          SizedBox(height: screenHeight * 0.02),
-                          _buildMenuBoxesSecondRow(),
-                          SizedBox(
-                              height:
-                                  screenHeight * 0.02), // Extra space at bottom
-                        ],
-                      ),
-                    ),
-                  ],
+                child: Padding(
+                  // Padding internal untuk konten yang di-scroll
+                  padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                  child: Column(
+                    children: [
+                      SizedBox(
+                          height: screenHeight *
+                              0.12), // Jarak antara wallet card dan baris ikon pertama
+                      _buildMenuIcons(),
+                      SizedBox(height: screenHeight * 0.03),
+                      _buildMenuBoxesFirstRow(),
+                      SizedBox(height: screenHeight * 0.02),
+                      _buildMenuBoxesSecondRow(),
+                      SizedBox(
+                          height: screenHeight * 0.02), // Extra space at bottom
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -370,7 +406,7 @@ class _EWalletScreenState extends State<EWalletScreen> {
       top: 0,
       left: 0,
       right: 0,
-      height: headerHeight,
+      height: 0.30 * screenHeight, // 30% dari tinggi layar
       child: Container(
         decoration: BoxDecoration(
           color: const Color(0xFFFFC950),
@@ -382,9 +418,6 @@ class _EWalletScreenState extends State<EWalletScreen> {
       ),
     );
   }
-
-  // NOTE: _buildMainContent() and _buildScrollableMenuSection() are no longer needed
-  // as their content has been integrated directly into the main SingleChildScrollView.
 
   /// Widget untuk tombol kembali
   Widget _buildBackButton() {
@@ -482,6 +515,7 @@ class _EWalletScreenState extends State<EWalletScreen> {
   /// PENTING: Widget untuk menampilkan card saldo dompet dengan data API
   Widget _buildWalletCard() {
     return Container(
+      key: _walletCardKey, // Tambahkan GlobalKey di sini
       width: double.infinity,
       padding: EdgeInsets.all(cardPadding),
       decoration: BoxDecoration(
