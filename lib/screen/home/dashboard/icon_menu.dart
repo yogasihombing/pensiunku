@@ -11,6 +11,7 @@ class IconMenu extends StatelessWidget {
   final double? imageWidth; // Parameter baru
   final double? imageHeight; // Parameter baru
   final FilterQuality filterQuality; // Parameter baru
+  final VoidCallback? onTap; // Tambahkan ini
 
   IconMenu(
       {Key? key,
@@ -22,6 +23,7 @@ class IconMenu extends StatelessWidget {
       this.imageWidth,
       this.imageHeight,
       this.filterQuality = FilterQuality.low,
+      this.onTap, // Tambahkan ini
       this.arguments})
       : super(key: key);
 

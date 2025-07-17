@@ -1218,17 +1218,70 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   useBox: false,
                 ),
               ),
-              SizedBox(width: screenWidth * 0.073),
+              // --- MODIFIKASI DIMULAI DI SINI ---
+              SizedBox(width: screenWidth * 0.073), // Jaga jarak yang sama
+
+              // Bungkus IconMenu Toko dalam SizedBox dengan lebar yang sama
               SizedBox(
-                width: screenWidth * 0.34,
-                child: IconMenu(
-                  image: "assets/dashboard_screen/icon_toko.png",
-                  title: "",
-                  routeNamed: TokoScreen.ROUTE_NAME,
-                  arguments: TokoScreenArguments(categoryId: 1),
-                  useBox: false,
+                width: screenWidth * 0.315,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    AbsorbPointer(
+                      absorbing: true,
+                      child: Opacity(
+                        opacity: 0.3,
+                        child: IconMenu(
+                          image: "assets/dashboard_screen/icon_toko.png",
+                          title: "",
+                          routeNamed: TokoScreen.ROUTE_NAME,
+                          arguments: TokoScreenArguments(categoryId: 1),
+                          useBox: false,
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      top: screenHeight * 0.022,
+                      child: Icon(
+                        Icons.lock,
+                        size: screenWidth * 0.07,
+                        color: Colors.black.withOpacity(0.6),
+                      ),
+                    ),
+                    Positioned(
+                      top: screenHeight * 0.078,
+                      child: Text(
+                        'Coming Soon',
+                        // --- PERUBAHAN DI SINI ---
+                        style: Theme.of(context).textTheme.subtitle1?.copyWith(
+                              fontSize: 11, // Sama dengan di IconMenu
+                              fontWeight:
+                                  FontWeight.w600, // Sama dengan di IconMenu
+                              color: Colors.black, // Tetap hitam
+                            ),
+                        // --- AKHIR PERUBAHAN ---
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ],
                 ),
               ),
+              // SizedBox(
+              //   width: screenWidth * 0.34,
+              //   child: IconMenu(
+              //     image: "assets/dashboard_screen/icon_toko.png",
+              //     title: "",
+              //     routeNamed: TokoScreen.ROUTE_NAME,
+              //     arguments: TokoScreenArguments(categoryId: 1),
+              //     useBox: false,
+              //   ),
+              // ),
+
+              // --- MODIFIKASI DIMULAI DI SINI ---
+              SizedBox(
+                  width: screenWidth *
+                      0.022), // Tambahkan SizedBox terakhir untuk konsistensi jika ada ikon lain
+              // --- MODIFIKASI BERAKHIR DI SINI ---
             ],
           ),
         ),

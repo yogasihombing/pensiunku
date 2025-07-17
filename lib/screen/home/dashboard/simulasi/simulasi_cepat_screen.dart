@@ -3,11 +3,13 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:image_gallery_saver/image_gallery_saver.dart';
 import 'package:http/http.dart' as http;
+import 'package:dropdown_search/dropdown_search.dart';
 
 class SimulasiCepatScreen extends StatefulWidget {
   static const String ROUTE_NAME = '/simulasi-cepat';
@@ -18,8 +20,9 @@ class SimulasiCepatScreen extends StatefulWidget {
   State<SimulasiCepatScreen> createState() => _SimulasiCepatScreenState();
 }
 
-class _SimulasiCepatScreenState extends State<SimulasiCepatScreen> {
-  // Controller dan state variables
+class _SimulasiCepatScreenState extends State<SimulasiCepatScreen>
+    with SingleTickerProviderStateMixin {
+  // --- Controller dan Variabel State ---
   final _formKey = GlobalKey<FormState>();
   final ScreenshotController screenshotController = ScreenshotController();
   final TextEditingController _namaController = TextEditingController();
@@ -28,6 +31,13 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen> {
       TextEditingController();
   final TextEditingController _gajiPensiunController = TextEditingController();
   final TextEditingController _nomorTeleponController = TextEditingController();
+  final TextEditingController _pekerjaanController = TextEditingController();
+
+  String? _selectedDomisili;
+  List<String> _allDomisiliOptions = [];
+  bool _isLoadingDomisili = false;
+  bool _initialDomisiliFetchDone = false;
+
   String _statusPengaju = 'Pra-Pensiun';
   bool _hasilSimulasi = false;
   bool _isLoading = false;
@@ -36,24 +46,50 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen> {
   String _errorMessage = '';
   String _generatedCode = '';
 
-  // Error tracking - NEW
+  late AnimationController _logoAnimationController;
+  bool _isLoadingOverlay = false;
+
+  // --- Map untuk Tracking Error Validasi Field ---
   Map<String, String> _fieldErrors = {
     'nama': '',
     'tanggalLahir': '',
     'tanggalPensiun': '',
     'gajiPensiun': '',
     'nomorTelepon': '',
+    'domisili': '',
+    'pekerjaan': '',
   };
 
-  // Format number
+  // --- Format Number ---
   final NumberFormat _currencyFormat = NumberFormat.currency(
     locale: 'id',
     symbol: 'Rp ',
     decimalDigits: 0,
   );
 
-  // Format number tanpa symbol
   final NumberFormat _numberFormat = NumberFormat.decimalPattern('id');
+
+  @override
+  void initState() {
+    super.initState();
+    _logoAnimationController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat();
+
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      _logoAnimationController.repeat();
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_initialDomisiliFetchDone) {
+      _initialDomisiliFetchDone = true;
+      _fetchDomisili();
+    }
+  }
 
   @override
   void dispose() {
@@ -62,10 +98,100 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen> {
     _tanggalPensiunController.dispose();
     _gajiPensiunController.dispose();
     _nomorTeleponController.dispose();
+    _pekerjaanController.dispose();
+    _logoAnimationController.dispose();
     super.dispose();
   }
 
-  // Fungsi untuk call API
+  // --- FUNGSI: Mengambil data domisili dari API ---
+  Future<void> _fetchDomisili() async {
+    if (!mounted) return;
+
+    setState(() {
+      _isLoadingDomisili = true;
+      _errorMessage = '';
+    });
+
+    try {
+      final String domisiliApiUrl =
+          'https://api.pensiunku.id/new.php/getDomisili';
+      debugPrint("Fetching domisili from URL: $domisiliApiUrl");
+
+      final response = await http.get(Uri.parse(domisiliApiUrl));
+
+      if (!mounted) return;
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> decodedData = json.decode(response.body);
+        debugPrint("Raw Response Body (getDomisili): ${response.body}");
+
+        if (decodedData.containsKey('text') && decodedData['text'] is Map) {
+          final Map<String, dynamic> textData = decodedData['text'];
+
+          if (textData.containsKey('message') &&
+              textData['message'] == 'success' &&
+              textData.containsKey('data') &&
+              textData['data'] is List) {
+            final List<dynamic> rawDomisiliList = textData['data'];
+
+            setState(() {
+              _allDomisiliOptions =
+                  List<String>.from(rawDomisiliList.map((item) {
+                if (item.containsKey('city') && item['city'] != null) {
+                  return item['city'].toString();
+                }
+                return '';
+              }).where((name) => name.isNotEmpty));
+            });
+          } else {
+            String specificErrorMessage = 'Gagal memuat data domisili. ';
+            if (textData.containsKey('message') &&
+                textData['message'] != 'success') {
+              specificErrorMessage +=
+                  'Pesan API bukan sukses (${textData['message']}).';
+            } else if (!textData.containsKey('data') ||
+                !(textData['data'] is List)) {
+              specificErrorMessage +=
+                  'Format data domisili tidak valid: kunci "data" tidak ada atau bukan list (tipe: ${textData['data'].runtimeType}).';
+            }
+            print('Error fetching domisili: $specificErrorMessage');
+            _showSnackBar(specificErrorMessage);
+          }
+        } else {
+          print(
+              'Error fetching domisili: Kunci "text" tidak ditemukan atau bukan map.');
+          _showSnackBar(
+              'Gagal memuat data domisili: Struktur respons tidak sesuai.');
+        }
+      } else {
+        print('HTTP Error fetching domisili: ${response.statusCode}');
+        _showSnackBar(
+            'Gagal memuat data domisili (HTTP ${response.statusCode}).');
+      }
+    } catch (e) {
+      print('Exception fetching domisili: $e');
+      _showSnackBar('Terjadi kesalahan saat memuat domisili: ${e.toString()}');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingDomisili = false;
+        });
+      }
+    }
+  }
+
+  // Fungsi pembantu untuk menampilkan SnackBar dengan aman
+  void _showSnackBar(String message) {
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message)),
+        );
+      }
+    });
+  }
+
+  // --- Fungsi untuk call API Simulasi ---
   Future<void> _callSimulationAPI() async {
     try {
       if (!mounted) return;
@@ -108,12 +234,16 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen> {
         'sisa_hutang': '0',
         'master_dapem': 'NO',
         'versi_simulasi': 'SV12',
+        'domisili': _selectedDomisili ?? '',
+        'pekerjaan': _pekerjaanController.text,
       });
 
       debugPrint("Request Fields: ${request.fields}");
 
       http.StreamedResponse response = await request.send();
       debugPrint("Response Status Code: ${response.statusCode}");
+
+      if (!mounted) return;
 
       if (response.statusCode == 200) {
         final responseBody = await response.stream.bytesToString();
@@ -129,14 +259,14 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen> {
               data['data'].isNotEmpty) {
             debugPrint("First data element: ${data['data'][0]}");
 
-            // Simpan hasil simulasi terlebih dahulu
             await _saveSimulation(data['data'][0]);
 
-            // Setelah penyimpanan selesai, tampilkan hasil simulasi
-            setState(() {
-              _simulationResult = data['data'][0];
-              _hasilSimulasi = true;
-            });
+            if (mounted) {
+              setState(() {
+                _simulationResult = data['data'][0];
+                _hasilSimulasi = true;
+              });
+            }
           } else {
             throw Exception('Format data tidak sesuai');
           }
@@ -148,34 +278,37 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen> {
       }
     } catch (e) {
       debugPrint("Terjadi error: ${e.toString()}");
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Error: ${e.toString()}';
+          _simulationResult = null;
+        });
 
-      setState(() {
-        _errorMessage = 'Error: ${e.toString()}';
-        _simulationResult = null; // Reset hasil jika error
-      });
-
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text('Terjadi Kesalahan'),
-          content: Text(_errorMessage),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text('OK'),
-            ),
-          ],
-        ),
-      );
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text('Terjadi Kesalahan'),
+            content: Text(_errorMessage),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
       debugPrint("Proses API simulasi selesai");
     }
   }
 
-  // 4. FUNGSI BARU UNTUK API SAVE
+  // --- Fungsi Penyimpanan Simulasi ---
   Future<void> _saveSimulation(dynamic simulationData) async {
     try {
       debugPrint("[SAVE SIMULASI] Memulai proses penyimpanan...");
@@ -188,6 +321,8 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen> {
       debugPrint(
           "- Gaji: ${_gajiPensiunController.text.replaceAll(RegExp(r'[^0-9]'), '')}");
       debugPrint("- Telepon: ${_nomorTeleponController.text}");
+      debugPrint("- Domisili: ${_selectedDomisili ?? ''}");
+      debugPrint("- Pekerjaan: ${_pekerjaanController.text}");
 
       final response = await http.post(
         Uri.parse('https://api.pensiunku.id/new.php/saveSimulasi'),
@@ -201,6 +336,8 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen> {
             "gaji":
                 _gajiPensiunController.text.replaceAll(RegExp(r'[^0-9]'), ''),
             "telepon": _nomorTeleponController.text,
+            "domisili": _selectedDomisili ?? '',
+            "pekerjaan": _pekerjaanController.text,
             "usia": simulationData['usia']?.toString() ?? '',
             "max_jangka": simulationData['max_jangka']?.toString() ?? '',
             "nominal": simulationData['nominal']?.toString() ?? '',
@@ -237,14 +374,17 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen> {
           "[SAVE SIMULASI] Response Status Code: ${response.statusCode}");
       debugPrint("[SAVE SIMULASI] Response Body: ${response.body}");
 
+      if (!mounted) return;
+
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
-        // Perbaiki cara mengambil kode dari response JSON
         final simCode = responseData['text']?['code'];
+        if (mounted) {
+          setState(() {
+            _generatedCode = simCode ?? 'KOSONG';
+          });
+        }
         debugPrint("[SAVE SIMULASI] Simulasi tersimpan dengan code: $simCode");
-        setState(() {
-          _generatedCode = simCode ?? 'KOSONG';
-        });
       } else {
         debugPrint("[SAVE SIMULASI] Gagal menyimpan. Status code tidak 200");
       }
@@ -254,7 +394,7 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen> {
     }
   }
 
-  // Fungsi untuk menampilkan hasil
+  // --- Widget Tampilan Hasil dan Fungsi Pendukung ---
   Widget _buildResultDisplay() {
     return Padding(
       padding: const EdgeInsets.all(12.0),
@@ -307,40 +447,35 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen> {
     );
   }
 
-// Fungsi untuk membuka WhatsApp
   void _launchWhatsApp() async {
     final Uri whatsappUrl = Uri.parse(
         'whatsapp://send?phone=+6287785833344&text=Hallo%20admin%20pensiunku,%20saya%20mau%20menanyakan%20perihal%20simulasi%20aplikasi%20Pensiunku%3F');
 
     if (await canLaunchUrl(whatsappUrl)) {
-      await launchUrl(whatsappUrl); // Buka langsung di aplikasi WhatsApp
+      await launchUrl(whatsappUrl);
     } else {
-      // Fallback ke versi web jika WhatsApp tidak terinstall
       await launchUrl(
           Uri.parse('https://web.whatsapp.com/send?phone=+6287785833344'));
     }
   }
 
-  // Fungsi untuk mengambil screenshot dan menyimpannya ke galeri
   Future<void> _captureAndSaveScreenshot() async {
     try {
       final Uint8List? imageBytes = await screenshotController.capture(
-        delay: Duration(milliseconds: 200), // Delay untuk render widget
-        // captureMode: CaptureMode.entireWidget, // Ambil seluruh konten widget
+        delay: Duration(milliseconds: 200),
       );
 
       if (imageBytes != null) {
-        // Simpan ke galeri
         await ImageGallerySaver.saveImage(imageBytes);
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Screenshot tersimpan!')));
+        _showSnackBar('Screenshot tersimpan!');
       }
     } catch (e) {
       print("Gagal: $e");
+      _showSnackBar('Gagal menyimpan screenshot: ${e.toString()}');
     }
   }
 
-  // NEW - Field validation functions that set error messages but don't change layout
+  // --- Fungsi Validasi Field ---
   String? validateNama(String? value) {
     if (value == null || value.isEmpty) {
       _fieldErrors['nama'] = 'Harap masukkan nama';
@@ -356,20 +491,17 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen> {
       return '';
     }
 
-    // Validasi format dd-mm-yyyy
     final datePattern = RegExp(r'^\d{2}-\d{2}-\d{4}$');
     if (!datePattern.hasMatch(value)) {
       _fieldErrors['tanggalLahir'] = 'Format tanggal harus dd-mm-yyyy';
       return '';
     }
 
-    // Ekstrak nilai tanggal, bulan, dan tahun
     final parts = value.split('-');
     final day = int.tryParse(parts[0]) ?? 0;
     final month = int.tryParse(parts[1]) ?? 0;
     final year = int.tryParse(parts[2]) ?? 0;
 
-    // Validasi nilai tanggal dan bulan
     if (day < 1 || day > 31) {
       _fieldErrors['tanggalLahir'] = 'Tanggal harus antara 1-31';
       return '';
@@ -379,13 +511,11 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen> {
       return '';
     }
 
-    // Validasi tanggal valid untuk bulan tertentu
     if ((month == 4 || month == 6 || month == 9 || month == 11) && day > 30) {
       _fieldErrors['tanggalLahir'] = 'Bulan ini hanya memiliki 30 hari';
       return '';
     }
 
-    // Validasi Februari dan tahun kabisat
     if (month == 2) {
       bool isLeapYear = (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
       if (day > (isLeapYear ? 29 : 28)) {
@@ -410,19 +540,16 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen> {
       return '';
     }
 
-    // Validasi format dd-mm-yyyy
     final datePattern = RegExp(r'^\d{2}-\d{2}-\d{4}$');
     if (!datePattern.hasMatch(value)) {
       _fieldErrors['tanggalPensiun'] = 'Format tanggal harus dd-mm-yyyy';
       return '';
     }
 
-    // Ekstrak nilai tanggal, bulan, dan tahun
     final parts = value.split('-');
     final day = int.tryParse(parts[0]) ?? 0;
     final month = int.tryParse(parts[1]) ?? 0;
 
-    // Validasi nilai tanggal dan bulan
     if (day < 1 || day > 31) {
       _fieldErrors['tanggalPensiun'] = 'Tanggal harus antara 1-31';
       return '';
@@ -454,7 +581,24 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen> {
     return null;
   }
 
-  // NEW - Check if all fields are valid
+  String? validateDomisili(String? value) {
+    if (value == null || value.isEmpty) {
+      _fieldErrors['domisili'] = 'Harap pilih domisili';
+      return '';
+    }
+    _fieldErrors['domisili'] = '';
+    return null;
+  }
+
+  String? validatePekerjaan(String? value) {
+    if (value == null || value.isEmpty) {
+      _fieldErrors['pekerjaan'] = 'Harap masukkan pekerjaan';
+      return '';
+    }
+    _fieldErrors['pekerjaan'] = '';
+    return null;
+  }
+
   bool validateForm() {
     validateNama(_namaController.text);
     validateTanggalLahir(_tanggalLahirController.text);
@@ -465,12 +609,13 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen> {
     }
     validateGajiPensiun(_gajiPensiunController.text);
     validateNomorTelepon(_nomorTeleponController.text);
+    validateDomisili(_selectedDomisili);
+    validatePekerjaan(_pekerjaanController.text);
 
-    // Check if any errors exist
     return !_fieldErrors.values.any((error) => error.isNotEmpty);
   }
 
-  // Build a form field with error message below
+  // --- Widget Pembantu untuk Form Field ---
   Widget buildFormFieldWithError({
     required TextEditingController controller,
     required String fieldKey,
@@ -543,20 +688,19 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen> {
     );
   }
 
+  // --- Metode Build Utama ---
   @override
   Widget build(BuildContext context) {
-    // Ambil tinggi top bar (misalnya 56) dan padding atas dari SafeArea.
     final double topBarHeight = 50.0;
     final double topPadding = MediaQuery.of(context).padding.top;
 
     return Scaffold(
-      resizeToAvoidBottomInset: true, // untuk menghindari masalah keyboard
+      resizeToAvoidBottomInset: true,
       body: Screenshot(
         controller: screenshotController,
         child: Stack(
           children: [
-            
-            // Latar belakang gradien yang mengisi layar.
+            // Latar belakang gradien
             Container(
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
@@ -572,7 +716,7 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen> {
                 ),
               ),
             ),
-            // Custom top bar dengan tombol back dan judul.
+            // Custom top bar
             Positioned(
               top: 10,
               left: 0,
@@ -582,8 +726,6 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen> {
                   height: topBarHeight,
                   child: Stack(
                     children: [
-                      
-                      // Tombol back di kiri.
                       Positioned(
                         left: 0,
                         top: 0,
@@ -594,7 +736,6 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen> {
                           onPressed: () => Navigator.pop(context),
                         ),
                       ),
-                      // Judul di tengah.
                       Center(
                         child: Text(
                           'Simulasi Cepat Pensiunku (SCP)',
@@ -610,7 +751,7 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen> {
                 ),
               ),
             ),
-            // Konten layar. Mengatur posisi agar tidak tertutup top bar.
+            // Konten layar utama
             Positioned.fill(
               top: topBarHeight + topPadding,
               child: SingleChildScrollView(
@@ -621,7 +762,6 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      // Gambar pensiunku.png di tengah.
                       Center(
                         child: Image.asset(
                           'assets/register_screen/pensiunku.png',
@@ -629,11 +769,9 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen> {
                         ),
                       ),
                       const SizedBox(height: 32.0),
-
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Field Nama
                           buildFormFieldWithError(
                             controller: _namaController,
                             fieldKey: 'nama',
@@ -645,7 +783,6 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen> {
                             validator: validateNama,
                           ),
 
-                          // Field Tanggal Lahir
                           buildFormFieldWithError(
                             controller: _tanggalLahirController,
                             fieldKey: 'tanggalLahir',
@@ -661,27 +798,19 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen> {
                               String digitsOnly = value.replaceAll('-', '');
                               String formatted = '';
 
-                              // Format saat mengetik
                               if (digitsOnly.isNotEmpty) {
-                                // Tambahkan 2 digit pertama (tanggal)
                                 formatted = digitsOnly.substring(
                                     0, min(2, digitsOnly.length));
-
-                                // Tambahkan pemisah dan 2 digit bulan
                                 if (digitsOnly.length > 2) {
                                   formatted += '-' +
                                       digitsOnly.substring(
                                           2, min(4, digitsOnly.length));
                                 }
-
-                                // Tambahkan pemisah dan digit tahun
                                 if (digitsOnly.length > 4) {
                                   formatted += '-' +
                                       digitsOnly.substring(
                                           4, min(8, digitsOnly.length));
                                 }
-
-                                // Atur ulang teks dan posisi kursor
                                 _tanggalLahirController.value =
                                     TextEditingValue(
                                   text: formatted,
@@ -693,7 +822,6 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen> {
                             validator: validateTanggalLahir,
                           ),
 
-                          // Field Status Pengaju
                           Padding(
                             padding: const EdgeInsets.only(left: 16.0),
                             child: Text(
@@ -733,7 +861,6 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen> {
                           ),
                           SizedBox(height: 10.0),
 
-                          // Field Tanggal Pensiun - hanya muncul jika status Pra-Pensiun
                           if (_statusPengaju == 'Pra-Pensiun')
                             buildFormFieldWithError(
                               controller: _tanggalPensiunController,
@@ -750,27 +877,19 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen> {
                                 String digitsOnly = value.replaceAll('-', '');
                                 String formatted = '';
 
-                                // Format saat mengetik
                                 if (digitsOnly.isNotEmpty) {
-                                  // Tambahkan 2 digit pertama (tanggal)
                                   formatted = digitsOnly.substring(
                                       0, min(2, digitsOnly.length));
-
-                                  // Tambahkan pemisah dan 2 digit bulan
                                   if (digitsOnly.length > 2) {
                                     formatted += '-' +
                                         digitsOnly.substring(
                                             2, min(4, digitsOnly.length));
                                   }
-
-                                  // Tambahkan pemisah dan digit tahun
                                   if (digitsOnly.length > 4) {
                                     formatted += '-' +
                                         digitsOnly.substring(
                                             4, min(8, digitsOnly.length));
                                   }
-
-                                  // Atur ulang teks dan posisi kursor
                                   _tanggalPensiunController.value =
                                       TextEditingValue(
                                     text: formatted,
@@ -782,7 +901,6 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen> {
                               validator: validateTanggalPensiun,
                             ),
 
-                          // Field Gaji Pensiun
                           buildFormFieldWithError(
                             controller: _gajiPensiunController,
                             fieldKey: 'gajiPensiun',
@@ -792,24 +910,146 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen> {
                               FilteringTextInputFormatter.digitsOnly
                             ],
                             onChanged: (value) {
-                              // Format input sebagai mata uang (Rupiah)
                               if (value.isNotEmpty) {
                                 final numericValue = int.parse(
                                     value.replaceAll(RegExp(r'[^0-9]'), ''));
                                 _gajiPensiunController.value = TextEditingValue(
                                   text: _currencyFormat.format(numericValue),
                                   selection: TextSelection.collapsed(
-                                    offset: _currencyFormat
-                                        .format(numericValue)
-                                        .length,
-                                  ),
+                                      offset: _currencyFormat
+                                          .format(numericValue)
+                                          .length),
                                 );
                               }
                             },
                             validator: validateGajiPensiun,
                           ),
 
-                          // Field Nomor Telepon
+                          // --- Bagian Input Domisili dengan DropdownSearch ---
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.only(left: 16.0),
+                                child: Text(
+                                  'Domisili:',
+                                  style: TextStyle(
+                                    color: Color(0xFF017964),
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ),
+                              SizedBox(height: 4),
+                              DropdownSearch<String>(
+                                // onFind adalah pengganti asyncItems di v3.0.1
+                                onFind: (String? filter) async {
+                                  // Ini akan memfilter _allDomisiliOptions secara lokal
+                                  return _allDomisiliOptions
+                                      .where((element) => element
+                                          .toLowerCase()
+                                          .contains(
+                                              filter?.toLowerCase() ?? ''))
+                                      .toList();
+                                },
+                                // popupProps tidak ada di v3.0.1, properti dipindahkan langsung
+                                showSearchBox:
+                                    true, // Dipindahkan dari popupProps
+                                searchFieldProps: TextFieldProps(
+                                  // Dipindahkan dari popupProps
+                                  decoration: InputDecoration(
+                                    hintText: "Cari domisili...",
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(30.0),
+                                      borderSide:
+                                          BorderSide(color: Color(0xFF017964)),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(30.0),
+                                      borderSide: BorderSide(
+                                          color: Color(0xFF017964), width: 2.0),
+                                    ),
+                                    contentPadding: EdgeInsets.symmetric(
+                                        horizontal: 16, vertical: 10),
+                                  ),
+                                ),
+                                emptyBuilder: (context,
+                                        searchEntry) => // Dipindahkan dari popupProps
+                                    Center(
+                                  child: Text(
+                                    _isLoadingDomisili
+                                        ? 'Memuat domisili...'
+                                        : 'Tidak ada domisili ditemukan.',
+                                    style: TextStyle(color: Colors.grey),
+                                  ),
+                                ),
+                                // decoration untuk input utama DropdownSearch
+                                dropdownSearchDecoration: InputDecoration(
+                                  // Menggunakan dropdownSearchDecoration
+                                  contentPadding: EdgeInsets.all(12),
+                                  isDense: true,
+                                  hintText: _isLoadingDomisili
+                                      ? 'Memuat domisili!'
+                                      : 'Pilih Domisili',
+                                  suffixIcon: Icon(Icons.arrow_drop_down,
+                                      color: Color(
+                                          0xFF017964)), // Mengembalikan suffixIcon ke sini
+                                  enabledBorder: OutlineInputBorder(
+                                    borderSide: BorderSide(
+                                        color:
+                                            _fieldErrors['domisili']!.isNotEmpty
+                                                ? Colors.red
+                                                : Color(0xFF017964)),
+                                    borderRadius: BorderRadius.circular(30.0),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderSide: BorderSide(
+                                        color:
+                                            _fieldErrors['domisili']!.isNotEmpty
+                                                ? Colors.red
+                                                : Color(0xFF017964),
+                                        width: 2.0),
+                                    borderRadius: BorderRadius.circular(30.0),
+                                  ),
+                                  errorStyle: TextStyle(height: 0, fontSize: 0),
+                                ),
+                                selectedItem: _selectedDomisili,
+                                onChanged: (String? newValue) {
+                                  setState(() {
+                                    _selectedDomisili = newValue;
+                                    validateDomisili(
+                                        newValue); // Validasi saat perubahan
+                                  });
+                                },
+                                validator: (value) => validateDomisili(
+                                    value), // Validator untuk DropdownSearch
+                                itemAsString: (String? item) =>
+                                    item ??
+                                    '', // Mengubah parameter menjadi nullable String dan memberikan fallback
+                              ),
+                              if (_fieldErrors['domisili']!.isNotEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.only(
+                                      left: 20.0, top: 2.0),
+                                  child: Text(
+                                    _fieldErrors['domisili']!,
+                                    style: TextStyle(
+                                        color: Colors.red, fontSize: 10),
+                                  ),
+                                ),
+                              SizedBox(height: 10.0),
+                            ],
+                          ),
+                          // --- Akhir Bagian Input Domisili dengan DropdownSearch ---
+
+                          buildFormFieldWithError(
+                            controller: _pekerjaanController,
+                            fieldKey: 'pekerjaan',
+                            label: 'Pekerjaan:',
+                            validator: validatePekerjaan,
+                            hintText: 'Masukkan pekerjaan',
+                          ),
+
                           buildFormFieldWithError(
                             controller: _nomorTeleponController,
                             fieldKey: 'nomorTelepon',
@@ -821,7 +1061,7 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen> {
                             validator: validateNomorTelepon,
                           ),
 
-                          // Field Hasil simulasi
+                          // --- Bagian Hasil Simulasi ---
                           Container(
                             width: double.infinity,
                             padding: const EdgeInsets.symmetric(vertical: 12.0),
@@ -854,7 +1094,6 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen> {
                                         crossAxisAlignment:
                                             CrossAxisAlignment.center,
                                         children: [
-                                          // Tombol Lihat Hasil Simulasi
                                           Flexible(
                                             child: Align(
                                               alignment: Alignment.centerLeft,
@@ -890,18 +1129,16 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen> {
                                                   child: Text(
                                                     "Lihat Hasil Simulasi!",
                                                     style: TextStyle(
+                                                      fontSize: 12,
                                                       color: Colors.black,
                                                       fontWeight:
                                                           FontWeight.bold,
-                                                      fontSize: 12,
                                                     ),
                                                   ),
                                                 ),
                                               ),
                                             ),
                                           ),
-
-                                          // Kode Generate
                                           if (_generatedCode.isNotEmpty)
                                             Flexible(
                                               child: Padding(
@@ -920,8 +1157,6 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen> {
                                             ),
                                         ],
                                       ),
-
-                                      // Tampilkan hasil di bawah tombol dan kode
                                       if (_simulationResult != null)
                                         _buildResultDisplay(),
                                     ],
@@ -932,7 +1167,6 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              // Widget pertama - Unduh Simulasi
                               Flexible(
                                 child: Padding(
                                   padding: const EdgeInsets.only(left: 16.0),
@@ -970,7 +1204,6 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen> {
                                 ),
                               ),
                               SizedBox(width: 15),
-                              // Widget kedua - Hubungi Kami
                               Flexible(
                                 child: Padding(
                                   padding: const EdgeInsets.only(right: 16.0),
@@ -1002,77 +1235,78 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen> {
                                 ),
                               ),
                             ],
-                          )
-                        ],
-                      ),
-                      SizedBox(height: 16.0),
-
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Syarat Dan Ketentuan:',
-                            style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF017964)),
                           ),
-                          SizedBox(height: 10),
-                          // Point 1
-                          Row(
+                          SizedBox(height: 16.0),
+
+                          Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              SizedBox(
-                                width: 30, // lebar untuk nomor
-                                child: Text(
-                                  '1.',
-                                  style: TextStyle(color: Color(0xFF017964)),
-                                ),
+                              Text(
+                                'Syarat Dan Ketentuan:',
+                                style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF017964)),
                               ),
-                              Expanded(
-                                child: Text(
-                                  'Pastikan anda memasukkan data keterangan sesuai dengan benar dan tepat!',
-                                  style: TextStyle(color: Color(0xFF017964)),
-                                ),
+                              SizedBox(height: 10),
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  SizedBox(
+                                    width: 30,
+                                    child: Text(
+                                      '1.',
+                                      style:
+                                          TextStyle(color: Color(0xFF017964)),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: Text(
+                                      'Pastikan anda memasukkan data keterangan sesuai dengan benar dan tepat!',
+                                      style:
+                                          TextStyle(color: Color(0xFF017964)),
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
-
-                          // Point 2
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              SizedBox(
-                                width: 30,
-                                child: Text(
-                                  '2.',
-                                  style: TextStyle(color: Color(0xFF017964)),
-                                ),
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  SizedBox(
+                                    width: 30,
+                                    child: Text(
+                                      '2.',
+                                      style:
+                                          TextStyle(color: Color(0xFF017964)),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: Text(
+                                      'Kalkulator ini bersifat hitungan sementara, karena belum dihitung sisa hutang bapak/ibu (bila ada)',
+                                      style:
+                                          TextStyle(color: Color(0xFF017964)),
+                                    ),
+                                  ),
+                                ],
                               ),
-                              Expanded(
-                                child: Text(
-                                  'Kalkuator ini bersifat hitungan sementara, karena belum dihitung sisa hutang bapak/ibu (bila ada)',
-                                  style: TextStyle(color: Color(0xFF017964)),
-                                ),
-                              ),
-                            ],
-                          ),
-
-                          // Point 3
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              SizedBox(
-                                width: 30,
-                                child: Text(
-                                  '3.',
-                                  style: TextStyle(color: Color(0xFF017964)),
-                                ),
-                              ),
-                              Expanded(
-                                child: Text(
-                                  'Untuk solusi keuangan bapak/ibu, silahkan hubungi petugas kami.',
-                                  style: TextStyle(color: Color(0xFF017964)),
-                                ),
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  SizedBox(
+                                    width: 30,
+                                    child: Text(
+                                      '3.',
+                                      style:
+                                          TextStyle(color: Color(0xFF017964)),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: Text(
+                                      'Untuk solusi keuangan bapak/ibu, silahkan hubungi petugas kami.',
+                                      style:
+                                          TextStyle(color: Color(0xFF017964)),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
@@ -1083,6 +1317,37 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen> {
                 ),
               ),
             ),
+            // Loading Overlay
+            if (_isLoadingOverlay)
+              Positioned.fill(
+                child: ModalBarrier(
+                  color: Colors.black.withOpacity(0.5),
+                  dismissible: false,
+                ),
+              ),
+            if (_isLoadingOverlay)
+              Center(
+                child: RotationTransition(
+                  turns: _logoAnimationController,
+                  child: Container(
+                    width: 120,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black26,
+                          blurRadius: 10,
+                          offset: Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    padding: EdgeInsets.all(20),
+                    child: Image.asset('assets/logo.png'), // Logo yang muter
+                  ),
+                ),
+              ),
           ],
         ),
       ),

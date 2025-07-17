@@ -91,6 +91,7 @@ dependencies:
   cookie_jar: ^4.0.8
   dio_cookie_manager: ^3.2.0
   flutter_secure_storage: ^8.1.0
+  dropdown_search: ^3.0.1
 
 dev_dependencies:
   flutter_test:
