@@ -1,15 +1,17 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:intl/intl.dart';
 import 'package:pensiunku/data/db/pengajuan_anda_dao.dart';
 import 'package:pensiunku/model/option_model.dart';
 import 'package:pensiunku/model/user_model.dart';
-import 'package:pensiunku/repository/location_repository.dart';
 import 'package:pensiunku/model/result_model.dart';
 import 'package:pensiunku/repository/user_repository.dart';
 import 'package:pensiunku/screen/home/submission/riwayat_pengajuan_anda.dart';
 import 'package:pensiunku/util/shared_preferences_util.dart';
+import 'package:http/http.dart' as http;
 
 class CustomUploadField extends StatelessWidget {
   final String label;
@@ -147,9 +149,10 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
   TextEditingController tanggalLahirController = TextEditingController();
   TextEditingController pekerjaanController = TextEditingController();
 
-  // _searchController tidak digunakan di sini, bisa dihapus jika tidak ada search bar di luar dialog
-  // final TextEditingController _searchController = TextEditingController();
-  // List<OptionModel> _filteredCities = List.from(LocationRepository.cities);
+  // State baru untuk data domisili dari API
+  List<String> _allDomisiliOptions = [];
+  bool _isLoadingDomisili = false;
+  String _errorMessage = '';
 
   late Future<ResultModel<UserModel>> _futureData;
 
@@ -162,6 +165,95 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
     _isLoadingOverlay = true;
     _selectedCity = OptionModel(id: 0, text: ''); // Inisialisasi awal
     _refreshData();
+    _fetchDomisili(); // Panggil fungsi untuk mengambil data domisili
+  }
+
+  // --- FUNGSI: Mengambil data domisili dari API ---
+  Future<void> _fetchDomisili() async {
+    if (!mounted) return;
+
+    setState(() {
+      _isLoadingDomisili = true;
+      _errorMessage = '';
+    });
+
+    try {
+      final String domisiliApiUrl =
+          'https://api.pensiunku.id/new.php/getDomisili';
+      debugPrint("Fetching domisili from URL: $domisiliApiUrl");
+
+      final response = await http.get(Uri.parse(domisiliApiUrl));
+
+      if (!mounted) return;
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> decodedData = json.decode(response.body);
+        debugPrint("Raw Response Body (getDomisili): ${response.body}");
+
+        if (decodedData.containsKey('text') && decodedData['text'] is Map) {
+          final Map<String, dynamic> textData = decodedData['text'];
+
+          if (textData.containsKey('message') &&
+              textData['message'] == 'success' &&
+              textData.containsKey('data') &&
+              textData['data'] is List) {
+            final List<dynamic> rawDomisiliList = textData['data'];
+
+            setState(() {
+              _allDomisiliOptions =
+                  List<String>.from(rawDomisiliList.map((item) {
+                if (item.containsKey('city') && item['city'] != null) {
+                  return item['city'].toString();
+                }
+                return '';
+              }).where((name) => name.isNotEmpty));
+            });
+          } else {
+            String specificErrorMessage = 'Gagal memuat data domisili. ';
+            if (textData.containsKey('message') &&
+                textData['message'] != 'success') {
+              specificErrorMessage +=
+                  'Pesan API bukan sukses (${textData['message']}).';
+            } else if (!textData.containsKey('data') ||
+                !(textData['data'] is List)) {
+              specificErrorMessage +=
+                  'Format data domisili tidak valid: kunci "data" tidak ada atau bukan list (tipe: ${textData['data'].runtimeType}).';
+            }
+            print('Error fetching domisili: $specificErrorMessage');
+            _showSnackBar(specificErrorMessage);
+          }
+        } else {
+          print(
+              'Error fetching domisili: Kunci "text" tidak ditemukan atau bukan map.');
+          _showSnackBar(
+              'Gagal memuat data domisili: Struktur respons tidak sesuai.');
+        }
+      } else {
+        print('HTTP Error fetching domisili: ${response.statusCode}');
+        _showSnackBar(
+            'Gagal memuat data domisili (HTTP ${response.statusCode}).');
+      }
+    } catch (e) {
+      print('Exception fetching domisili: $e');
+      _showSnackBar('Terjadi kesalahan saat memuat domisili: ${e.toString()}');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingDomisili = false;
+        });
+      }
+    }
+  }
+
+  // Fungsi pembantu untuk menampilkan SnackBar dengan aman
+  void _showSnackBar(String message) {
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message)),
+        );
+      }
+    });
   }
 
   Future<void> _showCitySelectionDialog() async {
@@ -169,7 +261,7 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
     final screenWidth = MediaQuery.of(context).size.width;
 
     // Gunakan StatefulBuilder untuk mengelola state di dalam dialog
-    List<OptionModel> filteredCities = List.from(LocationRepository.cities);
+    List<String> filteredCities = List.from(_allDomisiliOptions);
     TextEditingController searchController = TextEditingController();
 
     await showDialog(
@@ -180,11 +272,11 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
             void handleSearch(String query) {
               setDialogState(() {
                 if (query.isEmpty) {
-                  filteredCities = List.from(LocationRepository.cities);
+                  filteredCities = List.from(_allDomisiliOptions);
                 } else {
-                  filteredCities = LocationRepository.cities
+                  filteredCities = _allDomisiliOptions
                       .where((city) =>
-                          city.text.toLowerCase().contains(query.toLowerCase()))
+                          city.toLowerCase().contains(query.toLowerCase()))
                       .toList();
                 }
               });
@@ -238,46 +330,65 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
                     ),
                     SizedBox(height: screenHeight * 0.02),
                     Expanded(
-                      child: filteredCities.isEmpty
+                      child: _isLoadingDomisili
                           ? Center(
-                              child: Text(
-                                'Tidak ada kota yang ditemukan',
-                                style: TextStyle(
-                                  fontSize: screenWidth * 0.04,
-                                  color: Colors.grey[600],
-                                ),
-                              ),
-                            )
-                          : ListView.builder(
-                              itemCount: filteredCities.length,
-                              itemBuilder: (context, index) {
-                                final city = filteredCities[index];
-                                return Card(
-                                  elevation: 0,
-                                  margin: EdgeInsets.symmetric(
-                                      vertical: screenHeight * 0.004),
-                                  color: Colors.grey[50],
-                                  child: ListTile(
-                                    contentPadding: EdgeInsets.symmetric(
-                                      vertical: screenHeight * 0.005,
-                                      horizontal: screenWidth * 0.02,
+                              child: CircularProgressIndicator(
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                      Color(0xFF017964))))
+                          : _errorMessage.isNotEmpty
+                              ? Center(
+                                  child: Text(
+                                    _errorMessage,
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontSize: screenWidth * 0.04,
+                                      color: Colors.red,
                                     ),
-                                    title: Text(
-                                      city.text,
-                                      style: TextStyle(
-                                          fontSize: screenWidth * 0.04),
-                                    ),
-                                    onTap: () {
-                                      Navigator.of(context).pop();
-                                      setState(() {
-                                        _selectedCity = city;
-                                        domisiliController.text = city.text;
-                                      });
-                                    },
                                   ),
-                                );
-                              },
-                            ),
+                                )
+                              : filteredCities.isEmpty
+                                  ? Center(
+                                      child: Text(
+                                        'Tidak ada kota yang ditemukan',
+                                        style: TextStyle(
+                                          fontSize: screenWidth * 0.04,
+                                          color: Colors.grey[600],
+                                        ),
+                                      ),
+                                    )
+                                  : ListView.builder(
+                                      itemCount: filteredCities.length,
+                                      itemBuilder: (context, index) {
+                                        final city = filteredCities[index];
+                                        return Card(
+                                          elevation: 0,
+                                          margin: EdgeInsets.symmetric(
+                                              vertical: screenHeight * 0.004),
+                                          color: Colors.grey[50],
+                                          child: ListTile(
+                                            contentPadding:
+                                                EdgeInsets.symmetric(
+                                              vertical: screenHeight * 0.005,
+                                              horizontal: screenWidth * 0.02,
+                                            ),
+                                            title: Text(
+                                              city,
+                                              style: TextStyle(
+                                                  fontSize: screenWidth * 0.04),
+                                            ),
+                                            onTap: () {
+                                              Navigator.of(context).pop();
+                                              setState(() {
+                                                // Create OptionModel with dummy ID or index
+                                                _selectedCity = OptionModel(
+                                                    id: index + 1, text: city);
+                                                domisiliController.text = city;
+                                              });
+                                            },
+                                          ),
+                                        );
+                                      },
+                                    ),
                     ),
                     SizedBox(height: screenHeight * 0.02),
                     Row(
@@ -558,12 +669,20 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
         if (value.data?.kecamatan != null &&
             value.data!.kecamatan!.isNotEmpty) {
           domisiliController.text = value.data!.kecamatan!;
-          // Cari OptionModel yang sesuai
-          _selectedCity = LocationRepository.cities.firstWhere(
-            (city) => city.text == value.data!.kecamatan,
-            orElse: () =>
-                OptionModel(id: 0, text: ''), // Default jika tidak ditemukan
-          );
+          // Cari OptionModel yang sesuai dari _allDomisiliOptions
+          // Karena _allDomisiliOptions adalah List<String>, kita perlu membuat OptionModel
+          // Jika tidak ditemukan, default ke OptionModel kosong
+          _selectedCity = _allDomisiliOptions
+                  .firstWhere(
+                    (cityText) => cityText == value.data!.kecamatan,
+                    orElse: () => '', // Return empty string if not found
+                  )
+                  .isNotEmpty
+              ? OptionModel(
+                  id: _allDomisiliOptions.indexOf(value.data!.kecamatan!) +
+                      1, // Dummy ID
+                  text: value.data!.kecamatan!)
+              : OptionModel(id: 0, text: '');
         } else {
           domisiliController.text = '';
           _selectedCity = OptionModel(id: 0, text: '');
@@ -641,8 +760,12 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
           body: SafeArea(
             child: Stack(
               children: [
-                _isLoadingOverlay
-                    ? Center(child: CircularProgressIndicator())
+                _isLoadingOverlay || _isLoadingDomisili
+                    ? Center(
+                        child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                            Color(0xFF017964)), // Warna hijau
+                      ))
                     : Padding(
                         padding: EdgeInsets.symmetric(
                           horizontal: screenWidth * 0.04,
@@ -810,38 +933,47 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
                                   SizedBox(height: screenHeight * 0.04),
 
                                   // Submit button
-                                  SizedBox(
-                                    width: double.infinity,
-                                    height: screenHeight * 0.06,
-                                    child: ElevatedButton(
-                                      onPressed: _isSubmitting
-                                          ? null
-                                          : _submitPengajuanAnda,
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Color(0xFF017964),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                              screenWidth * 0.02),
+                                  Center(
+                                    child: SizedBox(
+                                      // width: double.infinity,
+                                      height: screenHeight * 0.06,
+                                      child: ElevatedButton(
+                                        onPressed: _isSubmitting
+                                            ? null
+                                            : _submitPengajuanAnda,
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor:
+                                              const Color(0xFF017964),
+                                          padding: EdgeInsets.symmetric(
+                                            vertical: screenHeight * 0.015,
+                                            horizontal: screenWidth * 0.04,
+                                          ),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                                screenWidth * 0.02),
+                                          ),
                                         ),
-                                      ),
-                                      child: _isSubmitting
-                                          ? SizedBox(
-                                              height: screenHeight * 0.025,
-                                              width: screenHeight * 0.025,
-                                              child: CircularProgressIndicator(
-                                                strokeWidth: 2,
-                                                valueColor:
-                                                    AlwaysStoppedAnimation<
-                                                        Color>(Colors.white),
+                                        child: _isSubmitting
+                                            ? SizedBox(
+                                                height: screenHeight * 0.025,
+                                                width: screenHeight * 0.025,
+                                                child:
+                                                    CircularProgressIndicator(
+                                                  strokeWidth: 2,
+                                                  valueColor:
+                                                      AlwaysStoppedAnimation<
+                                                          Color>(Colors.white),
+                                                ),
+                                              )
+                                            : Text(
+                                                'Ajukan Sekarang',
+                                                style: TextStyle(
+                                                    color: Colors
+                                                        .white, // Tambahkan warna teks putih
+                                                    fontSize:
+                                                        screenWidth * 0.04),
                                               ),
-                                            )
-                                          : Text(
-                                              'Ajukan Sekarang',
-                                              style: TextStyle(
-                                                  color: Colors
-                                                      .white, // Tambahkan warna teks putih
-                                                  fontSize: screenWidth * 0.04),
-                                            ),
+                                      ),
                                     ),
                                   ),
                                   SizedBox(
@@ -857,7 +989,7 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
             ),
           ),
         ),
-        if (_isLoadingOverlay)
+        if (_isLoadingOverlay || _isLoadingDomisili)
           Positioned.fill(
             child: Container(
               color: Colors.black.withOpacity(0.5),
@@ -908,620 +1040,6 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
     domisiliController.dispose();
     tanggalLahirController.dispose();
     pekerjaanController.dispose();
-    // Jika _searchController tidak digunakan di sini, bisa dihapus
-    // _searchController.dispose();
     super.dispose();
   }
 }
-
-// class CustomUploadField extends StatelessWidget {
-//   final String label;
-//   final String? filePath;
-//   final bool isUploading;
-//   final double uploadProgress;
-//   final VoidCallback onUpload;
-//   final String? errorText;
-
-//   const CustomUploadField({
-//     Key? key,
-//     required this.label,
-//     required this.filePath,
-//     required this.isUploading,
-//     required this.uploadProgress,
-//     required this.onUpload,
-//     this.errorText,
-//   }) : super(key: key);
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Column(
-//       crossAxisAlignment: CrossAxisAlignment.start,
-//       children: [
-//         Container(
-//           margin: EdgeInsets.symmetric(vertical: 8.0),
-//           child: Container(
-//             decoration: BoxDecoration(
-//               border: Border.all(
-//                 color: errorText != null ? Colors.red : Colors.grey[300]!,
-//               ),
-//               borderRadius: BorderRadius.circular(8.0),
-//             ),
-//             child: Padding(
-//               padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-//               child: Row(
-//                 children: [
-//                   Expanded(
-//                     child: Column(
-//                       crossAxisAlignment: CrossAxisAlignment.start,
-//                       children: [
-//                         Text(
-//                           label,
-//                           style: TextStyle(
-//                             color: Colors.grey[600],
-//                             fontSize: 14,
-//                           ),
-//                         ),
-//                         SizedBox(height: 4),
-//                         Text(
-//                           filePath ?? 'Belum ada file dipilih',
-//                           style: TextStyle(
-//                             color: Colors.black87,
-//                             fontSize: 16,
-//                           ),
-//                           maxLines: 1,
-//                           overflow: TextOverflow.ellipsis,
-//                         ),
-//                       ],
-//                     ),
-//                   ),
-//                   Container(
-//                     height: 50,
-//                     width: 1,
-//                     color: Colors.grey[300],
-//                     margin: EdgeInsets.symmetric(horizontal: 12),
-//                   ),
-//                   if (isUploading)
-//                     SizedBox(
-//                       width: 24,
-//                       height: 24,
-//                       child: CircularProgressIndicator(
-//                         value: uploadProgress,
-//                         strokeWidth: 2,
-//                         valueColor:
-//                             AlwaysStoppedAnimation<Color>(Color(0xFF017964)),
-//                       ),
-//                     )
-//                   else
-//                     InkWell(
-//                       onTap: onUpload,
-//                       child: Container(
-//                         padding: EdgeInsets.all(8),
-//                         child: Image.asset(
-//                           'assets/dashboard_screen/upload_icon.png',
-//                           width: 32,
-//                           height: 32,
-//                           color: Color(0xFF017964),
-//                         ),
-//                       ),
-//                     ),
-//                 ],
-//               ),
-//             ),
-//           ),
-//         ),
-//         if (errorText != null)
-//           Padding(
-//             padding: EdgeInsets.only(left: 12, top: 4),
-//             child: Text(
-//               errorText!,
-//               style: TextStyle(
-//                 color: Colors.red,
-//                 fontSize: 12,
-//               ),
-//             ),
-//           ),
-//       ],
-//     );
-//   }
-// }
-
-// class PengajuanAndaScreen extends StatefulWidget {
-//   static const String ROUTE_NAME = '/pengajuan_anda';
-
-//   @override
-//   _PengajuanAndaScreenState createState() => _PengajuanAndaScreenState();
-// }
-
-// class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
-//   final _formKey = GlobalKey<FormState>();
-//   final ImagePicker _picker = ImagePicker();
-//   bool _isSubmitting = false;
-//   bool _isLoading = false;
-//   bool _isKtpUploading = false;
-//   bool _isNpwpUploading = false;
-//   bool _isKaripUploading = false;
-//   late Future<ResultModel<UserModel>> _futureData;
-//   UserModel? _userModel;
-
-//   double _ktpUploadProgress = 0.0;
-//   double _npwpUploadProgress = 0.0;
-//   double _karipUploadProgress = 0.0;
-
-//   TextEditingController namaController = TextEditingController();
-//   TextEditingController teleponController = TextEditingController();
-//   TextEditingController domisiliController = TextEditingController();
-//   TextEditingController nipController = TextEditingController();
-
-//   String? fileKTP;
-//   String? fileNPWP;
-//   String? fileKarip;
-
-//   // Store the actual file paths separately for upload
-//   String? fileKTPPath;
-//   String? fileNPWPPath;
-//   String? fileKaripPath;
-
-//   OptionModel _inputProvinsi =
-//       OptionModel(id: 0, text: ''); // Untuk menyimpan provinsi yang dipilih
-
-//   Map<String, String?> fileErrors = {
-//     'KTP': null,
-//     'NPWP': null,
-//     'Karip': null,
-//   };
-
-//   PengajuanAndaDao pengajuanAndaDao = PengajuanAndaDao();
-
-//   Future<void> _simulateUpload(String label) async {
-//     setState(() {
-//       if (label == 'KTP') _isKtpUploading = true;
-//       if (label == 'NPWP') _isNpwpUploading = true;
-//       if (label == 'Karip') _isKaripUploading = true;
-//     });
-
-//     for (double progress = 0.0; progress <= 1.0; progress += 0.1) {
-//       await Future.delayed(Duration(milliseconds: 300));
-//       setState(() {
-//         if (label == 'KTP') _ktpUploadProgress = progress;
-//         if (label == 'NPWP') _npwpUploadProgress = progress;
-//         if (label == 'Karip') _karipUploadProgress = progress;
-//       });
-//     }
-
-//     setState(() {
-//       if (label == 'KTP') _isKtpUploading = false;
-//       if (label == 'NPWP') _isNpwpUploading = false;
-//       if (label == 'Karip') _isKaripUploading = false;
-//     });
-//   }
-
-//   Future<void> _pickImage(String label) async {
-//     try {
-//       final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
-
-//       if (image == null) return;
-
-//       setState(() {
-//         if (label == 'KTP') {
-//           fileKTP = image.name; // Store original filename for display
-//           fileKTPPath = image.path; // Store path for upload
-//           fileErrors['KTP'] = null;
-//         }
-//         if (label == 'NPWP') {
-//           fileNPWP = image.name;
-//           fileNPWPPath = image.path;
-//           fileErrors['NPWP'] = null;
-//         }
-//         if (label == 'Karip') {
-//           fileKarip = image.name;
-//           fileKaripPath = image.path;
-//           fileErrors['Karip'] = null;
-//         }
-//       });
-
-//       await _simulateUpload(label);
-//     } catch (e) {
-//       print('Error picking image: $e');
-//       ScaffoldMessenger.of(context).showSnackBar(
-//         SnackBar(
-//           content: Text('Gagal memilih file. Silakan coba lagi.'),
-//           backgroundColor: Colors.red,
-//         ),
-//       );
-//     }
-//   }
-
-//   bool _validateFiles() {
-//     bool isValid = true;
-//     setState(() {
-//       if (fileKTP == null) {
-//         fileErrors['KTP'] = 'File KTP wajib diupload';
-//         isValid = false;
-//       }
-//       if (fileNPWP == null) {
-//         fileErrors['NPWP'] = 'File NPWP wajib diupload';
-//         isValid = false;
-//       }
-//       if (fileKarip == null) {
-//         fileErrors['Karip'] =
-//             'File SK Pensiun/SK Aktif/Karip/Karpeg wajib diupload';
-//         isValid = false;
-//       }
-//     });
-//     return isValid;
-//   }
-
-//   Future<void> _submitPengajuanAnda() async {
-//     if (!_formKey.currentState!.validate() || !_validateFiles()) {
-//       ScaffoldMessenger.of(context).showSnackBar(
-//         SnackBar(
-//           content: Text('Harap lengkapi semua data dan file yang diperlukan'),
-//           backgroundColor: Colors.red,
-//         ),
-//       );
-//       return;
-//     }
-
-//     setState(() {
-//       _isSubmitting = true;
-//     });
-
-//     try {
-//       bool success = await PengajuanAndaDao.kirimPengajuanAnda(
-//         nama: namaController.text,
-//         telepon: teleponController.text,
-//         domisili: domisiliController.text,
-//         nip: nipController.text,
-//         fotoKTP: fileKTPPath!,
-//         namaFotoKTP: fileKTP!,
-//         fotoNPWP: fileNPWPPath!,
-//         namaFotoNPWP: fileNPWP!,
-//         fotoKarip: fileKaripPath!,
-//         namaFotoKarip: fileKarip!,
-//       );
-
-//       if (success) {
-//         _showAwesomeDialog(
-//           title: 'Sukses',
-//           message: 'Pengajuan Anda Berhasil Dikirim.',
-//           dialogType: DialogType.success,
-//           color: Colors.green,
-//           isSuccess: true,
-//         );
-//       } else {
-//         _showAwesomeDialog(
-//           title: 'Gagal',
-//           message: 'Anda sudah pernah melakukan pengajuan!',
-//           dialogType: DialogType.error,
-//           color: Colors.red,
-//           isSuccess: false,
-//         );
-//       }
-//     } catch (e) {
-//       print('Error submitting pengajuan: $e');
-//       _showAwesomeDialog(
-//         title: 'Error',
-//         message: 'Terjadi kesalahan saat mengirim pengajuan',
-//         dialogType: DialogType.error,
-//         color: Colors.red,
-//         isSuccess: false,
-//       );
-//     } finally {
-//       setState(() {
-//         _isSubmitting = false;
-//       });
-//     }
-//   }
-
-//   void _showAwesomeDialog({
-//     required String title,
-//     required String message,
-//     required DialogType dialogType,
-//     required Color color,
-//     required bool isSuccess,
-//   }) {
-//     AwesomeDialog(
-//       context: context,
-//       dialogType: dialogType,
-//       animType: AnimType.scale,
-//       title: title,
-//       desc: message,
-//       btnOkText: 'OK',
-//       btnOkColor: color,
-//       btnOkOnPress: () {
-//         if (isSuccess) {
-//           Navigator.pushReplacement(
-//             context,
-//             MaterialPageRoute(
-//               builder: (context) => RiwayatPengajuanAndaScreen(
-//                 onChangeBottomNavIndex: (index) => 1,
-//               ),
-//             ),
-//           );
-//         }
-//       },
-//     ).show();
-//   }
-
-//   @override
-//   void initState() {
-//     super.initState();
-//     _refreshData();
-//   }
-
-//   _refreshData() {
-//     String? token = SharedPreferencesUtil()
-//         .sharedPreferences
-//         .getString(SharedPreferencesUtil.SP_KEY_TOKEN);
-
-//     _futureData = UserRepository().getOne(token!).then((value) {
-//       if (value.error != null) {
-//         showDialog(
-//             context: context,
-//             builder: (_) => AlertDialog(
-//                   content: Text(value.error.toString(),
-//                       style: TextStyle(color: Colors.white)),
-//                   backgroundColor: Colors.red,
-//                   elevation: 24.0,
-//                 ));
-//       }
-
-//       setState(() {
-//         namaController.text = value.data?.username ?? '';
-//         teleponController.text = value.data?.phone ?? '';
-//       });
-
-//       return value;
-//     });
-//   }
-
-//   OptionModel _inputCity =
-//       OptionModel(id: 0, text: ''); // For storing selected city
-//   List<OptionModel> _cities = []; // To store city list
-
-//   Future<void> _loadCities() async {
-//     if (_inputProvinsi.id == 0) return;
-
-//     setState(() => _isLoading = true);
-//     try {
-//       final cities = await LocationRepository.getCity(_inputProvinsi.id);
-//       setState(() {
-//         _cities = cities;
-//         _isLoading = false;
-//       });
-//     } catch (e) {
-//       print('Error loading cities: $e');
-//       setState(() => _isLoading = false);
-//     }
-//   }
-
-//   Future<void> _showCitySelectionDialog() async {
-//     if (_cities.isEmpty) {
-//       await _loadCities();
-//     }
-
-//     final selectedCity = await showDialog<OptionModel>(
-//       context: context,
-//       builder: (BuildContext context) {
-//         return AlertDialog(
-//           title: Text('Pilih Kabupaten/Kota'),
-//           content: Container(
-//             width: double.maxFinite,
-//             child: ListView.builder(
-//               shrinkWrap: true,
-//               itemCount: _cities.length,
-//               itemBuilder: (context, index) {
-//                 return ListTile(
-//                   title: Text(_cities[index].text),
-//                   onTap: () {
-//                     Navigator.of(context).pop(_cities[index]);
-//                   },
-//                 );
-//               },
-//             ),
-//           ),
-//         );
-//       },
-//     );
-
-//     if (selectedCity != null) {
-//       setState(() {
-//         _inputCity = selectedCity;
-//         domisiliController.text = selectedCity.text;
-//       });
-//     }
-//   }
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       appBar: AppBar(
-//         title: Text(''),
-//         leading: IconButton(
-//           icon: Icon(Icons.arrow_back, color: Color(0xFF017964)),
-//           onPressed: () => Navigator.pop(context),
-//         ),
-//         backgroundColor: Colors.transparent,
-//         elevation: 0,
-//         flexibleSpace: Center(
-//           child: Padding(
-//             padding:
-//                 EdgeInsets.only(top: MediaQuery.of(context).padding.top + 5),
-//             child: Text(
-//               'Form Pengajuan',
-//               style: TextStyle(
-//                 color: Color(0xFF017964),
-//                 fontWeight: FontWeight.bold,
-//                 fontSize: 20,
-//               ),
-//             ),
-//           ),
-//         ),
-//       ),
-//       body: Stack(
-//         children: [
-//           _isLoading
-//               ? Center(child: CircularProgressIndicator())
-//               : Padding(
-//                   padding: const EdgeInsets.all(16.0),
-//                   child: Form(
-//                     key: _formKey,
-//                     child: ListView(
-//                       children: <Widget>[
-//                         SizedBox(height: 30.0),
-//                         TextFormField(
-//                           controller: namaController,
-//                           readOnly: true,
-//                           enabled: !_isLoading,
-//                           decoration: InputDecoration(
-//                               labelText: 'Nama', border: OutlineInputBorder()),
-//                           validator: (value) => (value == null || value.isEmpty)
-//                               ? 'Harap masukkan nama'
-//                               : null,
-//                         ),
-//                         SizedBox(height: 16.0),
-//                         TextFormField(
-//                           controller: teleponController,
-//                           readOnly: true,
-//                           enabled: !_isLoading,
-//                           keyboardType: TextInputType.phone,
-//                           decoration: InputDecoration(
-//                               labelText: 'No. Telepon',
-//                               border: OutlineInputBorder()),
-//                           validator: (value) {
-//                             if (value == null || value.isEmpty)
-//                               return 'Harap masukkan no. telepon';
-//                             if (!RegExp(r'^[0-9]+$').hasMatch(value))
-//                               return 'No. telepon hanya boleh angka';
-//                             return null;
-//                           },
-//                         ),
-//                         SizedBox(height: 16.0),
-//                         // Replace TextFormField with GestureDetector for city selection
-//                         GestureDetector(
-//                           onTap: _showCitySelectionDialog,
-//                           child: Container(
-//                             padding: EdgeInsets.symmetric(
-//                                 horizontal: 12, vertical: 8),
-//                             decoration: BoxDecoration(
-//                               border: Border.all(color: Colors.grey),
-//                               borderRadius: BorderRadius.circular(4),
-//                             ),
-//                             child: Row(
-//                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-//                               children: [
-//                                 Column(
-//                                   crossAxisAlignment: CrossAxisAlignment.start,
-//                                   children: [
-//                                     Text(
-//                                       'Kota Domisili',
-//                                       style: TextStyle(
-//                                         fontSize: 12,
-//                                         color: Colors.grey[600],
-//                                       ),
-//                                     ),
-//                                     SizedBox(height: 4),
-//                                     Text(
-//                                       _inputCity.text.isNotEmpty
-//                                           ? _inputCity.text
-//                                           : 'Pilih Kota Domisili',
-//                                       style: TextStyle(
-//                                         fontSize: 16,
-//                                         color: _inputCity.text.isNotEmpty
-//                                             ? Colors.black87
-//                                             : Colors.grey,
-//                                       ),
-//                                     ),
-//                                   ],
-//                                 ),
-//                                 Icon(Icons.arrow_drop_down, color: Colors.grey),
-//                               ],
-//                             ),
-//                           ),
-//                         ),
-//                         SizedBox(height: 16.0),
-//                         TextFormField(
-//                           controller: nipController,
-//                           keyboardType: TextInputType.number,
-//                           decoration: InputDecoration(
-//                               labelText: 'NOTAS/NIP',
-//                               border: OutlineInputBorder()),
-//                           validator: (value) {
-//                             if (value == null || value.isEmpty)
-//                               return 'Harap masukkan NOTAS/NIP';
-//                             if (value.length < 16 || value.length > 18) {
-//                               return 'NIP harus antara 16 hingga 18 digit';
-//                             }
-//                             return null;
-//                           },
-//                         ),
-//                         SizedBox(height: 16.0),
-
-//                         // Custom Upload Fields
-//                         CustomUploadField(
-//                           label: 'KTP',
-//                           filePath: fileKTP,
-//                           isUploading: _isKtpUploading,
-//                           uploadProgress: _ktpUploadProgress,
-//                           onUpload: () => _pickImage('KTP'),
-//                           errorText: fileErrors['KTP'],
-//                         ),
-
-//                         CustomUploadField(
-//                           label: 'NPWP',
-//                           filePath: fileNPWP,
-//                           isUploading: _isNpwpUploading,
-//                           uploadProgress: _npwpUploadProgress,
-//                           onUpload: () => _pickImage('NPWP'),
-//                           errorText: fileErrors['NPWP'],
-//                         ),
-
-//                         CustomUploadField(
-//                           label: 'SK Pensiun/SK Aktif/Karip/Karpeg',
-//                           filePath: fileKarip,
-//                           isUploading: _isKaripUploading,
-//                           uploadProgress: _karipUploadProgress,
-//                           onUpload: () => _pickImage('Karip'),
-//                           errorText: fileErrors['Karip'],
-//                         ),
-
-//                         SizedBox(height: 24.0),
-
-//                         ElevatedButton(
-//                           onPressed: _submitPengajuanAnda,
-//                           child: Text('Ajukan Sekarang'),
-//                           style: ElevatedButton.styleFrom(
-//                             backgroundColor: Color(0xFF017964),
-//                           ),
-//                         ),
-//                       ],
-//                     ),
-//                   ),
-//                 ),
-//         ],
-//       ),
-//     );
-//   }
-
-//   @override
-//   void dispose() {
-//     namaController.dispose();
-//     teleponController.dispose();
-//     domisiliController.dispose();
-//     nipController.dispose();
-//     super.dispose();
-//   }
-
-//   void _resetForm() {
-//     setState(() {
-//       namaController.clear();
-//       teleponController.clear();
-//       domisiliController.clear();
-//       nipController.clear();
-//       fileKTP = null;
-//       fileNPWP = null;
-//       fileKarip = null;
-//       _inputCity = OptionModel(id: 0, text: '');
-//     });
-//   }
-// }

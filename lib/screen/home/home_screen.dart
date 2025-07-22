@@ -18,7 +18,6 @@ import 'package:pensiunku/screen/web_view/web_view_screen.dart';
 import 'package:pensiunku/util/shared_preferences_util.dart';
 import 'package:pensiunku/widget/floating_bottom_navigation_bar.dart';
 import 'package:new_version/new_version.dart';
-import 'package:showcaseview/showcaseview.dart';
 
 class HomeScreen extends StatefulWidget {
   static const String ROUTE_NAME = '/home';
@@ -344,7 +343,6 @@ class _HomeScreenState extends State<HomeScreen> {
               _currentIndex = newIndex;
             });
           },
-          walkthroughIndex: _walkthroughIndex,
           scrollController: _dashboardScrollController,
         );
       case 1:

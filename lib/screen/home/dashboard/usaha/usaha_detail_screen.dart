@@ -89,7 +89,8 @@ class _UsahaDetailScreenState extends State<UsahaDetailScreen> {
                             ),
                             errorWidget: (_, __, ___) => Container(
                               color: Colors.grey[300],
-                              child: Icon(Icons.broken_image, size: 60, color: Colors.grey[600]),
+                              child: Icon(Icons.broken_image,
+                                  size: 60, color: Colors.grey[600]),
                             ),
                           ),
                         ),
@@ -118,8 +119,8 @@ class _UsahaDetailScreenState extends State<UsahaDetailScreen> {
                                     alignment: Alignment.center,
                                     child: Text(
                                       usahaDetailModel.nama,
-                                      style: theme.textTheme.headline4
-                                          ?.copyWith(
+                                      style:
+                                          theme.textTheme.headline4?.copyWith(
                                         fontWeight: FontWeight.bold,
                                         color: Colors.black,
                                       ),
@@ -157,8 +158,7 @@ class _UsahaDetailScreenState extends State<UsahaDetailScreen> {
                                 Expanded(
                                   child: Text(
                                     'Galeri',
-                                    style: theme.textTheme.headline6
-                                        ?.copyWith(
+                                    style: theme.textTheme.headline6?.copyWith(
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
@@ -173,8 +173,7 @@ class _UsahaDetailScreenState extends State<UsahaDetailScreen> {
                               scrollDirection: Axis.horizontal,
                               children: usahaDetailModel.photo_gallery
                                   .map((franchise) {
-                                int indexFoto = usahaDetailModel
-                                    .photo_gallery
+                                int indexFoto = usahaDetailModel.photo_gallery
                                     .indexOf(franchise);
                                 List<String> fotos = usahaDetailModel
                                     .photo_gallery
@@ -186,15 +185,13 @@ class _UsahaDetailScreenState extends State<UsahaDetailScreen> {
                                     onTap: () {
                                       Navigator.of(context).pushNamed(
                                         GalleryFullScreen.ROUTE_NAME,
-                                        arguments:
-                                            GalleryFullScreenArguments(
+                                        arguments: GalleryFullScreenArguments(
                                           images: fotos,
                                           indexPage: indexFoto,
                                         ),
                                       );
                                     },
-                                    borderRadius:
-                                        BorderRadius.circular(8.0),
+                                    borderRadius: BorderRadius.circular(8.0),
                                     child: Container(
                                       margin: const EdgeInsets.symmetric(
                                           horizontal: 4.0),
@@ -206,9 +203,11 @@ class _UsahaDetailScreenState extends State<UsahaDetailScreen> {
                                         child: CachedNetworkImage(
                                           imageUrl: franchise.path,
                                           fit: BoxFit.cover,
-                                          placeholder: (_, __) =>
-                                              Center(child: CircularProgressIndicator()),
-                                          errorWidget: (_, __, ___) => Container(
+                                          placeholder: (_, __) => Center(
+                                              child:
+                                                  CircularProgressIndicator()),
+                                          errorWidget: (_, __, ___) =>
+                                              Container(
                                             color: Colors.grey[300],
                                             child: Icon(Icons.broken_image,
                                                 color: Colors.grey[600]),

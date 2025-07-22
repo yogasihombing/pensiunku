@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:pensiunku/widget/floating_bottom_navigation_bar_item.dart';
-import 'package:showcaseview/showcaseview.dart';
 
 class FloatingBottomNavigationBar extends StatelessWidget {
   final int currentIndex;

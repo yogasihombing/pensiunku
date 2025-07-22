@@ -449,13 +449,13 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen>
 
   void _launchWhatsApp() async {
     final Uri whatsappUrl = Uri.parse(
-        'whatsapp://send?phone=+6287785833344&text=Hallo%20admin%20pensiunku,%20saya%20mau%20menanyakan%20perihal%20simulasi%20aplikasi%20Pensiunku%3F');
+        'whatsapp://send?phone=+6281220357098&text=Hallo%20admin%20pensiunku,%20saya%20mau%20menanyakan%20perihal%20simulasi%20aplikasi%20Pensiunku%3F');
 
     if (await canLaunchUrl(whatsappUrl)) {
       await launchUrl(whatsappUrl);
     } else {
       await launchUrl(
-          Uri.parse('https://web.whatsapp.com/send?phone=+6287785833344'));
+          Uri.parse('https://web.whatsapp.com/send?phone=+6281220357098'));
     }
   }
 

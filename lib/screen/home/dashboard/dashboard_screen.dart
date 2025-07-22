@@ -35,6 +35,7 @@ import 'package:pensiunku/util/shared_preferences_util.dart';
 import 'package:pensiunku/widget/chip_tab.dart';
 import 'package:http/http.dart' as http;
 import 'package:pensiunku/widget/floating_bottom_navigation_bar.dart';
+import 'package:pensiunku/widget/showcase/app_showcase_keys.dart';
 import 'dart:convert';
 
 import 'package:showcaseview/showcaseview.dart';
@@ -82,14 +83,14 @@ class DashboardScreen extends StatefulWidget {
   final void Function(int index)
       onChangeBottomNavIndex; // Callback untuk mengubah indeks navigasi bawah
   final ScrollController scrollController; // Controller untuk scroll
-  final int? walkthroughIndex; // Indeks untuk walkthrough (opsional)
+  // final int? walkthroughIndex; // Hapus parameter ini dari constructor
 
   const DashboardScreen({
     Key? key,
     required this.onApplySubmission,
     required this.onChangeBottomNavIndex,
     required this.scrollController,
-    this.walkthroughIndex,
+    // this.walkthroughIndex, // Hapus parameter ini dari constructor
   }) : super(key: key);
 
   @override
@@ -104,44 +105,39 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   // Variabel state untuk saldo pengguna
   String _userBalance = '0';
-  // --- PERUBAHAN: Menghapus _isLoadingBalance karena tidak lagi diperlukan untuk UI loading di kartu ---
-  // bool _isLoadingBalance = false;
-  // --- AKHIR PERUBAHAN ---
+  bool _isLoadingOverlay = false;
+  bool _isActivated = false;
+  bool _isInDevelopment = true;
+  bool _isLoadingCheckMemberBalanceCard = false;
+  bool _isLoadingCheckMemberActionButton = false;
 
   // Variabel untuk menyimpan daftar kategori artikel setelah diambil
   List<ArticleCategoryModel> _articleCategories = [];
-  // Deklarasi Future untuk kategori artikel, akan diinisialisasi di initState/refreshData
   late Future<ResultModel<List<ArticleCategoryModel>>> _futureArticleCategories;
 
-  Future<ResultModel<List<ForumModel>>>?
-      _futureDataForum; // Mengganti _futureData
+  Future<ResultModel<List<ForumModel>>>? _futureDataForum;
   late Future<ResultModel<List<EventModel>>> _futureDataEventModel;
   late List<EventModel> _EventModel = [];
   late Future<String> _futureGreeting;
   UserModel? _userModel;
-  late Future<ResultModel<UserModel>> _futureUser; // Mengganti _future
-  // --- PERUBAHAN: Mengubah _futureMemberStatus menjadi int? dengan nilai default 0 ---
-  int? _memberStatus = 0; // Menyimpan status member, default 0 (belum aktif)
-  // --- AKHIR PERUBAHAN ---
+  late Future<ResultModel<UserModel>> _futureUser;
+  int? _memberStatus = 0;
 
-  // Variabel untuk loading overlay dan status lainnya
-  bool _isLoadingOverlay = false;
-  bool _isActivated =
-      false; // Variabel ini tidak digunakan, bisa dihapus jika tidak ada rencana penggunaan
-  bool _isInDevelopment =
-      true; // Variabel ini tidak digunakan, bisa dihapus jika tidak ada rencana penggunaan
-  bool _isLoadingCheckMemberBalanceCard = false;
-  bool _isLoadingCheckMemberActionButton = false;
-
-  // Controller untuk input teks
   TextEditingController namaController = TextEditingController();
 
-  final dataKey = GlobalKey(); // Key global untuk widget tertentu
+  final dataKey = GlobalKey();
 
-  final List<String> simulationFormTypeTitle = [
-    'KREDIT PRA-PENSIUN',
-    'KREDIT PENSIUN',
-    'KREDIT PLATINUM',
+  // Global Keys untuk ShowcaseView
+  // Menggunakan GlobalKey yang diimpor dari app_showcase_keys.dart
+  List<GlobalKey> _showcaseKeys = [
+    // one,
+    two,
+    three,
+    four,
+    five,
+    six,
+    seven,
+    eight,
   ];
 
   @override
@@ -160,8 +156,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
           _isLoadingOverlay = false;
           print('DashboardScreen: Overlay loading dinonaktifkan.');
         });
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _startShowcase();
+        });
       }
     });
+  }
+
+  void _startShowcase() async {
+    bool? isFinishedWalkthrough = SharedPreferencesUtil()
+        .sharedPreferences
+        .getBool(SharedPreferencesUtil.SP_KEY_IS_FINISHED_WALKTHROUGH);
+
+    if (isFinishedWalkthrough != true) {
+      ShowCaseWidget.of(context).startShowCase(_showcaseKeys);
+      print('DashboardScreen: Memulai walkthrough.');
+    } else {
+      print('DashboardScreen: Walkthrough sudah selesai sebelumnya.');
+    }
   }
 
   Future<void> _refreshData() async {
@@ -189,14 +201,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
         });
         if (_userModel?.id != null) {
           await _fetchBalance(_userModel!.id.toString());
-          // --- PERUBAHAN: Memanggil cekMember dan langsung update _memberStatus ---
           try {
             _memberStatus = await cekMember(_userModel!.id.toString());
           } catch (e) {
             print('DashboardScreen: Error mengambil status member: $e');
-            _memberStatus = 0; // Default ke 0 jika ada error
+            _memberStatus = 0;
           }
-          // --- AKHIR PERUBAHAN ---
         } else {
           print('DashboardScreen: User ID null setelah pengambilan data user.');
         }
@@ -297,7 +307,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
         final data = jsonDecode(response.body);
         if (data != null && data['text'] != null) {
-          // Periksa jika ada 'balance' atau 'message'
           if (data['text']['balance'] != null) {
             String balanceStr = data['text']['balance'].toString();
             balanceStr = balanceStr
@@ -317,7 +326,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
             }
           } else if (data['text']['message'] != null &&
               data['text']['message'] == 'Wallet tidak ditemukan!') {
-            // Jika wallet tidak ditemukan, set saldo ke Rp 0
             debugPrint("Wallet tidak ditemukan, setting saldo ke Rp 0.");
             if (mounted) {
               setState(() {
@@ -329,7 +337,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 "Error: Field 'balance' tidak ditemukan atau response tidak dikenal: ${response.body}");
             if (mounted) {
               setState(() {
-                _userBalance = 'Error'; // Atau 'Tidak Tersedia'
+                _userBalance = 'Error';
               });
             }
           }
@@ -355,7 +363,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       }
     } finally {
       if (mounted) {
-        // Tidak ada perubahan di sini karena _isLoadingBalance sudah dihapus
+        // No changes here as _isLoadingBalance was already removed
       }
     }
   }
@@ -591,10 +599,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       Padding(
                         padding: EdgeInsets.symmetric(
                             horizontal: screenWidth * 0.04),
-                        child: (_memberStatus ==
-                                4) // Jika status 4 (member aktif)
-                            ? _buildBalanceCard(screenWidth, screenHeight)
-                            : _aktifkanpensiunkuPlus(screenWidth, screenHeight),
+                        child: Showcase(
+                          key:
+                              three, // Key untuk Balance Card / Aktifkan Pensiunku+
+                          description:
+                              'Kamu bisa melihat nominal saldo yang ada di akun kamu.', // Detail text showcase
+                          child: (_memberStatus ==
+                                  4) // Jika status 4 (member aktif)
+                              ? _buildBalanceCard(screenWidth, screenHeight)
+                              : _aktifkanpensiunkuPlus(
+                                  screenWidth, screenHeight),
+                        ),
                       ),
                       // --- AKHIR PERUBAHAN ---
                       SizedBox(height: screenHeight * 0.015),
@@ -602,8 +617,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       Padding(
                         padding: EdgeInsets.symmetric(
                             horizontal: screenWidth * 0.04),
-                        child: _buildSimulasiPensiunku(
-                            context, screenWidth, screenHeight),
+                        child: Showcase(
+                          key: four, // Key untuk Simulasi Cepat
+                          description:
+                              'Dengan fitur Simulasi Cepat PensiunKu, kamu bisa melakukan simulasi kredit dengan mudah dan cepat. \n\nCukup masukkan data yang diperlukan, dan aplikasi ini akan menghitung plafon kredit dan terima bersih yang bisa kamu dapatkan.', // Detail text showcase
+                          child: _buildSimulasiPensiunku(
+                              context, screenWidth, screenHeight),
+                        ),
                       ),
                       SizedBox(height: screenHeight * 0.015),
                       SizedBox(height: screenHeight * 0.015),
@@ -615,14 +635,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                       SizedBox(height: screenHeight * 0.02),
 
-                      Padding(
-                        padding: EdgeInsets.symmetric(
-                            horizontal: screenWidth * 0.04),
-                        child: _buildMenuFeatures(
-                            context, screenWidth, screenHeight),
+                      Showcase(
+                        // Showcase untuk seluruh bagian menu fitur
+                        key: seven, // Key untuk Icon Menu Events
+                        description:
+                            'Kami juga menyediakan berbagai menu menarik yang dapat membantu kamu tetap aktif dan produktif di masa pensiun.', // Detail text showcase
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(
+                              horizontal: screenWidth * 0.04),
+                          child: _buildMenuFeatures(
+                              context, screenWidth, screenHeight),
+                        ),
                       ),
                       SizedBox(height: screenHeight * 0.02),
-                      _buildHeaderImage(context, screenWidth, screenHeight),
+                      Showcase(
+                        key: eight, // Key untuk Carousel Header Image
+                        description:
+                            'Kamu bisa melihat berbagai pengumuman dan informasi penting yang perlu diketahui.', // Detail text showcase
+                        child: _buildHeaderImage(
+                            context, screenWidth, screenHeight),
+                      ),
                       SizedBox(height: screenHeight * 0.015),
                       _buildArticleFeatures(context, screenWidth, screenHeight),
                       SizedBox(height: screenHeight * 0.06),
@@ -632,6 +664,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             ),
           ),
+          // FloatingBottomNavigationBar tidak dibungkus Showcase
           FloatingBottomNavigationBar(
             isVisible: _isBottomNavBarVisible,
             currentIndex: 2,
@@ -688,18 +721,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
             'assets/logo_pensiunku.png',
             height: screenHeight * 0.06,
           ),
-          IconButton(
-            icon: const Icon(Icons.account_circle_outlined),
-            iconSize: screenWidth * 0.06,
-            onPressed: () => Navigator.of(context)
-                .push(MaterialPageRoute(
-                    builder: (context) => AccountScreen(
-                          onChangeBottomNavIndex: (int index) {},
-                        )))
-                .then((_) {
-              _refreshData();
-            }),
-            color: Colors.black54,
+          Showcase(
+            key: two, // Key untuk Icon Akun
+            description:
+                'Kamu bisa menemukan berbagai informasi penting yang berhubungan dengan status pengajuan kredit dan pengaturan', // Detail text showcase
+            child: IconButton(
+              icon: const Icon(Icons.account_circle_outlined),
+              iconSize: screenWidth * 0.06,
+              onPressed: () => Navigator.of(context)
+                  .push(MaterialPageRoute(
+                      builder: (context) => AccountScreen(
+                            onChangeBottomNavIndex: (int index) {},
+                          )))
+                  .then((_) {
+                _refreshData();
+              }),
+              color: Colors.black54,
+            ),
           ),
         ],
       ),
@@ -710,12 +748,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final TextStyle greetingStyle = TextStyle(
       fontSize: screenWidth * 0.032,
       fontWeight: FontWeight.normal,
-      color: Color(0Xff017964),
+      color: const Color(0Xff017964),
     );
     final TextStyle boldStyle = TextStyle(
       fontSize: screenWidth * 0.035,
       fontWeight: FontWeight.bold,
-      color: Color(0Xff017964),
+      color: const Color(0Xff017964),
     );
 
     String userName = _userModel?.username?.split(' ').first ?? 'Pengguna';
@@ -785,8 +823,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     color: Colors.black,
                   ),
                 ),
-                Spacer(),
-                // --- PERUBAHAN: Menghilangkan CircularProgressIndicator, langsung tampilkan saldo atau "Error" ---
+                const Spacer(),
                 Text(
                   _userBalance,
                   style: TextStyle(
@@ -795,24 +832,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     color: Colors.black87,
                   ),
                 ),
-                // --- AKHIR PERUBAHAN ---
               ],
             ),
-            // --- PERUBAHAN: Menghilangkan _isLoadingCheckMemberBalanceCard ---
-            // if (_isLoadingCheckMemberBalanceCard)
-            //   Center(
-            //     child: CircularProgressIndicator(
-            //       strokeWidth: screenWidth * 0.008,
-            //     ),
-            //   ),
-            // --- AKHIR PERUBAHAN ---
           ],
         ),
       ),
     );
   }
 
-  // Widget _aktifkanpensiunkuPlus dipindahkan ke sini
   Widget _aktifkanpensiunkuPlus(double screenWidth, double screenHeight) {
     return Container(
       width: double.infinity,
@@ -844,8 +871,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   color: Colors.black,
                 ),
               ),
-              Spacer(),
-              // --- PERUBAHAN: Menampilkan "Rp 0" secara langsung tanpa loading indicator ---
+              const Spacer(),
               Text(
                 'Rp 0',
                 style: TextStyle(
@@ -853,11 +879,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     fontWeight: FontWeight.bold,
                     color: Colors.black87),
               ),
-              // --- AKHIR PERUBAHAN ---
             ],
           ),
           SizedBox(height: screenHeight * 0.01),
-          // --- PERUBAHAN: Menghilangkan _isLoadingCheckMemberBalanceCard di sini juga ---
           _isLoadingCheckMemberBalanceCard
               ? Center(
                   child: CircularProgressIndicator(
@@ -885,17 +909,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         color: Colors.green[900],
                       ),
                       children: [
-                        TextSpan(
+                        const TextSpan(
                             text: 'Pensiunku+',
                             style: TextStyle(fontWeight: FontWeight.bold)),
-                        TextSpan(
+                        const TextSpan(
                             text: ' Sekarang',
                             style: TextStyle(fontWeight: FontWeight.normal)),
                       ],
                     ),
                   ),
                 ),
-          // --- AKHIR PERUBAHAN ---
         ],
       ),
     );
@@ -938,12 +961,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
     Widget _buildButton(
         String iconPath, Widget textWidget, VoidCallback onPressed,
         {Color backgroundColor = Colors.white70,
-        Color shadowColor = Colors.transparent}) {
+        Color shadowColor = Colors.transparent,
+        GlobalKey? showcaseKey,
+        String? showcaseDescription}) {
+      // Parameter ini sudah benar
       final double imageSize = screenWidth * 0.14;
       final double paddingHorizontal = screenWidth * 0.03;
       final double paddingVertical = screenHeight * 0.01;
 
-      return ElevatedButton(
+      Widget buttonContent = ElevatedButton(
         style: ElevatedButton.styleFrom(
           backgroundColor: backgroundColor,
           shape: RoundedRectangleBorder(
@@ -964,6 +990,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ],
         ),
       );
+
+      if (showcaseKey != null && showcaseDescription != null) {
+        return Showcase(
+          key: showcaseKey,
+          description: showcaseDescription, // Digunakan di sini
+          child: buttonContent,
+        );
+      }
+      return buttonContent;
     }
 
     return Row(
@@ -996,6 +1031,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   builder: (context) => PengajuanAndaScreen()));
             },
             shadowColor: Colors.grey.withOpacity(0.5),
+            showcaseKey: five, // Key untuk Ajukan Pinjaman
+            showcaseDescription:
+                'Di menu Ajukan Pinjaman, kamu bisa mulai proses pengajuan kredit dengan mudah. \n\nCaranya, cukup mengisi form pengajuan kredit yang tersedia di sini dengan informasi yang diperlukan.\n\nSetelah itu, anda akan kami hubungi via Whatsapp', // PERBAIKAN: Menggunakan showcaseDescription
           ),
         ),
         SizedBox(width: screenWidth * 0.025),
@@ -1030,6 +1068,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     _handleCheckMemberAndNavigateFromActionButton(context);
                   },
                   shadowColor: Colors.grey.withOpacity(0.5),
+                  showcaseKey: six, // Key untuk Ajukan Mitra
+                  showcaseDescription:
+                      'Dengan menjadi Mitra Pensiunku+, anda bisa mendapatkan insentif dengan cara membantu mendapatkan nasabah baru dan mendaftarkannya di aplikasi.\n\nUntuk memulai, kamu harus menjadi Mitra App+ terlebih dahulu dengan mengisi form pendaftaran yang ada di menu ini.', // PERBAIKAN: Menggunakan showcaseDescription
                 ),
         ),
       ],
@@ -1100,17 +1141,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           fit: BoxFit.cover,
                           filterQuality: FilterQuality.high,
                           gaplessPlayback: true,
-                          // Tambahkan errorBuilder untuk fallback visual jika aset gagal dimuat
                           errorBuilder: (context, error, stackTrace) {
                             debugPrint(
                                 'Error memuat aset ${images[index]}: $error');
-                            // Tampilkan placeholder abu-abu dengan ikon gambar rusak
                             return Container(
-                              color: Colors.grey[
-                                  200], // Warna latar belakang placeholder
+                              color: Colors.grey[200],
                               child: Center(
                                 child: Icon(
-                                  Icons.broken_image, // Ikon gambar rusak
+                                  Icons.broken_image,
                                   size: screenWidth * 0.1,
                                   color: Colors.grey[600],
                                 ),
@@ -1218,10 +1256,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   useBox: false,
                 ),
               ),
-              // --- MODIFIKASI DIMULAI DI SINI ---
-              SizedBox(width: screenWidth * 0.073), // Jaga jarak yang sama
-
-              // Bungkus IconMenu Toko dalam SizedBox dengan lebar yang sama
+              SizedBox(width: screenWidth * 0.073),
               SizedBox(
                 width: screenWidth * 0.315,
                 child: Stack(
@@ -1252,36 +1287,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       top: screenHeight * 0.078,
                       child: Text(
                         'Coming Soon',
-                        // --- PERUBAHAN DI SINI ---
                         style: Theme.of(context).textTheme.subtitle1?.copyWith(
-                              fontSize: 11, // Sama dengan di IconMenu
-                              fontWeight:
-                                  FontWeight.w600, // Sama dengan di IconMenu
-                              color: Colors.black, // Tetap hitam
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black,
                             ),
-                        // --- AKHIR PERUBAHAN ---
                         textAlign: TextAlign.center,
                       ),
                     ),
                   ],
                 ),
               ),
-              // SizedBox(
-              //   width: screenWidth * 0.34,
-              //   child: IconMenu(
-              //     image: "assets/dashboard_screen/icon_toko.png",
-              //     title: "",
-              //     routeNamed: TokoScreen.ROUTE_NAME,
-              //     arguments: TokoScreenArguments(categoryId: 1),
-              //     useBox: false,
-              //   ),
-              // ),
-
-              // --- MODIFIKASI DIMULAI DI SINI ---
-              SizedBox(
-                  width: screenWidth *
-                      0.022), // Tambahkan SizedBox terakhir untuk konsistensi jika ada ikon lain
-              // --- MODIFIKASI BERAKHIR DI SINI ---
+              SizedBox(width: screenWidth * 0.022),
             ],
           ),
         ),
@@ -1350,7 +1367,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   child: SizedBox(
                     height: screenHeight * 0.05,
                     width: screenHeight * 0.05,
-                    child: CircularProgressIndicator(),
+                    child: const CircularProgressIndicator(),
                   ),
                 );
               }
