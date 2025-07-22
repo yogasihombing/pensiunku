@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:pensiunku/model/article_model.dart';
@@ -18,11 +19,13 @@ class ArticleItemScreen extends StatelessWidget {
     try {
       return DateFormat('dd MMM yyyy', 'en_US').parse(dateString);
     } catch (e) {
-      print('Warning: Gagal parsing tanggal "$dateString" dengan format "dd MMM yyyy": $e');
+      // Menghapus print statement yang berlebihan
+      // print('Warning: Gagal parsing tanggal "$dateString" dengan format "dd MMM yyyy": $e');
       try {
         return DateTime.parse(dateString);
       } catch (e2) {
-        print('Warning: Gagal parsing tanggal "$dateString" dengan format ISO 8601: $e2');
+        // Menghapus print statement yang berlebihan
+        // print('Warning: Gagal parsing tanggal "$dateString" dengan format ISO 8601: $e2');
         return DateTime.now();
       }
     }
@@ -31,7 +34,7 @@ class ArticleItemScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     ThemeData theme = Theme.of(context);
-    Size screenSize = MediaQuery.of(context).size;
+    // Size screenSize = MediaQuery.of(context).size; // Tidak digunakan, bisa dihapus
 
     return GestureDetector(
       onTap: () {
@@ -41,12 +44,12 @@ class ArticleItemScreen extends StatelessWidget {
         );
       },
       child: Container(
-        margin: EdgeInsets.symmetric(vertical: 8.0),
+        margin: const EdgeInsets.symmetric(vertical: 8.0),
         child: Container(
           decoration: BoxDecoration(
             boxShadow: [
               BoxShadow(
-                color: Color.fromRGBO(0, 0, 0, 0.05),
+                color: const Color.fromRGBO(0, 0, 0, 0.05),
                 offset: const Offset(0.0, 7.0),
                 blurRadius: 5.0,
                 spreadRadius: 1.0,
@@ -55,7 +58,7 @@ class ArticleItemScreen extends StatelessWidget {
           ),
           child: Card(
             shadowColor: Colors.transparent,
-            margin: EdgeInsets.symmetric(horizontal: 8.0),
+            margin: const EdgeInsets.symmetric(horizontal: 8.0),
             child: Padding(
               padding: const EdgeInsets.all(12.0),
               child: Row(
@@ -67,27 +70,46 @@ class ArticleItemScreen extends StatelessWidget {
                       alignment: Alignment.center,
                       height: 100,
                       child: ClipRRect(
-                        borderRadius: BorderRadius.all(Radius.circular(8.0)),
-                        child: Image.network(
-                          (article.imageUrl.isNotEmpty && 
-                           Uri.tryParse(article.imageUrl)?.hasAbsolutePath == true)
+                        borderRadius:
+                            const BorderRadius.all(Radius.circular(8.0)),
+                        // Menggunakan CachedNetworkImage untuk pemuatan gambar yang lebih baik
+                        child: CachedNetworkImage(
+                          imageUrl: (article.imageUrl.isNotEmpty &&
+                                  Uri.tryParse(article.imageUrl)
+                                          ?.hasAbsolutePath ==
+                                      true)
                               ? article.imageUrl
                               : 'https://placehold.co/100x100/cccccc/333333?text=No+Image',
                           fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            print('Error loading article item image: ${article.imageUrl} - $error');
+                          width:
+                              double.infinity, // Pastikan gambar mengisi lebar
+                          height:
+                              double.infinity, // Pastikan gambar mengisi tinggi
+                          placeholder: (context, url) => Container(
+                            color: Colors.grey[200],
+                            child: const Center(
+                              child: CircularProgressIndicator(
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                    Color(0xFF017964)),
+                              ),
+                            ),
+                          ),
+                          errorWidget: (context, url, error) {
+                            // Menghapus print statement yang berlebihan
+                            // print('Error loading article item image: ${article.imageUrl} - $error');
                             return Container(
-                              color: Color.fromRGBO(1, 169, 159, 1.0),
+                              color: const Color.fromRGBO(1, 169, 159, 1.0),
                               width: double.infinity,
                               height: double.infinity,
-                              child: Icon(Icons.broken_image, color: Colors.grey[600]),
+                              child: const Icon(Icons.broken_image,
+                                  color: Colors.grey),
                             );
                           },
                         ),
                       ),
                     ),
                   ),
-                  SizedBox(width: 12),
+                  const SizedBox(width: 12),
                   Expanded(
                     flex: 5,
                     child: Column(
@@ -124,13 +146,14 @@ class ArticleItemScreen extends StatelessWidget {
                       ],
                     ),
                   ),
-                  SizedBox(width: 12),
+                  const SizedBox(width: 12),
                   Expanded(
                     flex: 1,
                     child: status == 0
                         ? Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.all(Radius.circular(8.0)),
+                            decoration: const BoxDecoration(
+                              borderRadius:
+                                  BorderRadius.all(Radius.circular(8.0)),
                               color: Color.fromRGBO(232, 232, 232, 1.0),
                             ),
                             child: Column(
@@ -140,8 +163,10 @@ class ArticleItemScreen extends StatelessWidget {
                                   DateFormat("dd").format(
                                     _parseDateSafely(article.tanggal),
                                   ),
-                                  style: theme.textTheme.headlineSmall?.copyWith(
-                                    color: Color.fromRGBO(112, 112, 112, 1.0),
+                                  style:
+                                      theme.textTheme.headlineSmall?.copyWith(
+                                    color: const Color.fromRGBO(
+                                        112, 112, 112, 1.0),
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
@@ -150,7 +175,8 @@ class ArticleItemScreen extends StatelessWidget {
                                     _parseDateSafely(article.tanggal),
                                   ),
                                   style: theme.textTheme.bodySmall?.copyWith(
-                                    color: Color.fromRGBO(112, 112, 112, 1.0),
+                                    color: const Color.fromRGBO(
+                                        112, 112, 112, 1.0),
                                     fontSize: 11.0,
                                   ),
                                 ),

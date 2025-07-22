@@ -26,9 +26,19 @@ class _EWalletBankTujuanState extends State<EWalletBankTujuan> {
   List<UserBankDetail>? _userBankDetails; // Mengubah menjadi List
   bool _isLoadingBankDetail = false;
 
+  // GlobalKey untuk mengukur tinggi Wallet Card
+  final GlobalKey _walletCardKey = GlobalKey();
+  double _walletCardHeight = 0.0;
+
   // Screen dimensions - diinisialisasi di didChangeDependencies
   late double screenWidth;
   late double screenHeight;
+
+  // Responsive padding dan sizing - diinisialisasi di didChangeDependencies
+  late double horizontalPadding;
+  late double verticalPadding;
+  late double headerHeight;
+  late double avatarRadius;
 
   @override
   void initState() {
@@ -39,6 +49,11 @@ class _EWalletBankTujuanState extends State<EWalletBankTujuan> {
       _refreshData(); // Panggil refresh data awal setelah SharedPreferences siap
     });
     _futureGreeting = fetchGreeting();
+
+    // Tambahkan listener untuk mendapatkan tinggi wallet card setelah render pertama
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _getWalletCardHeight();
+    });
   }
 
   @override
@@ -52,6 +67,24 @@ class _EWalletBankTujuanState extends State<EWalletBankTujuan> {
   void _initializeResponsiveDimensions() {
     screenWidth = MediaQuery.of(context).size.width;
     screenHeight = MediaQuery.of(context).size.height;
+
+    horizontalPadding = screenWidth * 0.04;
+    verticalPadding = screenHeight * 0.015;
+
+    headerHeight = screenHeight * 0.28; // Header background
+    avatarRadius = screenWidth * 0.10;
+  }
+
+  /// Fungsi untuk mendapatkan tinggi _buildWalletCard setelah dirender
+  void _getWalletCardHeight() {
+    if (_walletCardKey.currentContext != null) {
+      final RenderBox renderBox =
+          _walletCardKey.currentContext!.findRenderObject() as RenderBox;
+      setState(() {
+        _walletCardHeight = renderBox.size.height;
+        debugPrint('Wallet Card Height: $_walletCardHeight');
+      });
+    }
   }
 
   /// Fungsi untuk refresh data pengguna, saldo, dan detail bank
@@ -324,75 +357,127 @@ class _EWalletBankTujuanState extends State<EWalletBankTujuan> {
   @override
   Widget build(BuildContext context) {
     // Dimensi responsif sudah diinisialisasi di didChangeDependencies
+    _initializeResponsiveDimensions(); // Pastikan dimensi responsif diinisialisasi
+
     final double horizontalPadding = screenWidth * 0.04;
     final double cardPadding = screenWidth * 0.04;
+
+    // Hitung tinggi status bar
+    final double statusBarHeight = MediaQuery.of(context).padding.top;
+
+    // Hitung posisi top untuk _buildWalletCard
+    // Posisi top = (Tinggi Header Kuning - Tinggi Status Bar) - (Setengah Tinggi Wallet Card) + Offset
+    // Offset ditambahkan untuk memastikan posisi yang lebih akurat di tengah perbatasan
+    final double walletCardTopPosition = (headerHeight - statusBarHeight) -
+        (_walletCardHeight / 2) +
+        (screenHeight * 0.02); // Disesuaikan offset
 
     return Scaffold(
       body: Stack(
         children: [
-          // Background gradient full screen
-          Container(
-            width: screenWidth,
-            height: screenHeight,
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.white,
-                  Colors.white,
-                  Colors.white,
-                  Color.fromARGB(255, 220, 226, 147),
-                ],
-                stops: [0.25, 0.5, 0.75, 1.0],
-              ),
-            ),
-          ),
-          // Header background (kuning) dengan ketinggian 28% dari tinggi layar
+          // 1. Background gradient full screen
+          _buildBackgroundGradient(),
+
+          // 2. Header berwarna di bagian atas (fixed)
+          _buildColoredHeader(),
+
+          // 3. Konten header tetap (tombol kembali, profil greeting)
+          // Ditempatkan di sini agar tidak ikut scroll dan berada di atas header kuning
           Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            height: screenHeight * 0.28,
-            child: Container(
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFC950),
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(
-                      screenWidth * 0.08), // Sesuaikan dengan screenWidth
-                  bottomRight: Radius.circular(
-                      screenWidth * 0.08), // Sesuaikan dengan screenWidth
-                ),
-              ),
+            top: statusBarHeight +
+                screenHeight * 0.01, // Dimulai setelah status bar
+            left: horizontalPadding,
+            right: horizontalPadding,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildAppBar(context, screenHeight, screenWidth),
+                SizedBox(height: screenHeight * 0.02),
+                Center(child: _buildProfileGreeting(screenWidth)),
+              ],
             ),
           ),
-          SafeArea(
+
+          // 4. Wallet Card yang di-positioning secara absolut (fixed, overlapping)
+          Positioned(
+            top: walletCardTopPosition,
+            left: horizontalPadding,
+            right: horizontalPadding,
+            child: _buildWalletCard(screenWidth, screenHeight, cardPadding),
+          ),
+
+          // 5. Konten utama yang bisa di-scroll (Daftar Bank dan Tombol Tambah Bank)
+          // Dimulai setelah area header dan setengah wallet card
+          Positioned.fill(
+            top: headerHeight +
+                (_walletCardHeight / 2) +
+                (screenHeight *
+                    0.02), // Mulai di bawah header + setengah wallet card + sedikit ruang
             child: RefreshIndicator(
               onRefresh: _refreshData, // Panggil _refreshData saat direfresh
               child: SingleChildScrollView(
                 physics:
                     const AlwaysScrollableScrollPhysics(), // Selalu bisa di-scroll untuk RefreshIndicator
-                padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SizedBox(height: screenHeight * 0.001),
-                    _buildAppBar(context, screenHeight, screenWidth),
-                    SizedBox(height: screenHeight * 0.02),
-                    Center(child: _buildProfileGreeting(screenWidth)),
-                    SizedBox(height: screenHeight * 0.02),
-                    _buildWalletCard(screenWidth, screenHeight, cardPadding),
-                    SizedBox(height: screenHeight * 0.04),
-                    _buildBankDetailsList(screenWidth),
-                    SizedBox(height: screenHeight * 0.02),
-                    _buildAddBank(context, screenWidth),
-                    SizedBox(height: screenHeight * 0.02),
-                  ],
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Jarak antara wallet card dan daftar bank
+                      SizedBox(
+                          height: screenHeight *
+                              0.02), // Memberikan sedikit padding di atas daftar bank
+                      _buildBankDetailsList(screenWidth),
+                      SizedBox(height: screenHeight * 0.02),
+                      _buildAddBank(context, screenWidth),
+                      SizedBox(height: screenHeight * 0.02),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  /// Widget untuk background gradient
+  Widget _buildBackgroundGradient() {
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Colors.white,
+            Colors.white,
+            Colors.white,
+            Color.fromARGB(255, 220, 226, 147),
+          ],
+          stops: [0.25, 0.5, 0.75, 1.0],
+        ),
+      ),
+    );
+  }
+
+  /// Widget untuk header berwarna di bagian atas
+  Widget _buildColoredHeader() {
+    return Positioned(
+      top: 0,
+      left: 0,
+      right: 0,
+      height: headerHeight, // Menggunakan headerHeight dari dimensi responsif
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFC950),
+          borderRadius: BorderRadius.only(
+            bottomLeft: Radius.circular(screenWidth * 0.08),
+            bottomRight: Radius.circular(screenWidth * 0.08),
+          ),
+        ),
       ),
     );
   }
@@ -436,7 +521,7 @@ class _EWalletBankTujuanState extends State<EWalletBankTujuan> {
 
   /// Widget Profil dan Ucapan Selamat Datang
   Widget _buildProfileGreeting(double screenWidth) {
-    final avatarRadius = screenWidth * 0.10;
+    final avatarRadius = screenWidth * 0.08; // Disesuaikan agar konsisten
     const TextStyle greetingStyle = TextStyle(
       fontSize: 12,
       fontWeight: FontWeight.normal,
@@ -449,15 +534,16 @@ class _EWalletBankTujuanState extends State<EWalletBankTujuan> {
     );
 
     return Row(
+      mainAxisAlignment:
+          MainAxisAlignment.start, // Ubah ke start agar konsisten
       children: [
-        SizedBox(width: screenWidth * 0.06),
         CircleAvatar(
           radius: avatarRadius,
-          backgroundColor: Colors.white.withOpacity(0.2),
+          backgroundColor: Colors.white.withOpacity(0.3),
           child: Icon(
             Icons.person,
             color: const Color(0xFF017964),
-            size: avatarRadius,
+            size: avatarRadius * 0.8,
           ),
         ),
         SizedBox(width: screenWidth * 0.05),
@@ -490,7 +576,8 @@ class _EWalletBankTujuanState extends State<EWalletBankTujuan> {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  SizedBox(height: screenWidth * 0.01),
+                  SizedBox(
+                      height: screenHeight * 0.005), // Menggunakan screenHeight
                   FittedBox(
                     fit: BoxFit.scaleDown,
                     alignment: Alignment.centerLeft,
@@ -514,6 +601,7 @@ class _EWalletBankTujuanState extends State<EWalletBankTujuan> {
   Widget _buildWalletCard(
       double screenWidth, double screenHeight, double cardPadding) {
     return Container(
+      key: _walletCardKey, // Tambahkan GlobalKey di sini
       width: double.infinity,
       padding: EdgeInsets.all(cardPadding),
       decoration: BoxDecoration(
@@ -598,7 +686,8 @@ class _EWalletBankTujuanState extends State<EWalletBankTujuan> {
         children: [
           Padding(
             padding: EdgeInsets.only(
-                left: screenWidth * 0.01, bottom: screenWidth * 0.03),
+                left: horizontalPadding,
+                bottom: screenWidth * 0.03), // Menggunakan horizontalPadding
             child: const Text(
               "Rekening Pencairan",
               style: TextStyle(
@@ -706,7 +795,8 @@ class _EWalletBankTujuanState extends State<EWalletBankTujuan> {
         children: [
           Padding(
             padding: EdgeInsets.only(
-                left: screenWidth * 0.01, bottom: screenWidth * 0.03),
+                left: horizontalPadding,
+                bottom: screenWidth * 0.03), // Menggunakan horizontalPadding
             child: const Text(
               "Rekening Pencairan",
               style: TextStyle(
@@ -743,7 +833,6 @@ class _EWalletBankTujuanState extends State<EWalletBankTujuan> {
   Widget _buildAddBank(BuildContext context, double screenWidth) {
     return Center(
       child: SizedBox(
-        // width: double.infinity,
         child: ElevatedButton(
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFFFFC950),

@@ -97,7 +97,10 @@ class DashboardScreen extends StatefulWidget {
   _DashboardScreenState createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> {
+class _DashboardScreenState extends State<DashboardScreen>
+    with AutomaticKeepAliveClientMixin<DashboardScreen> {
+  // Tambahkan mixin ini
+
   // Variabel state untuk indeks artikel dan event
   int _currentArticleIndex = 0;
   int _currenEventIndex = 0; // Typo here, should be _currentEventIndex?
@@ -140,6 +143,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
     eight,
   ];
 
+  // Daftar path gambar carousel
+  final List<String> _carouselImagePaths = const [
+    'assets/dashboard_screen/image_1.png',
+    'assets/dashboard_screen/image_2.png',
+    'assets/dashboard_screen/image_3.png',
+  ];
+
+  @override
+  bool get wantKeepAlive =>
+      true; // Penting: Memberi tahu Flutter untuk menjaga status widget ini
+
   @override
   void initState() {
     super.initState();
@@ -149,6 +163,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _futureArticleCategories = ArticleRepository().getAllCategories();
 
     _refreshData();
+    _precacheCarouselImages(); // Panggil fungsi pre-cache
 
     _futureGreeting = fetchGreeting().whenComplete(() {
       if (mounted) {
@@ -161,6 +176,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
         });
       }
     });
+  }
+
+  // Fungsi untuk pre-cache gambar carousel
+  Future<void> _precacheCarouselImages() async {
+    for (final path in _carouselImagePaths) {
+      try {
+        // precacheImage akan memuat gambar ke dalam ImageCache
+        await precacheImage(AssetImage(path), context);
+        print('Precached image: $path');
+      } catch (e, st) {
+        print('Error precaching $path: $e\n$st');
+        // Anda bisa menambahkan penanganan error di sini jika diperlukan
+      }
+    }
   }
 
   void _startShowcase() async {
@@ -550,6 +579,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(
+        context); // Penting: Panggil super.build(context) saat menggunakan AutomaticKeepAliveClientMixin
+
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
     final ThemeData theme = Theme.of(context);
@@ -1079,11 +1111,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildHeaderImage(
       BuildContext context, double screenWidth, double screenHeight) {
-    final List<String> images = [
-      'assets/dashboard_screen/image_1.png',
-      'assets/dashboard_screen/image_2.png',
-      'assets/dashboard_screen/image_3.png'
-    ];
+    // Gunakan _carouselImagePaths yang sudah didefinisikan di state
+    final List<String> images = _carouselImagePaths;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1141,6 +1170,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           fit: BoxFit.cover,
                           filterQuality: FilterQuality.high,
                           gaplessPlayback: true,
+                          // Tambahkan cacheWidth dan cacheHeight untuk optimasi
+                          cacheWidth: (screenWidth *
+                                  0.94 *
+                                  MediaQuery.of(context).devicePixelRatio)
+                              .toInt(), // Sesuaikan dengan lebar viewport dan pixel ratio
+                          cacheHeight: (screenHeight *
+                                  0.22 *
+                                  MediaQuery.of(context).devicePixelRatio)
+                              .toInt(), // Sesuaikan dengan tinggi carousel dan pixel ratio
                           errorBuilder: (context, error, stackTrace) {
                             debugPrint(
                                 'Error memuat aset ${images[index]}: $error');
@@ -1185,6 +1223,89 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  // Widget kustom untuk item menu "Coming Soon"
+  Widget _buildComingSoonBox(double screenWidth, double screenHeight) {
+    // Content that will be faded (original icon and title)
+    final Widget fadedContent = Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Image.asset(
+          "assets/dashboard_screen/icon_toko.png",
+          width: screenWidth * 0.30,
+          height: screenWidth * 0.16,
+        ),
+        // SizedBox(height: screenHeight * 0.001),
+        Text(
+          'Toko', // Original title
+          style: Theme.of(context).textTheme.subtitle1?.copyWith(
+                fontSize: screenWidth * 0.030,
+                fontWeight: FontWeight.w600,
+                color: Colors.black,
+              ),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+
+    // Overlay content (lock icon and "Coming Soon" text)
+    final Widget overlayContent = Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(
+          Icons.lock,
+          size: screenWidth * 0.07,
+          color: Colors.black.withOpacity(0.6),
+        ),
+        Text(
+          'Coming Soon',
+          style: Theme.of(context).textTheme.subtitle1?.copyWith(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: Colors.black,
+              ),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+
+    return Expanded(
+      flex: 2, // Mengambil 2 ruang proporsional
+      child: GestureDetector(
+        onTap: () {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Fitur ini akan segera hadir!',
+                style: const TextStyle(color: Colors.white),
+              ),
+              backgroundColor: Colors.blueAccent,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        },
+        child: Container(
+          margin: EdgeInsets.symmetric(horizontal: screenWidth * 0.01),
+          padding: EdgeInsets.symmetric(vertical: screenHeight * 0.01),
+          // decoration: boxDecoration, // Apply the common box decoration
+          child: Stack(
+            // Use Stack to overlay content
+            alignment: Alignment.center, // Center the children in the stack
+            children: [
+              // Faded background content
+              Opacity(
+                opacity: 0.3,
+                child: fadedContent,
+              ),
+              // Overlay content (lock and "Coming Soon")
+              overlayContent,
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildMenuFeatures(
       BuildContext context, double screenWidth, double screenHeight) {
     return Column(
@@ -1204,41 +1325,55 @@ class _DashboardScreenState extends State<DashboardScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            IconMenu(
-              image: "assets/dashboard_screen/icon_event.png",
-              title: "Events",
-              routeNamed: EventScreen.ROUTE_NAME,
-              useBox: false,
+            Expanded(
+              // Added Expanded for proportional spacing
+              child: IconMenu(
+                image: "assets/dashboard_screen/icon_event.png",
+                title: "Events",
+                routeNamed: EventScreen.ROUTE_NAME,
+                useBox: false,
+              ),
             ),
-            IconMenu(
-              image: "assets/dashboard_screen/icon_article.png",
-              title: "Artikel",
-              routeNamed: ArticleScreen.ROUTE_NAME,
-              arguments:
-                  ArticleScreenArguments(articleCategories: _articleCategories),
-              useBox: false,
+            Expanded(
+              // Added Expanded for proportional spacing
+              child: IconMenu(
+                image: "assets/dashboard_screen/icon_article.png",
+                title: "Artikel",
+                routeNamed: ArticleScreen.ROUTE_NAME,
+                arguments: ArticleScreenArguments(
+                    articleCategories: _articleCategories),
+                useBox: false,
+              ),
             ),
-            IconMenu(
-              image: "assets/dashboard_screen/icon_halo_pensiun.png",
-              title: "Halo Pensiun",
-              routeNamed: HalopensiunScreen.ROUTE_NAME,
-              useBox: false,
+            Expanded(
+              // Added Expanded for proportional spacing
+              child: IconMenu(
+                image: "assets/dashboard_screen/icon_halo_pensiun.png",
+                title: "Halo Pensiun",
+                routeNamed: HalopensiunScreen.ROUTE_NAME,
+                useBox: false,
+              ),
             ),
-            IconMenu(
-              image: "assets/dashboard_screen/icon_forum.png",
-              title: "PensiTalk",
-              routeNamed: ForumScreen.ROUTE_NAME,
-              useBox: false,
+            Expanded(
+              // Added Expanded for proportional spacing
+              child: IconMenu(
+                image: "assets/dashboard_screen/icon_forum.png",
+                title: "PensiTalk",
+                routeNamed: ForumScreen.ROUTE_NAME,
+                useBox: false,
+              ),
             ),
           ],
         ),
+        // Baris kedua menu
         Padding(
           padding: EdgeInsets.symmetric(
               horizontal: screenWidth * 0.0, vertical: screenHeight * 0.005),
           child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              SizedBox(
-                width: screenWidth * 0.22,
+              Expanded(
+                // Added Expanded for proportional spacing
                 child: IconMenu(
                   image: "assets/dashboard_screen/icon_karir.png",
                   title: "Karir",
@@ -1246,9 +1381,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   useBox: false,
                 ),
               ),
-              SizedBox(width: screenWidth * 0.022),
-              SizedBox(
-                width: screenWidth * 0.22,
+              Expanded(
+                // Added Expanded for proportional spacing
                 child: IconMenu(
                   image: "assets/dashboard_screen/icon_franchise.png",
                   title: "Franchise",
@@ -1256,87 +1390,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   useBox: false,
                 ),
               ),
-              SizedBox(width: screenWidth * 0.073),
-              SizedBox(
-                width: screenWidth * 0.315,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    AbsorbPointer(
-                      absorbing: true,
-                      child: Opacity(
-                        opacity: 0.3,
-                        child: IconMenu(
-                          image: "assets/dashboard_screen/icon_toko.png",
-                          title: "",
-                          routeNamed: TokoScreen.ROUTE_NAME,
-                          arguments: TokoScreenArguments(categoryId: 1),
-                          useBox: false,
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      top: screenHeight * 0.022,
-                      child: Icon(
-                        Icons.lock,
-                        size: screenWidth * 0.07,
-                        color: Colors.black.withOpacity(0.6),
-                      ),
-                    ),
-                    Positioned(
-                      top: screenHeight * 0.078,
-                      child: Text(
-                        'Coming Soon',
-                        style: Theme.of(context).textTheme.subtitle1?.copyWith(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.black,
-                            ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(width: screenWidth * 0.022),
+              // Menggunakan widget kustom untuk "Coming Soon" dengan flex 2
+              _buildComingSoonBox(screenWidth, screenHeight),
+              // Expanded kosong dihapus karena _buildComingSoonBox sekarang mengambil 2 space
             ],
           ),
         ),
       ],
     );
-  }
-
-  Future<List<ArticleCategoryModel>> _getArticleCategories() async {
-    print('DashboardScreen: _getArticleCategories dipanggil.');
-    if (_articleCategories.isNotEmpty) {
-      print(
-          'DashboardScreen: Kategori artikel sudah tersedia: ${_articleCategories.length} kategori.');
-      return Future.value(_articleCategories);
-    } else {
-      print(
-          'DashboardScreen: Kategori artikel belum tersedia, menunggu hasil _futureArticleCategories...');
-      try {
-        final result = await _futureArticleCategories;
-        if (result.data != null && result.data!.isNotEmpty) {
-          if (mounted) {
-            setState(() {
-              _articleCategories = result.data!;
-            });
-          }
-          print(
-              'DashboardScreen: Kategori artikel berhasil diambil ulang: ${_articleCategories.length} kategori.');
-          return _articleCategories;
-        } else {
-          print('DashboardScreen: Data kategori artikel kosong dari API.');
-          throw Exception(result.error ?? 'Data artikel kosong.');
-        }
-      } catch (e) {
-        print(
-            'DashboardScreen: Error memuat kategori artikel di _getArticleCategories: ${e.toString()}');
-        throw Exception(
-            'Gagal memuat kategori artikel di _getArticleCategories.');
-      }
-    }
   }
 
   Widget _buildArticleFeatures(

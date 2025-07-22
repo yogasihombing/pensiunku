@@ -27,55 +27,45 @@ class ArticleScreen extends StatefulWidget {
 }
 
 class _ArticleScreenState extends State<ArticleScreen> {
+  // Deklarasi Future untuk data artikel. Akan diinisialisasi di initState dan di-update saat filter berubah.
   late Future<ResultModel<List<MobileArticleModel>>> _futureData;
-  late Future<ResultModel<List<MobileArticleModel>>>
-      _futureDataWithoutSearchString;
+
+  // _futureDataWithoutSearchString tidak lagi diperlukan karena redundan.
+  // late Future<ResultModel<List<MobileArticleModel>>> _futureDataWithoutSearchString;
+
   late List<ArticleCategoryModel> _articleCategories = widget.articleCategories;
-  // late List<MobileArticleModel> _articlesWithSearch = [];
-  // int _currentCarouselIndex = 0;
-  int _filterIndex = 0;
-  String _searchText = '';
+  int _filterIndex = 0; // Indeks kategori yang sedang aktif
+  String _searchText = ''; // Teks pencarian
   final TextEditingController editingController = TextEditingController();
-  List<String> images = [];
+
+  // latestArticles akan diisi dari hasil FutureBuilder
   List<MobileArticleModel> latestArticles = [];
 
   @override
   void initState() {
     super.initState();
-
-    // _currentCarouselIndex = 0;
-    _filterIndex = 0;
-    _searchText = '';
-    // _articlesWithSearch = [];
-    _refreshData();
+    print('ArticleScreen: initState dipanggil.');
+    // Inisialisasi _futureData dengan kategori pertama saat initState
+    _futureData =
+        ArticleRepository().getMobileAll(_articleCategories[_filterIndex]);
   }
 
-  _refreshData() {
-    return _futureData = ArticleRepository()
-        .getMobileAll(_articleCategories[_filterIndex])
-        .then((value) {
-      if (value.error != null) {
-        // showDialog(
-        //     context: context,
-        //     builder: (_) => AlertDialog(
-        //           content: Text(value.error.toString(),
-        //               style: TextStyle(color: Colors.white)),
-        //           backgroundColor: Colors.red,
-        //           elevation: 24.0,
-        //         ));
-        // } else {
-        //   _articlesWithSearch = [];
-        //   value.data!.asMap().forEach((key, value) {
-        //     if(value.title.toLowerCase().contains(_searchText!)){
-        //       _articlesWithSearch.add(value);
-        //     }
-        //    });
-      }
-      _futureDataWithoutSearchString =
-          ArticleRepository().getMobileAll(_articleCategories[_filterIndex]);
-      setState(() {});
-      return value;
+  // Metode untuk me-refresh data artikel berdasarkan filter dan teks pencarian saat ini
+  // Metode ini akan mengembalikan Future<void> agar RefreshIndicator dapat menunggu
+  Future<void> _refreshData() async {
+    print(
+        'ArticleScreen: _refreshData dipanggil. Filter Index: $_filterIndex, Search Text: $_searchText');
+    setState(() {
+      // Re-assign _futureData untuk memicu FutureBuilder agar mengambil data baru
+      _futureData = ArticleRepository().getMobileAll(
+        _articleCategories[_filterIndex],
+        // Jika API Anda mendukung pencarian, Anda bisa meneruskan _searchText di sini
+        // Contoh: searchString: _searchText,
+      );
     });
+    // Tunggu hingga future selesai untuk memastikan RefreshIndicator berhenti
+    await _futureData;
+    print('ArticleScreen: _refreshData selesai.');
   }
 
   @override
@@ -93,14 +83,14 @@ class _ArticleScreenState extends State<ArticleScreen> {
           onPressed: () {
             Navigator.of(context).pop(true);
           },
-          icon: Icon(Icons.arrow_back),
-          color: Color(0xFF017964),
+          icon: const Icon(Icons.arrow_back),
+          color: const Color(0xFF017964),
         ),
         title: Text(
           "Artikel",
           style: theme.textTheme.headline6?.copyWith(
             fontWeight: FontWeight.w600,
-            color: Color(0xFF017964),
+            color: const Color(0xFF017964),
           ),
         ),
       ),
@@ -119,198 +109,148 @@ class _ArticleScreenState extends State<ArticleScreen> {
           ),
         ),
         child: RefreshIndicator(
-          onRefresh: () {
-            return _refreshData();
-          },
-          child: SingleChildScrollView(
-            physics: AlwaysScrollableScrollPhysics(),
-            child: Stack(
-              children: [
-                Container(
-                  height: MediaQuery.of(context).size.height -
-                      AppBar().preferredSize.height * 1.2,
-                ),
-                Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Container(
-                        height: 36.0,
-                        child: TextField(
-                          onSubmitted: (value) {
-                            _searchText = value;
-                            _refreshData();
-                          },
-                          controller: editingController,
-                          decoration: InputDecoration(
-                              filled: true,
-                              fillColor: Color.fromRGBO(228, 228, 228, 1.0),
-                              suffixIcon: Icon(Icons.search),
-                              contentPadding: EdgeInsets.fromLTRB(10, 0, 0, 0),
-                              border: OutlineInputBorder(
-                                  borderSide: BorderSide.none,
-                                  borderRadius:
-                                      BorderRadius.all(Radius.circular(18.0)))),
-                        ),
+          onRefresh: _refreshData, // Panggil _refreshData saat pull-to-refresh
+          child: Column(
+            // Gunakan Column untuk menyusun widget secara vertikal
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: SizedBox(
+                  // Gunakan SizedBox untuk mengontrol tinggi TextField
+                  height: 36.0,
+                  child: TextField(
+                    onSubmitted: (value) {
+                      _searchText = value;
+                      _refreshData(); // Panggil _refreshData saat pencarian disubmit
+                    },
+                    controller: editingController,
+                    decoration: const InputDecoration(
+                      filled: true,
+                      fillColor: Color.fromRGBO(228, 228, 228, 1.0),
+                      suffixIcon: Icon(Icons.search),
+                      contentPadding: EdgeInsets.fromLTRB(10, 0, 0, 0),
+                      border: OutlineInputBorder(
+                        borderSide: BorderSide.none,
+                        borderRadius: BorderRadius.all(Radius.circular(18.0)),
                       ),
                     ),
-                    FutureBuilder(
-                        future: _futureData,
-                        builder: (BuildContext context,
-                            AsyncSnapshot<ResultModel<List<MobileArticleModel>>>
-                                snapshot) {
-                          if (snapshot.hasData) {
-                            if (snapshot.data?.data != null) {
-                              List<MobileArticleModel> data =
-                                  snapshot.data!.data!;
-                              if (data.isEmpty) {
-                                return NoArticle();
-                              } else {
-                                latestArticles = [];
-                                data.asMap().forEach((index, value) {
-                                  if (index < 3) {
-                                    latestArticles.add(value);
-                                  }
+                  ),
+                ),
+              ),
+              // Bagian Chip Kategori - ini selalu terlihat dan tidak akan loading ulang
+              SizedBox(
+                height: 28.0,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  children: [
+                    const SizedBox(width: 12.0),
+                    ..._articleCategories
+                        .asMap()
+                        .map((index, articleCategory) {
+                          return MapEntry(
+                            index,
+                            ChipTab(
+                              text: articleCategory.name,
+                              isActive: _filterIndex == index,
+                              onTap: () {
+                                setState(() {
+                                  _filterIndex = index; // Update indeks filter
                                 });
-                                return Column(
-                                  children: [
-                                    LatestArticles(
-                                        latestArticles: latestArticles),
-                                    SizedBox(
-                                      height: 12.0,
-                                    ),
-                                    Container(
-                                      height: 28.0,
-                                      child: ListView(
-                                        scrollDirection: Axis.horizontal,
-                                        children: [
-                                          SizedBox(width: 12.0),
-                                          ..._articleCategories
-                                              .asMap()
-                                              .map((index, articleCategory) {
-                                                return MapEntry(
-                                                  index,
-                                                  ChipTab(
-                                                    text: articleCategory.name,
-                                                    isActive:
-                                                        _filterIndex == index,
-                                                    onTap: () {
-                                                      setState(() {
-                                                        _filterIndex = index;
-                                                      });
-                                                      _refreshData();
-                                                    },
-                                                    custom: true,
-                                                  ),
-                                                );
-                                              })
-                                              .values
-                                              .toList(),
-                                          SizedBox(width: 24.0),
-                                        ],
-                                      ),
-                                    ),
-                                    ...data
-                                        .where((element) => element.title
-                                            .toLowerCase()
-                                            .contains(_searchText))
-                                        .map((article) {
-                                      return ArticleItemScreen(
-                                        article: article,
-                                        status: _filterIndex,
-                                      );
-                                    })
-                                  ],
-                                );
-                              }
-                            } else {
-                              //check without search
-                              return FutureBuilder(
-                                  future: _futureDataWithoutSearchString,
-                                  builder: ((context,
-                                      AsyncSnapshot<
-                                              ResultModel<
-                                                  List<MobileArticleModel>>>
-                                          snapshot) {
-                                    if (snapshot.hasData) {
-                                      if (snapshot.data?.data != null) {
-                                        List<MobileArticleModel> data =
-                                            snapshot.data!.data!;
-                                        if (data.isEmpty) {
-                                          return NoArticle();
-                                        } else {
-                                          latestArticles = [];
-                                          data.asMap().forEach((index, value) {
-                                            if (index < 3) {
-                                              latestArticles.add(value);
-                                            }
-                                          });
-                                          return Column(
-                                            children: [
-                                              LatestArticles(
-                                                  latestArticles:
-                                                      latestArticles),
-                                              filter(context),
-                                              Container(
-                                                width: screenSize.width - 16.0,
-                                                margin: EdgeInsets.symmetric(
-                                                    vertical: 8.0),
-                                                child: Card(
-                                                  margin: EdgeInsets.symmetric(
-                                                      horizontal: 8.0),
-                                                  child: Padding(
-                                                    padding:
-                                                        const EdgeInsets.all(
-                                                            12.0),
-                                                    child: Row(
-                                                      mainAxisAlignment:
-                                                          MainAxisAlignment
-                                                              .center,
-                                                      children: [
-                                                        Text(
-                                                            'Hasil pencarian : 0 artikel'),
-                                                      ],
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          );
-                                        }
-                                      } else {
-                                        return NoArticle();
-                                      }
-                                    } else {
-                                      return Container(
-                                        height: (screenSize.height) * 0.5 +
-                                            36 +
-                                            16.0,
-                                        child: Center(
-                                          child: CircularProgressIndicator(
-                                            color: theme.primaryColor,
-                                          ),
-                                        ),
-                                      );
-                                    }
-                                  }));
-                            }
-                          } else {
-                            return Column(
-                              children: [
-                                SizedBox(height: screenSize.height * 0.4),
-                                Center(
-                                  child: CircularProgressIndicator(
-                                    color: theme.primaryColor,
-                                  ),
-                                ),
-                              ],
-                            );
-                          }
-                        }),
+                                _refreshData(); // Panggil _refreshData untuk kategori baru
+                              },
+                              custom: true,
+                            ),
+                          );
+                        })
+                        .values
+                        .toList(),
+                    const SizedBox(width: 24.0),
                   ],
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(
+                  height: 12.0), // Spasi antara chip dan daftar artikel
+
+              // FutureBuilder untuk menampilkan daftar artikel
+              // Hanya bagian ini yang akan menunjukkan loading
+              Expanded(
+                // Gunakan Expanded agar daftar artikel mengambil sisa ruang yang tersedia
+                child: FutureBuilder<ResultModel<List<MobileArticleModel>>>(
+                  future: _futureData, // Future yang akan dipantau
+                  builder: (BuildContext context,
+                      AsyncSnapshot<ResultModel<List<MobileArticleModel>>>
+                          snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      print(
+                          'ArticleScreen: FutureBuilder (articles) - ConnectionState.waiting');
+                      return Center(
+                        child: CircularProgressIndicator(
+                          color: theme.primaryColor,
+                        ),
+                      );
+                    } else if (snapshot.hasError) {
+                      print(
+                          'ArticleScreen: FutureBuilder (articles) - snapshot.hasError: ${snapshot.error}');
+                      return Center(
+                        child: Text(
+                          'Error memuat artikel: ${snapshot.error}',
+                          style: TextStyle(
+                              color: Colors.red,
+                              fontSize: screenSize.width * 0.04),
+                          textAlign: TextAlign.center,
+                        ),
+                      );
+                    } else if (snapshot.hasData &&
+                        snapshot.data?.data != null) {
+                      List<MobileArticleModel> data = snapshot.data!.data!;
+
+                      // Terapkan filter pencarian di sini (client-side)
+                      if (_searchText.isNotEmpty) {
+                        data = data
+                            .where((element) => element.title
+                                .toLowerCase()
+                                .contains(_searchText.toLowerCase()))
+                            .toList();
+                      }
+
+                      if (data.isEmpty) {
+                        print(
+                            'ArticleScreen: FutureBuilder (articles) - Data artikel kosong setelah filter.');
+                        return NoArticle();
+                      } else {
+                        print(
+                            'ArticleScreen: FutureBuilder (articles) - Data artikel berhasil dimuat. Jumlah: ${data.length}');
+                        // Ambil 3 artikel terbaru untuk LatestArticles
+                        latestArticles = data.take(3).toList();
+
+                        return SingleChildScrollView(
+                          // Memungkinkan konten artikel untuk discroll
+                          physics:
+                              const AlwaysScrollableScrollPhysics(), // Penting untuk RefreshIndicator
+                          child: Column(
+                            children: [
+                              LatestArticles(latestArticles: latestArticles),
+                              // Tampilkan semua artikel yang sudah difilter
+                              ...data.map((article) {
+                                return ArticleItemScreen(
+                                  article: article,
+                                  status:
+                                      _filterIndex, // Status ini mungkin perlu disesuaikan jika ada logika khusus
+                                );
+                              }).toList(),
+                            ],
+                          ),
+                        );
+                      }
+                    } else {
+                      print(
+                          'ArticleScreen: FutureBuilder (articles) - Tidak ada data artikel atau null.');
+                      return NoArticle(); // Tampilkan widget jika tidak ada data
+                    }
+                  },
+                ),
+              ),
+            ],
           ),
         ),
       ),

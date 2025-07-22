@@ -38,53 +38,42 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
   @override
   void initState() {
     super.initState();
-    print('ArticleDetailScreen: initState dipanggil.');
+    // print('ArticleDetailScreen: initState dipanggil.'); // Hapus print ini
 
     // Inisialisasi _futureData segera dengan panggilan pertama ke _refreshData()
     // Ini memastikan _futureData memiliki nilai Future sebelum build dipanggil.
     _futureData = _refreshData();
 
     _switchController.addListener(() {
-      print(
-          'ArticleDetailScreen: _switchController listener dipicu. Value: ${_switchController.value}');
+      // print('ArticleDetailScreen: _switchController listener dipicu. Value: ${_switchController.value}'); // Hapus print ini
       setState(() {
         if (_switchController.value) {
           _darkMode = false;
-          print('ArticleDetailScreen: Mode terang diaktifkan.');
+          // print('ArticleDetailScreen: Mode terang diaktifkan.'); // Hapus print ini
           //update db
           ThemeModel theme = ThemeModel(parameter: "darkMode", value: "false");
           ThemeRepository().update(theme).then((value) {
-            print("ArticleDetailScreen: updateTheme (light mode): " +
-                value.toString()); // Menggunakan print
+            // print("ArticleDetailScreen: updateTheme (light mode): " + value.toString()); // Hapus print ini
           });
         } else {
           _darkMode = true;
-          print('ArticleDetailScreen: Mode gelap diaktifkan.');
+          // print('ArticleDetailScreen: Mode gelap diaktifkan.'); // Hapus print ini
           //update db
           ThemeModel theme = ThemeModel(parameter: "darkMode", value: "true");
           ThemeRepository().update(theme).then((value) {
-            print("ArticleDetailScreen: updateTheme (dark mode): " +
-                value.toString()); // Menggunakan print
+            // print("ArticleDetailScreen: updateTheme (dark mode): " + value.toString()); // Hapus print ini
           });
         }
       });
     });
-
-    // _initializeData(); // Tidak perlu memanggil ini lagi karena _refreshData sudah dipanggil di atas
   }
-
-  // Fungsi ini sekarang tidak lagi diperlukan karena _refreshData dipanggil langsung di initState
-  // Future<void> _initializeData() async {
-  //   print('ArticleDetailScreen: _initializeData dipanggil.');
-  //   await _refreshData();
-  // }
 
   // Mengubah tipe return menjadi Future<ResultModel<MobileArticleDetailModel>>
   Future<ResultModel<MobileArticleDetailModel>> _refreshData() async {
-    print('ArticleDetailScreen: _refreshData dipanggil.');
+    // print('ArticleDetailScreen: _refreshData dipanggil.'); // Hapus print ini
 
     // Get theme setting first
-    print('ArticleDetailScreen: Mengambil pengaturan tema...');
+    // print('ArticleDetailScreen: Mengambil pengaturan tema...'); // Hapus print ini
     try {
       final themeValue = await ThemeRepository().get();
       if (mounted) {
@@ -93,25 +82,22 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
           if (theme.value == 'false') {
             _darkMode = false;
             _switchController.value = true;
-            print('ArticleDetailScreen: Tema diatur ke terang.');
+            // print('ArticleDetailScreen: Tema diatur ke terang.'); // Hapus print ini
           } else {
             _darkMode = true;
             _switchController.value = false;
-            print('ArticleDetailScreen: Tema diatur ke gelap.');
+            // print('ArticleDetailScreen: Tema diatur ke gelap.'); // Hapus print ini
           }
         } else {
-          print(
-              'ArticleDetailScreen: Gagal mengambil tema: ${themeValue.error}. Menggunakan default.');
+          // print('ArticleDetailScreen: Gagal mengambil tema: ${themeValue.error}. Menggunakan default.'); // Hapus print ini
         }
       }
     } catch (e) {
-      print(
-          'ArticleDetailScreen: Error mengambil tema: $e. Menggunakan default.');
+      // print('ArticleDetailScreen: Error mengambil tema: $e. Menggunakan default.'); // Hapus print ini
     }
 
     // Then get article data
-    print(
-        'ArticleDetailScreen: Memulai panggilan ArticleRepository().getMobileArticle...');
+    // print('ArticleDetailScreen: Memulai panggilan ArticleRepository().getMobileArticle...'); // Hapus print ini
     try {
       final articleResult =
           await ArticleRepository().getMobileArticle(widget.articleId);
@@ -120,26 +106,27 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
           // Hanya update articleTitle di sini, _futureData sudah diinisialisasi
           if (articleResult.data != null) {
             articleTitle = articleResult.data!.title;
-            print(
-                'ArticleDetailScreen: Data artikel berhasil dimuat. Judul: $articleTitle');
+            // print('ArticleDetailScreen: Data artikel berhasil dimuat. Judul: $articleTitle'); // Hapus print ini
           } else {
-            print('ArticleDetailScreen: Data artikel null.');
+            // print('ArticleDetailScreen: Data artikel null.'); // Hapus print ini
           }
         });
       }
       return articleResult; // Mengembalikan hasil dari API
     } catch (e) {
-      print('ArticleDetailScreen: Error saat mengambil artikel: $e');
+      // print('ArticleDetailScreen: Error saat mengambil artikel: $e'); // Hapus print ini
       if (mounted) {
-        showDialog(
-            context: context,
-            builder: (_) => AlertDialog(
-                  content: Text(
-                      'Terjadi kesalahan saat memuat artikel: ${e.toString()}',
-                      style: TextStyle(color: Colors.white)),
-                  backgroundColor: Colors.red,
-                  elevation: 24.0,
-                ));
+        // Gunakan SnackBar atau custom dialog yang tidak memblokir UI
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Terjadi kesalahan saat memuat artikel: ${e.toString()}',
+              style: const TextStyle(color: Colors.white),
+            ),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
       }
       return ResultModel(
           isSuccess: false,
@@ -151,7 +138,6 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
   Widget build(BuildContext context) {
     ThemeData theme = Theme.of(context);
     Size screenSize = MediaQuery.of(context).size;
-    // double cardWidth = screenSize.width * 0.37;
 
     return Scaffold(
         resizeToAvoidBottomInset: false,
@@ -161,29 +147,29 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
           backgroundColor: Colors.transparent,
           leading: IconButton(
             onPressed: () {
-              print('ArticleDetailScreen: Tombol kembali ditekan.');
+              // print('ArticleDetailScreen: Tombol kembali ditekan.'); // Hapus print ini
               Navigator.of(context).pop(true);
             },
-            icon: Icon(Icons.arrow_back),
+            icon: const Icon(Icons.arrow_back),
             color: _darkMode ? Colors.black : Colors.white,
           ),
           actions: [
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 14),
               child: AdvancedSwitch(
-                activeChild: Icon(
+                activeChild: const Icon(
                   Icons.dark_mode_outlined,
                   color: Colors.black,
                 ),
-                inactiveChild: Icon(Icons.light_mode),
-                activeColor: Color.fromRGBO(255, 255, 255, 0.65),
-                inactiveColor: Color.fromRGBO(177, 177, 177, 0.65),
+                inactiveChild: const Icon(Icons.light_mode),
+                activeColor: const Color.fromRGBO(255, 255, 255, 0.65),
+                inactiveColor: const Color.fromRGBO(177, 177, 177, 0.65),
                 height: 28,
                 width: 60,
                 controller: _switchController,
               ),
             ),
-            SizedBox(
+            const SizedBox(
               width: 15.0,
             )
           ],
@@ -193,7 +179,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
             RefreshIndicator(
               onRefresh: () async {
                 // Pastikan onRefresh adalah async
-                print('ArticleDetailScreen: RefreshIndicator dipicu.');
+                // print('ArticleDetailScreen: RefreshIndicator dipicu.'); // Hapus print ini
                 // Update _futureData dengan Future baru dari _refreshData
                 setState(() {
                   _futureData = _refreshData();
@@ -202,14 +188,14 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                 await _futureData;
               },
               child: SingleChildScrollView(
-                physics: AlwaysScrollableScrollPhysics(),
+                physics: const AlwaysScrollableScrollPhysics(),
                 child: Stack(children: [
                   Container(
                     height: MediaQuery.of(context).size.height,
                     decoration: BoxDecoration(
                         color: _darkMode
                             ? Colors.white
-                            : Color.fromRGBO(38, 38, 38, 1.0)),
+                            : const Color.fromRGBO(38, 38, 38, 1.0)),
                   ),
                   Column(children: [
                     FutureBuilder<ResultModel<MobileArticleDetailModel>>(
@@ -218,8 +204,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                         builder: (BuildContext context,
                             AsyncSnapshot<ResultModel<MobileArticleDetailModel>>
                                 snapshot) {
-                          print(
-                              'ArticleDetailScreen: FutureBuilder ConnectionState: ${snapshot.connectionState}');
+                          // print('ArticleDetailScreen: FutureBuilder ConnectionState: ${snapshot.connectionState}'); // Hapus print ini
                           if (snapshot.connectionState ==
                               ConnectionState.waiting) {
                             return Column(
@@ -234,15 +219,14 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                             );
                           } else if (snapshot.hasError ||
                               (snapshot.hasData && !snapshot.data!.isSuccess)) {
-                            print(
-                                'ArticleDetailScreen: FutureBuilder Error: ${snapshot.error ?? snapshot.data?.error}');
+                            // print('ArticleDetailScreen: FutureBuilder Error: ${snapshot.error ?? snapshot.data?.error}'); // Hapus print ini
                             String errorTitle = 'Gagal memuat artikel';
                             String? errorSubtitle =
                                 snapshot.error?.toString() ??
                                     snapshot.data?.error;
                             return Column(
                               children: [
-                                SizedBox(height: 16),
+                                const SizedBox(height: 16),
                                 ErrorCard(
                                   title: errorTitle,
                                   subtitle: errorSubtitle,
@@ -252,17 +236,14 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                             );
                           } else if (snapshot.hasData &&
                               snapshot.data!.data != null) {
-                            print(
-                                'ArticleDetailScreen: FutureBuilder Data tersedia.');
+                            // print('ArticleDetailScreen: FutureBuilder Data tersedia.'); // Hapus print ini
                             MobileArticleDetailModel data =
                                 snapshot.data!.data!;
                             // Panggil splitTextByImageTag
-                            print(
-                                'ArticleDetailScreen: Memulai splitTextByImageTag...');
+                            // print('ArticleDetailScreen: Memulai splitTextByImageTag...'); // Hapus print ini
                             List<String> paragraf =
                                 splitTextByImageTag(data.content, []);
-                            print(
-                                'ArticleDetailScreen: splitTextByImageTag selesai. Panjang list paragraf: ${paragraf.length}');
+                            // print('ArticleDetailScreen: splitTextByImageTag selesai. Panjang list paragraf: ${paragraf.length}'); // Hapus print ini
 
                             return Column(
                               children: [
@@ -292,10 +273,14 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                                             decoration: BoxDecoration(
                                               gradient: LinearGradient(
                                                 colors: [
-                                                  Color.fromRGBO(0, 0, 0, 0.0),
-                                                  Color.fromRGBO(0, 0, 0, 0.1),
-                                                  Color.fromRGBO(0, 0, 0, 0.3),
-                                                  Color.fromRGBO(0, 0, 0, 0.4),
+                                                  const Color.fromRGBO(
+                                                      0, 0, 0, 0.0),
+                                                  const Color.fromRGBO(
+                                                      0, 0, 0, 0.1),
+                                                  const Color.fromRGBO(
+                                                      0, 0, 0, 0.3),
+                                                  const Color.fromRGBO(
+                                                      0, 0, 0, 0.4),
                                                 ],
                                                 begin: Alignment.topCenter,
                                                 end: Alignment.bottomCenter,
@@ -382,38 +367,38 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                                     )
                                   ],
                                 ),
-                                SizedBox(
+                                const SizedBox(
                                   height: 12.0,
                                 ),
                                 Container(
                                   color: _darkMode
                                       ? Colors.white
-                                      : Color.fromRGBO(38, 38, 38, 1.0),
+                                      : const Color.fromRGBO(38, 38, 38, 1.0),
                                   width: screenSize.width,
                                   child: Column(
                                     children: [
-                                      SizedBox(
+                                      const SizedBox(
                                         height: 4.0,
                                       ),
-                                      Container(
+                                      SizedBox(
                                         width: screenSize.width * 0.9,
                                         child: Row(
                                           children: [
                                             Container(
-                                              decoration: BoxDecoration(
+                                              decoration: const BoxDecoration(
                                                   color: Color.fromRGBO(
                                                       149, 149, 149, 1.0),
                                                   borderRadius:
                                                       BorderRadius.all(
                                                           Radius.circular(30))),
                                               alignment: Alignment.center,
-                                              padding: EdgeInsets.only(
+                                              padding: const EdgeInsets.only(
                                                   left: 3,
                                                   right: 15,
                                                   top: 3,
                                                   bottom: 3),
-                                              margin:
-                                                  EdgeInsets.only(bottom: 5),
+                                              margin: const EdgeInsets.only(
+                                                  bottom: 5),
                                               child: Row(
                                                 children: [
                                                   ClipRRect(
@@ -423,7 +408,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                                                     child: Container(
                                                       width: 26,
                                                       color: Colors.white,
-                                                      child: Icon(
+                                                      child: const Icon(
                                                         Icons.person,
                                                         size: 25,
                                                         color: Color.fromRGBO(
@@ -431,7 +416,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                                                       ),
                                                     ),
                                                   ),
-                                                  SizedBox(
+                                                  const SizedBox(
                                                     width: 10.0,
                                                   ),
                                                   Text(
@@ -439,13 +424,13 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                                                     style: theme
                                                         .textTheme.subtitle2
                                                         ?.copyWith(
-                                                      color: Colors.white,
-                                                    ),
+                                                            color:
+                                                                Colors.white),
                                                   ),
                                                 ],
                                               ),
                                             ),
-                                            SizedBox(
+                                            const SizedBox(
                                               width: 12.0,
                                             ),
                                             Text(
@@ -453,36 +438,36 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                                               style: theme.textTheme.subtitle2
                                                   ?.copyWith(
                                                 color: _darkMode
-                                                    ? Color.fromRGBO(
+                                                    ? const Color.fromRGBO(
                                                         131, 131, 131, 1.0)
                                                     : Colors.white,
                                               ),
                                             ),
-                                            Spacer()
+                                            const Spacer()
                                           ],
                                         ),
                                       ),
-                                      SizedBox(
+                                      const SizedBox(
                                         height: 8.0,
                                       ),
                                       ...paragraf.map((kalimat) {
                                         if (kalimat.indexOf('[img') != -1) {
                                           String imgUrl = kalimat.substring(
                                               5, kalimat.length - 1);
-                                          print(
-                                              'ArticleDetailScreen: imgUrl dari tag: $imgUrl'); // Menggunakan print
+                                          // print('ArticleDetailScreen: imgUrl dari tag: $imgUrl'); // Hapus print ini
                                           return Container(
                                             width: screenSize.width * 0.9,
                                             child: CachedNetworkImage(
                                               // Gunakan CachedNetworkImage untuk gambar konten
                                               imageUrl: imgUrl.trim(),
                                               fit: BoxFit.fitWidth,
-                                              placeholder: (context, url) => Center(
-                                                  child:
-                                                      CircularProgressIndicator()),
+                                              placeholder: (context, url) =>
+                                                  const Center(
+                                                      child:
+                                                          CircularProgressIndicator()),
                                               errorWidget:
                                                   (context, url, error) =>
-                                                      Icon(Icons.error),
+                                                      const Icon(Icons.error),
                                             ),
                                           );
                                         } else {
@@ -495,14 +480,14 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                                                   fontFamily: 'Athelas',
                                                   fontWeight: FontWeight.normal,
                                                   color: _darkMode
-                                                      ? Color.fromRGBO(
+                                                      ? const Color.fromRGBO(
                                                           61, 61, 61, 1.0)
                                                       : Colors.white),
                                             ),
                                           );
                                         }
-                                      }),
-                                      SizedBox(
+                                      }).toList(),
+                                      const SizedBox(
                                         height: 20,
                                       ),
                                     ],
@@ -512,15 +497,14 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                             );
                           } else {
                             // Ini akan menangani kasus di mana snapshot.data null atau data di dalamnya null
-                            print(
-                                'ArticleDetailScreen: FutureBuilder Data null atau tidak ada.'); // Menggunakan print
+                            // print('ArticleDetailScreen: FutureBuilder Data null atau tidak ada.'); // Hapus print ini
                             String errorTitle =
                                 'Tidak dapat menemukan artikel yang dicari';
                             String? errorSubtitle = snapshot.data?.error ??
                                 'Data artikel tidak tersedia.';
                             return Column(
                               children: [
-                                SizedBox(height: 16),
+                                const SizedBox(height: 16),
                                 ErrorCard(
                                   title: errorTitle,
                                   subtitle: errorSubtitle,
@@ -561,20 +545,11 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
     String id = widget.articleId.toString();
     String message = '$articleTitle $url$id';
     Share.share(message);
-
-    // / optional subject that will be used when sharing to email
-    // Share.share(message, subject: 'Become An Elite Flutter Developer');
-
-    // / share a file
-    // Share.shareFiles(['${directory.path}/image.jpg'], text: 'Great picture');
-    // / share multiple files
-    // Share.shareFiles(['${directory.path}/image1.jpg', '${directory.path}/image2.jpg']);
   }
 
   List<String> splitTextByImageTag(
       String kalimat, List<String> splittedKalimat) {
-    print(
-        'ArticleDetailScreen: splitTextByImageTag dipanggil dengan kalimat awal: ${kalimat.length > 50 ? kalimat.substring(0, 50) + '...' : kalimat}'); // Menggunakan print
+    // print('ArticleDetailScreen: splitTextByImageTag dipanggil dengan kalimat awal: ${kalimat.length > 50 ? kalimat.substring(0, 50) + '...' : kalimat}'); // Hapus print ini
     late String firstPart;
     late String nextPart;
     late String lastPart;
@@ -582,7 +557,6 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
     late int startIndex;
     late int endIndex;
 
-    // if (kalimat != null && kalimat.length > 0) { // Pengecekan null ini tidak diperlukan karena parameter String tidak nullable
     startIndex = kalimat.indexOf('[img=');
     if (startIndex != -1) {
       // there are image in this paragraph
@@ -596,12 +570,10 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
         lastPart = nextPart.substring(endIndex + 1);
         splittedKalimat.add(firstPart);
         splittedKalimat.add(imgUrl);
-        print(
-            'ArticleDetailScreen: Ditemukan tag gambar. FirstPart: ${firstPart.length}, ImgUrl: ${imgUrl.length}, LastPart: ${lastPart.length}'); // Menggunakan print
+        // print('ArticleDetailScreen: Ditemukan tag gambar. FirstPart: ${firstPart.length}, ImgUrl: ${imgUrl.length}, LastPart: ${lastPart.length}'); // Hapus print ini
       } else {
         // Handle case where [img= tag is opened but not closed
-        print(
-            'ArticleDetailScreen: Peringatan: Tag [img= tidak ditutup dengan ]. Menambahkan sisa kalimat sebagai teks.'); // Menggunakan print
+        // print('ArticleDetailScreen: Peringatan: Tag [img= tidak ditutup dengan ]. Menambahkan sisa kalimat sebagai teks.'); // Hapus print ini
         splittedKalimat.add(kalimat);
         return splittedKalimat;
       }
@@ -613,10 +585,8 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
         // Hanya tambahkan jika tidak kosong
         splittedKalimat.add(kalimat);
       }
-      print(
-          'ArticleDetailScreen: Tidak ada tag gambar lagi. Mengembalikan list. Total paragraf: ${splittedKalimat.length}'); // Menggunakan print
+      // print('ArticleDetailScreen: Tidak ada tag gambar lagi. Mengembalikan list. Total paragraf: ${splittedKalimat.length}'); // Hapus print ini
       return splittedKalimat;
     }
-    // } // Tutup komentar ini
   }
 }
