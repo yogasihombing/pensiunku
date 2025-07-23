@@ -71,10 +71,11 @@ class _EWalletHistoriState extends State<EWalletHistori> {
     screenHeight = MediaQuery.of(context).size.height;
 
     horizontalPadding = screenWidth * 0.04;
-    verticalPadding = screenHeight * 0.015;
+    verticalPadding = screenHeight * 0.01; // Sesuai dengan e_wallet_screen.dart
 
-    headerHeight = screenHeight * 0.28; // Header background
-    avatarRadius = screenWidth * 0.10;
+    // Sesuai dengan e_wallet_screen.dart
+    headerHeight = screenHeight * 0.30; // 30% dari tinggi layar
+    avatarRadius = screenWidth * 0.08; // 8% dari lebar layar
     iconSize = screenWidth * 0.18;
     cardPadding = screenWidth * 0.04;
   }
@@ -337,11 +338,11 @@ class _EWalletHistoriState extends State<EWalletHistori> {
 
     // Hitung posisi top untuk _buildWalletBalance
     // Posisi top = (Tinggi Header Kuning - Tinggi Status Bar) - (Setengah Tinggi Wallet Balance Card) + Offset
-    // Offset ditambahkan untuk memastikan posisi yang lebih akurat di tengah perbatasan
+    // Menggunakan offset yang sama dengan e_wallet_screen.dart
     final double walletBalanceCardTopPosition =
         (headerHeight - statusBarHeight) -
             (_walletBalanceCardHeight / 2) +
-            (screenHeight * 0.02); // Disesuaikan offset
+            (screenHeight * 0.05);
 
     return Scaffold(
       body: Stack(
@@ -356,14 +357,14 @@ class _EWalletHistoriState extends State<EWalletHistori> {
           // Ditempatkan di sini agar tidak ikut scroll dan berada di atas header kuning
           Positioned(
             top: statusBarHeight +
-                screenHeight * 0.01, // Dimulai setelah status bar
+                screenHeight * 0.001, // Dimulai setelah status bar
             left: horizontalPadding,
             right: horizontalPadding,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildAppBar(context, screenWidth),
-                SizedBox(height: screenHeight * 0.02),
+                SizedBox(height: screenHeight * 0.01),
                 Center(child: _buildProfileGreeting(screenWidth)),
               ],
             ),
@@ -380,10 +381,10 @@ class _EWalletHistoriState extends State<EWalletHistori> {
           // 5. Konten utama yang bisa di-scroll (Histori Transaksi)
           // Dimulai setelah area header dan setengah wallet balance card
           Positioned.fill(
+            // Menggunakan offset yang sama dengan e_wallet_screen.dart
             top: headerHeight +
-                (_walletBalanceCardHeight / 2) +
-                (screenHeight *
-                    0.02), // Mulai di bawah header + setengah wallet card + sedikit ruang
+                (_walletBalanceCardHeight /
+                    2), // Sesuaikan dengan e_wallet_screen.dart
             child: RefreshIndicator(
               onRefresh: _refreshData, // Memanggil fungsi refresh data
               child: SingleChildScrollView(
@@ -396,12 +397,12 @@ class _EWalletHistoriState extends State<EWalletHistori> {
                       // Jarak antara wallet balance card dan histori transaksi
                       SizedBox(
                           height: screenHeight *
-                              0.02), // Memberikan sedikit padding di atas daftar histori
+                              0.04), // Memberikan sedikit padding di atas daftar histori
                       _buildTransactionHistoryList(
                           screenWidth), // Menggunakan list histori
                       SizedBox(
                           height:
-                              screenHeight * 0.03), // Padding di bagian bawah
+                              screenHeight * 0.01), // Padding di bagian bawah
                     ],
                   ),
                 ),
@@ -495,7 +496,8 @@ class _EWalletHistoriState extends State<EWalletHistori> {
 
   /// Profile Greeting: Avatar, greeting, dan username
   Widget _buildProfileGreeting(double screenWidth) {
-    final avatarRadius = screenWidth * 0.08; // Disesuaikan agar konsisten
+    // Menggunakan avatarRadius yang konsisten dengan e_wallet_screen.dart
+    final avatarRadius = screenWidth * 0.08;
     final greetingStyle = TextStyle(
       fontSize: screenWidth * 0.03,
       fontWeight: FontWeight.normal,
@@ -508,8 +510,8 @@ class _EWalletHistoriState extends State<EWalletHistori> {
     );
 
     return Row(
-      mainAxisAlignment: MainAxisAlignment
-          .center, // Ubah ke start agar konsisten dengan pencairan
+      // Mengubah ke start agar konsisten dengan e_wallet_screen.dart
+      mainAxisAlignment: MainAxisAlignment.start,
       children: [
         CircleAvatar(
           radius: avatarRadius,
@@ -659,11 +661,12 @@ class _EWalletHistoriState extends State<EWalletHistori> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: EdgeInsets.only(bottom: screenWidth * 0.03),
+            padding: EdgeInsets.only(
+                left: horizontalPadding + 2, bottom: screenWidth * 0.03),
             child: const Text(
               "Histori Transaksi",
               style: TextStyle(
-                fontSize: 18,
+                fontSize: 16,
                 fontWeight: FontWeight.bold,
                 color: Colors.black,
               ),

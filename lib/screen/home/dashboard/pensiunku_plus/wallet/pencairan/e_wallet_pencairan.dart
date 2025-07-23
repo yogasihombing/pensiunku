@@ -88,9 +88,9 @@ class _EWalletPencairanState extends State<EWalletPencairan> {
     verticalPadding = screenHeight * 0.01; // 1% dari tinggi layar
 
     // Responsive sizes
-    // Sesuaikan headerHeight agar lebih proporsional untuk menempatkan card di tengah
-    headerHeight = screenHeight * 0.28; // 28% dari tinggi layar
-    avatarRadius = screenWidth * 0.10; // 10% dari lebar layar
+    // Sesuai dengan e_wallet_screen.dart
+    headerHeight = screenHeight * 0.30; // 25% dari tinggi layar
+    avatarRadius = screenWidth * 0.08; // 8% dari lebar layar
   }
 
   /// Fungsi untuk mendapatkan tinggi _buildWalletBalance setelah dirender
@@ -429,11 +429,11 @@ class _EWalletPencairanState extends State<EWalletPencairan> {
 
     // Hitung posisi top untuk _buildWalletBalance
     // Posisi top = (Tinggi Header Kuning - Tinggi Status Bar) - (Setengah Tinggi Wallet Balance Card) + Offset
-    // Offset ditambahkan untuk memastikan posisi yang lebih akurat di tengah perbatasan
+    // Menggunakan offset yang sama dengan e_wallet_screen.dart
     final double walletBalanceCardTopPosition =
         (headerHeight - statusBarHeight) -
             (_walletBalanceCardHeight / 2) +
-            (screenHeight * 0.02); // Disesuaikan offset
+            (screenHeight * 0.05);
 
     return Scaffold(
       body: Stack(
@@ -448,7 +448,7 @@ class _EWalletPencairanState extends State<EWalletPencairan> {
           // Ditempatkan di sini agar tidak ikut scroll dan berada di atas header kuning
           Positioned(
             top: statusBarHeight +
-                screenHeight * 0.01, // Dimulai setelah status bar
+                screenHeight * 0.001, // Dimulai setelah status bar
             left: horizontalPadding,
             right: horizontalPadding,
             child: Column(
@@ -475,7 +475,7 @@ class _EWalletPencairanState extends State<EWalletPencairan> {
             top: headerHeight +
                 (_walletBalanceCardHeight / 2) +
                 (screenHeight *
-                    0.02), // Mulai di bawah header + setengah wallet card + sedikit ruang
+                    0.0), // Mulai di bawah header + setengah wallet card + sedikit ruang
             child: RefreshIndicator(
               onRefresh: _refreshData,
               child: SingleChildScrollView(
@@ -488,7 +488,7 @@ class _EWalletPencairanState extends State<EWalletPencairan> {
                       // Jarak antara wallet balance card dan form section
                       SizedBox(
                           height: screenHeight *
-                              0.02), // Memberikan sedikit padding di atas form
+                              0.04), // Memberikan sedikit padding di atas form
                       _buildFormSection(screenWidth),
                       SizedBox(
                           height:
@@ -586,21 +586,22 @@ class _EWalletPencairanState extends State<EWalletPencairan> {
 
   /// Profile Greeting: Avatar, greeting, dan username
   Widget _buildProfileGreeting(double screenWidth) {
-    final avatarRadius = screenWidth * 0.08; // Disesuaikan agar konsisten
+    // Menggunakan avatarRadius yang konsisten dengan e_wallet_screen.dart
+    final avatarRadius = screenWidth * 0.08;
     final TextStyle greetingStyle = TextStyle(
-      // Disesuaikan agar responsif
       fontSize: screenWidth * 0.03,
       fontWeight: FontWeight.normal,
       color: const Color(0xFF017964),
     );
     final TextStyle usernameStyle = TextStyle(
-      // Disesuaikan agar responsif
       fontSize: screenWidth * 0.035,
       fontWeight: FontWeight.bold,
       color: const Color(0xFF017964),
     );
 
     return Row(
+      // Mengubah ke start agar konsisten dengan e_wallet_screen.dart
+      mainAxisAlignment: MainAxisAlignment.start,
       children: [
         CircleAvatar(
           radius: avatarRadius,
@@ -732,25 +733,25 @@ class _EWalletPencairanState extends State<EWalletPencairan> {
 
   /// Bagian form pencairan: Judul + dua field + tombol Submit
   Widget _buildFormSection(double screenWidth) {
-    final fieldRadius = screenWidth * 0.025; // radius untuk OutlineInputBorder
+    final fieldRadius = screenWidth * 0.02; // radius untuk OutlineInputBorder
     final contentPadding = EdgeInsets.symmetric(
-      horizontal: screenWidth * 0.04,
-      vertical: screenWidth * 0.035,
+      horizontal: screenWidth * 0.02,
     );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      
       children: [
         // Judul "Rekening Pencairan"
         Padding(
           padding: EdgeInsets.only(
-            left: screenWidth * 0.06,
+          left: horizontalPadding + 2,
             bottom: screenWidth * 0.03,
           ),
           child: const Text(
             "Rekening Pencairan",
             style: TextStyle(
-              fontSize: 18,
+              fontSize: 16,
               fontWeight: FontWeight.bold,
               color: Colors.black,
             ),
@@ -903,7 +904,7 @@ class _EWalletPencairanState extends State<EWalletPencairan> {
                   ),
                 ),
 
-                SizedBox(height: screenWidth * 0.1), // Spasi antar tombol
+                SizedBox(height: screenWidth * 0.3), // Spasi antar tombol
 
                 // Teks "Rekeningmu belum ada?"
                 Align(
@@ -967,61 +968,3 @@ class _EWalletPencairanState extends State<EWalletPencairan> {
     );
   }
 }
-
-// // Tombol Demo: Ke Pencairan Diproses Screen
-//                 ElevatedButton(
-//                   onPressed: () {
-//                     Navigator.push(
-//                       context,
-//                       MaterialPageRoute(
-//                         builder: (context) => PencairanDiprosesScreen(
-//                           // Memberikan data dummy yang relevan untuk demo
-//                           bankDetail: UserBankDetail(
-//                             bankName: 'Bank Demo Proses',
-//                             accountNumber: '1122334455', // Nomor rekening dummy
-//                             accountHolderName: 'Pengguna Demo Proses',
-//                             id: 'dummy_id_proses',
-//                           ),
-//                           referenceNumber:
-//                               'DEMO-PROC-${DateTime.now().millisecondsSinceEpoch}', // Nomor referensi dummy
-//                           transactionDate:
-//                               DateTime.now(), // Tanggal transaksi saat ini
-//                         ),
-//                       ),
-//                     );
-//                   },
-//                   // Pastikan child berisi Text widget
-//                   child: Text('Demo: Ke Pencairan Diproses'),
-//                 ),
-//                 SizedBox(height: 8),
-
-//                 // Tombol Demo: Ke Pencairan Berhasil Screen
-//                 ElevatedButton(
-//                   onPressed: () {
-//                     Navigator.push(
-//                       context,
-//                       MaterialPageRoute(
-//                         builder: (context) => PencairanBerhasilScreen(
-//                           transactionDate:
-//                               DateTime.now(), // Tanggal transaksi saat ini
-//                           referenceNumber:
-//                               'DEMO-DONE-${DateTime.now().millisecondsSinceEpoch}', // Nomor referensi dummy
-//                           bankDetail: _selectedWithdrawalAccount ??
-//                               UserBankDetail(
-//                                 // Menggunakan _selectedWithdrawalAccount jika tersedia, atau dummy jika belum ada yang terpilih
-//                                 bankName: 'Bank Demo Sukses',
-//                                 accountNumber:
-//                                     '9876543210', // Nomor rekening dummy
-//                                 accountHolderName: 'Pengguna Demo Sukses',
-//                                 id: 'dummy_id_sukses',
-//                               ),
-//                           // Mengambil nominal dari controller, jika null default ke 0.0
-//                           amount:
-//                               double.tryParse(_jumlahController.text) ?? 0.0,
-//                         ),
-//                       ),
-//                     );
-//                   },
-//                   // Pastikan child berisi Text widget
-//                   child: Text('Demo: Ke Pencairan Berhasil'),
-//                 ),

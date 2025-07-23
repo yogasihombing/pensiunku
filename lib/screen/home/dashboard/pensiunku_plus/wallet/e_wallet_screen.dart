@@ -360,7 +360,7 @@ class _EWalletScreenState extends State<EWalletScreen> {
                     children: [
                       SizedBox(
                           height: screenHeight *
-                              0.12), // Jarak antara wallet card dan baris ikon pertama
+                              0.06), // Jarak antara wallet card dan baris ikon pertama
                       _buildMenuIcons(),
                       SizedBox(height: screenHeight * 0.03),
                       _buildMenuBoxesFirstRow(),

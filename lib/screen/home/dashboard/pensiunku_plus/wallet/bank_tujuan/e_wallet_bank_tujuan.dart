@@ -69,10 +69,11 @@ class _EWalletBankTujuanState extends State<EWalletBankTujuan> {
     screenHeight = MediaQuery.of(context).size.height;
 
     horizontalPadding = screenWidth * 0.04;
-    verticalPadding = screenHeight * 0.015;
+    verticalPadding = screenHeight * 0.01; // Sesuai dengan e_wallet_screen.dart
 
-    headerHeight = screenHeight * 0.28; // Header background
-    avatarRadius = screenWidth * 0.10;
+    // Sesuai dengan e_wallet_screen.dart
+    headerHeight = screenHeight * 0.30; // 30% dari tinggi layar
+    avatarRadius = screenWidth * 0.08; // 8% dari lebar layar
   }
 
   /// Fungsi untuk mendapatkan tinggi _buildWalletCard setelah dirender
@@ -367,10 +368,10 @@ class _EWalletBankTujuanState extends State<EWalletBankTujuan> {
 
     // Hitung posisi top untuk _buildWalletCard
     // Posisi top = (Tinggi Header Kuning - Tinggi Status Bar) - (Setengah Tinggi Wallet Card) + Offset
-    // Offset ditambahkan untuk memastikan posisi yang lebih akurat di tengah perbatasan
+    // Menggunakan offset yang sama dengan e_wallet_screen.dart
     final double walletCardTopPosition = (headerHeight - statusBarHeight) -
         (_walletCardHeight / 2) +
-        (screenHeight * 0.02); // Disesuaikan offset
+        (screenHeight * 0.05);
 
     return Scaffold(
       body: Stack(
@@ -385,14 +386,14 @@ class _EWalletBankTujuanState extends State<EWalletBankTujuan> {
           // Ditempatkan di sini agar tidak ikut scroll dan berada di atas header kuning
           Positioned(
             top: statusBarHeight +
-                screenHeight * 0.01, // Dimulai setelah status bar
+                screenHeight * 0.001, // Dimulai setelah status bar
             left: horizontalPadding,
             right: horizontalPadding,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildAppBar(context, screenHeight, screenWidth),
-                SizedBox(height: screenHeight * 0.02),
+                // SizedBox(height: screenHeight * 0.02),
                 Center(child: _buildProfileGreeting(screenWidth)),
               ],
             ),
@@ -409,10 +410,10 @@ class _EWalletBankTujuanState extends State<EWalletBankTujuan> {
           // 5. Konten utama yang bisa di-scroll (Daftar Bank dan Tombol Tambah Bank)
           // Dimulai setelah area header dan setengah wallet card
           Positioned.fill(
+            // Menggunakan offset yang sama dengan e_wallet_screen.dart
             top: headerHeight +
                 (_walletCardHeight / 2) +
-                (screenHeight *
-                    0.02), // Mulai di bawah header + setengah wallet card + sedikit ruang
+                (screenHeight * 0.0), // Sesuaikan dengan e_wallet_screen.dart
             child: RefreshIndicator(
               onRefresh: _refreshData, // Panggil _refreshData saat direfresh
               child: SingleChildScrollView(
@@ -426,7 +427,7 @@ class _EWalletBankTujuanState extends State<EWalletBankTujuan> {
                       // Jarak antara wallet card dan daftar bank
                       SizedBox(
                           height: screenHeight *
-                              0.02), // Memberikan sedikit padding di atas daftar bank
+                              0.04), // Memberikan sedikit padding di atas daftar bank
                       _buildBankDetailsList(screenWidth),
                       SizedBox(height: screenHeight * 0.02),
                       _buildAddBank(context, screenWidth),
@@ -482,6 +483,7 @@ class _EWalletBankTujuanState extends State<EWalletBankTujuan> {
     );
   }
 
+
   /// AppBar Custom: Tombol kembali dan judul "Bank Tujuan"
   Widget _buildAppBar(
       BuildContext context, double screenHeight, double screenWidth) {
@@ -521,7 +523,8 @@ class _EWalletBankTujuanState extends State<EWalletBankTujuan> {
 
   /// Widget Profil dan Ucapan Selamat Datang
   Widget _buildProfileGreeting(double screenWidth) {
-    final avatarRadius = screenWidth * 0.08; // Disesuaikan agar konsisten
+    // Menggunakan avatarRadius yang konsisten dengan e_wallet_screen.dart
+    final avatarRadius = screenWidth * 0.08;
     const TextStyle greetingStyle = TextStyle(
       fontSize: 12,
       fontWeight: FontWeight.normal,
@@ -691,7 +694,7 @@ class _EWalletBankTujuanState extends State<EWalletBankTujuan> {
             child: const Text(
               "Rekening Pencairan",
               style: TextStyle(
-                fontSize: 18,
+                fontSize: 16,
                 fontWeight: FontWeight.bold,
                 color: Colors.black,
               ),

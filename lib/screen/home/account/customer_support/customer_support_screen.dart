@@ -5,12 +5,9 @@ import 'package:pensiunku/util/form_error/customer_support_form_error.dart';
 import 'package:pensiunku/util/form_util.dart';
 import 'package:pensiunku/util/shared_preferences_util.dart';
 import 'package:pensiunku/util/url_util.dart';
-import 'package:pensiunku/util/widget_util.dart';
 import 'package:pensiunku/widget/contact_list_tile.dart';
 import 'package:pensiunku/widget/custom_text_field.dart';
 import 'package:pensiunku/widget/elevated_button_loading.dart';
-import 'package:pensiunku/widget/floating_bottom_navigation_bar.dart';
-import 'package:pensiunku/screen/home/test.dart';
 
 class CustomerSupportScreen extends StatefulWidget {
   static const String ROUTE_NAME = '/customer-support';
@@ -141,18 +138,6 @@ class _CustomerSupportScreenState extends State<CustomerSupportScreen> {
                     },
                   ),
                   SizedBox(height: 12.0),
-                  // ContactListTile(
-                  //   leading: Icon(
-                  //     Icons.phone_in_talk,
-                  //     color: theme.colorScheme.secondary,
-                  //   ),
-                  //   title: 'Telepon',
-                  //   subtitle: '087785833344',
-                  //   onTap: () {
-                  //     UrlUtil.launchURL('tel:087785833344');
-                  //   },
-                  // ),
-                  // SizedBox(height: 12.0),
                   ContactListTile(
                     leading: SvgPicture.asset(
                       'assets/icon/whatsapp.svg',

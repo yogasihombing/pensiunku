@@ -170,7 +170,7 @@ class TermAndConditionScreen extends StatelessWidget {
         "title": "Hubungi Kami",
         "content": _buildBulletPoints([
           "Email: pensiunku.hello@gmail.com",
-          "Telepon: 087785833344",
+          "Telepon: 081220357098",
         ])
       },
     ];
