@@ -38,30 +38,24 @@ import 'package:pensiunku/widget/floating_bottom_navigation_bar.dart';
 import 'package:pensiunku/widget/showcase/app_showcase_keys.dart';
 import 'dart:convert';
 
-import 'package:showcaseview/showcaseview.dart';
+// import 'package:showcaseview/showcaseview.dart';
 
-// Global variables for Firebase Messaging
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
 const AndroidNotificationChannel channel = AndroidNotificationChannel(
-  'high_importance_channel', // id
-  'High Importance Notifications', // title
-  description:
-      'This channel is used for important notifications.', // description
+  'high_importance_channel',
+  'High Importance Notifications',
+  description: 'This channel is used for important notifications.',
   importance: Importance.max,
 );
 
-// Variabel untuk menentukan mode produksi
 bool isProd = true;
-
-// Host API berdasarkan mode produksi
 String get apiHost {
   return isProd
       ? "https://pensiunku.id/mobileapi"
       : "https://pensiunku.id/mobileapi";
 }
 
-// Konfigurasi header default untuk API
 Map<String, String> get defaultApiHeaders {
   return {
     'User-Agent':
@@ -73,24 +67,17 @@ Map<String, String> get defaultApiHeaders {
   };
 }
 
-// 1. DashboardScreen
-// Kelas utama DashboardScreen dengan StatefulWidget agar memiliki state yang dapat berubah
 class DashboardScreen extends StatefulWidget {
   static const String ROUTE_NAME = '/dashboard_screen';
-  // Callback dan parameter lainnya
-  final void Function(BuildContext)
-      onApplySubmission; // Callback saat pengajuan dilakukan
-  final void Function(int index)
-      onChangeBottomNavIndex; // Callback untuk mengubah indeks navigasi bawah
-  final ScrollController scrollController; // Controller untuk scroll
-  // final int? walkthroughIndex; // Hapus parameter ini dari constructor
+  final void Function(BuildContext) onApplySubmission;
+  final void Function(int index) onChangeBottomNavIndex;
+  final ScrollController scrollController;
 
   const DashboardScreen({
     Key? key,
     required this.onApplySubmission,
     required this.onChangeBottomNavIndex,
     required this.scrollController,
-    // this.walkthroughIndex, // Hapus parameter ini dari constructor
   }) : super(key: key);
 
   @override
@@ -99,14 +86,9 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen>
     with AutomaticKeepAliveClientMixin<DashboardScreen> {
-  // Tambahkan mixin ini
-
-  // Variabel state untuk indeks artikel dan event
   int _currentArticleIndex = 0;
-  int _currenEventIndex = 0; // Typo here, should be _currentEventIndex?
+  int _currenEventIndex = 0;
   bool _isBottomNavBarVisible = true;
-
-  // Variabel state untuk saldo pengguna
   String _userBalance = '0';
   bool _isLoadingOverlay = false;
   bool _isActivated = false;
@@ -114,10 +96,8 @@ class _DashboardScreenState extends State<DashboardScreen>
   bool _isLoadingCheckMemberBalanceCard = false;
   bool _isLoadingCheckMemberActionButton = false;
 
-  // Variabel untuk menyimpan daftar kategori artikel setelah diambil
   List<ArticleCategoryModel> _articleCategories = [];
   late Future<ResultModel<List<ArticleCategoryModel>>> _futureArticleCategories;
-
   Future<ResultModel<List<ForumModel>>>? _futureDataForum;
   late Future<ResultModel<List<EventModel>>> _futureDataEventModel;
   late List<EventModel> _EventModel = [];
@@ -127,23 +107,19 @@ class _DashboardScreenState extends State<DashboardScreen>
   int? _memberStatus = 0;
 
   TextEditingController namaController = TextEditingController();
-
   final dataKey = GlobalKey();
 
-  // Global Keys untuk ShowcaseView
-  // Menggunakan GlobalKey yang diimpor dari app_showcase_keys.dart
-  List<GlobalKey> _showcaseKeys = [
-    // one,
-    two,
-    three,
-    four,
-    five,
-    six,
-    seven,
-    eight,
-  ];
+  // Daftar showcase keys telah dihapus
+  // List<GlobalKey> _showcaseKeys = [
+  //   two,
+  //   three,
+  //   four,
+  //   five,
+  //   six,
+  //   seven,
+  //   eight,
+  // ];
 
-  // Daftar path gambar carousel
   final List<String> _carouselImagePaths = const [
     'assets/dashboard_screen/image_1.png',
     'assets/dashboard_screen/image_2.png',
@@ -151,8 +127,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   ];
 
   @override
-  bool get wantKeepAlive =>
-      true; // Penting: Memberi tahu Flutter untuk menjaga status widget ini
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
@@ -163,7 +138,6 @@ class _DashboardScreenState extends State<DashboardScreen>
     _futureArticleCategories = ArticleRepository().getAllCategories();
 
     _refreshData();
-    _precacheCarouselImages(); // Panggil fungsi pre-cache
 
     _futureGreeting = fetchGreeting().whenComplete(() {
       if (mounted) {
@@ -171,39 +145,44 @@ class _DashboardScreenState extends State<DashboardScreen>
           _isLoadingOverlay = false;
           print('DashboardScreen: Overlay loading dinonaktifkan.');
         });
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _startShowcase();
-        });
+        // Panggilan untuk memulai showcase telah dihapus
+        // WidgetsBinding.instance.addPostFrameCallback((_) {
+        //   _startShowcase();
+        // });
       }
     });
   }
 
-  // Fungsi untuk pre-cache gambar carousel
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _precacheCarouselImages();
+  }
+
   Future<void> _precacheCarouselImages() async {
     for (final path in _carouselImagePaths) {
       try {
-        // precacheImage akan memuat gambar ke dalam ImageCache
         await precacheImage(AssetImage(path), context);
         print('Precached image: $path');
       } catch (e, st) {
         print('Error precaching $path: $e\n$st');
-        // Anda bisa menambahkan penanganan error di sini jika diperlukan
       }
     }
   }
 
-  void _startShowcase() async {
-    bool? isFinishedWalkthrough = SharedPreferencesUtil()
-        .sharedPreferences
-        .getBool(SharedPreferencesUtil.SP_KEY_IS_FINISHED_WALKTHROUGH);
-
-    if (isFinishedWalkthrough != true) {
-      ShowCaseWidget.of(context).startShowCase(_showcaseKeys);
-      print('DashboardScreen: Memulai walkthrough.');
-    } else {
-      print('DashboardScreen: Walkthrough sudah selesai sebelumnya.');
-    }
-  }
+  // Metode _startShowcase telah dihapus
+  // void _startShowcase() async {
+  //   bool? isFinishedWalkthrough = SharedPreferencesUtil()
+  //       .sharedPreferences
+  //       .getBool(SharedPreferencesUtil.SP_KEY_IS_FINISHED_WALKTHROUGH);
+  //
+  //   if (isFinishedWalkthrough != true) {
+  //     ShowCaseWidget.of(context).startShowCase(_showcaseKeys);
+  //     print('DashboardScreen: Memulai walkthrough.');
+  //   } else {
+  //     print('DashboardScreen: Walkthrough sudah selesai sebelumnya.');
+  //   }
+  // }
 
   Future<void> _refreshData() async {
     print('DashboardScreen: _refreshData dipanggil.');
@@ -391,9 +370,7 @@ class _DashboardScreenState extends State<DashboardScreen>
         });
       }
     } finally {
-      if (mounted) {
-        // No changes here as _isLoadingBalance was already removed
-      }
+      if (mounted) {}
     }
   }
 
@@ -579,8 +556,7 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   @override
   Widget build(BuildContext context) {
-    super.build(
-        context); // Penting: Panggil super.build(context) saat menggunakan AutomaticKeepAliveClientMixin
+    super.build(context);
 
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
@@ -627,35 +603,21 @@ class _DashboardScreenState extends State<DashboardScreen>
                         child: _buildGreeting(screenWidth, screenHeight),
                       ),
                       SizedBox(height: screenHeight * 0.01),
-                      // --- PERUBAHAN: Menampilkan _buildBalanceCard atau _aktifkanpensiunkuPlus berdasarkan _memberStatus ---
                       Padding(
                         padding: EdgeInsets.symmetric(
                             horizontal: screenWidth * 0.04),
-                        child: Showcase(
-                          key:
-                              three, // Key untuk Balance Card / Aktifkan Pensiunku+
-                          description:
-                              'Kamu bisa melihat nominal saldo yang ada di akun kamu.', // Detail text showcase
-                          child: (_memberStatus ==
-                                  4) // Jika status 4 (member aktif)
-                              ? _buildBalanceCard(screenWidth, screenHeight)
-                              : _aktifkanpensiunkuPlus(
-                                  screenWidth, screenHeight),
-                        ),
+                        // Widget Showcase telah dihapus
+                        child: (_memberStatus == 4)
+                            ? _buildBalanceCard(screenWidth, screenHeight)
+                            : _aktifkanpensiunkuPlus(screenWidth, screenHeight),
                       ),
-                      // --- AKHIR PERUBAHAN ---
                       SizedBox(height: screenHeight * 0.015),
-
                       Padding(
                         padding: EdgeInsets.symmetric(
                             horizontal: screenWidth * 0.04),
-                        child: Showcase(
-                          key: four, // Key untuk Simulasi Cepat
-                          description:
-                              'Dengan fitur Simulasi Cepat PensiunKu, kamu bisa melakukan simulasi kredit dengan mudah dan cepat. \n\nCukup masukkan data yang diperlukan, dan aplikasi ini akan menghitung plafon kredit dan terima bersih yang bisa kamu dapatkan.', // Detail text showcase
-                          child: _buildSimulasiPensiunku(
-                              context, screenWidth, screenHeight),
-                        ),
+                        // Widget Showcase telah dihapus
+                        child: _buildSimulasiPensiunku(
+                            context, screenWidth, screenHeight),
                       ),
                       SizedBox(height: screenHeight * 0.015),
                       SizedBox(height: screenHeight * 0.015),
@@ -666,27 +628,16 @@ class _DashboardScreenState extends State<DashboardScreen>
                             context, screenWidth, screenHeight),
                       ),
                       SizedBox(height: screenHeight * 0.02),
-
-                      Showcase(
-                        // Showcase untuk seluruh bagian menu fitur
-                        key: seven, // Key untuk Icon Menu Events
-                        description:
-                            'Kami juga menyediakan berbagai menu menarik yang dapat membantu kamu tetap aktif dan produktif di masa pensiun.', // Detail text showcase
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(
-                              horizontal: screenWidth * 0.04),
-                          child: _buildMenuFeatures(
-                              context, screenWidth, screenHeight),
-                        ),
-                      ),
-                      SizedBox(height: screenHeight * 0.02),
-                      Showcase(
-                        key: eight, // Key untuk Carousel Header Image
-                        description:
-                            'Kamu bisa melihat berbagai pengumuman dan informasi penting yang perlu diketahui.', // Detail text showcase
-                        child: _buildHeaderImage(
+                      // Widget Showcase telah dihapus
+                      Padding(
+                        padding: EdgeInsets.symmetric(
+                            horizontal: screenWidth * 0.04),
+                        child: _buildMenuFeatures(
                             context, screenWidth, screenHeight),
                       ),
+                      SizedBox(height: screenHeight * 0.02),
+                      // Widget Showcase telah dihapus
+                      _buildHeaderImage(context, screenWidth, screenHeight),
                       SizedBox(height: screenHeight * 0.015),
                       _buildArticleFeatures(context, screenWidth, screenHeight),
                       SizedBox(height: screenHeight * 0.06),
@@ -696,7 +647,6 @@ class _DashboardScreenState extends State<DashboardScreen>
               ),
             ),
           ),
-          // FloatingBottomNavigationBar tidak dibungkus Showcase
           FloatingBottomNavigationBar(
             isVisible: _isBottomNavBarVisible,
             currentIndex: 2,
@@ -753,23 +703,19 @@ class _DashboardScreenState extends State<DashboardScreen>
             'assets/logo_pensiunku.png',
             height: screenHeight * 0.06,
           ),
-          Showcase(
-            key: two, // Key untuk Icon Akun
-            description:
-                'Kamu bisa menemukan berbagai informasi penting yang berhubungan dengan status pengajuan kredit dan pengaturan', // Detail text showcase
-            child: IconButton(
-              icon: const Icon(Icons.account_circle_outlined),
-              iconSize: screenWidth * 0.06,
-              onPressed: () => Navigator.of(context)
-                  .push(MaterialPageRoute(
-                      builder: (context) => AccountScreen(
-                            onChangeBottomNavIndex: (int index) {},
-                          )))
-                  .then((_) {
-                _refreshData();
-              }),
-              color: Colors.black54,
-            ),
+          // Widget Showcase telah dihapus
+          IconButton(
+            icon: const Icon(Icons.account_circle_outlined),
+            iconSize: screenWidth * 0.06,
+            onPressed: () => Navigator.of(context)
+                .push(MaterialPageRoute(
+                    builder: (context) => AccountScreen(
+                          onChangeBottomNavIndex: (int index) {},
+                        )))
+                .then((_) {
+              _refreshData();
+            }),
+            color: Colors.black54,
           ),
         ],
       ),
@@ -993,10 +939,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     Widget _buildButton(
         String iconPath, Widget textWidget, VoidCallback onPressed,
         {Color backgroundColor = Colors.white70,
-        Color shadowColor = Colors.transparent,
-        GlobalKey? showcaseKey,
-        String? showcaseDescription}) {
-      // Parameter ini sudah benar
+        Color shadowColor = Colors.transparent}) {
       final double imageSize = screenWidth * 0.14;
       final double paddingHorizontal = screenWidth * 0.03;
       final double paddingVertical = screenHeight * 0.01;
@@ -1023,13 +966,7 @@ class _DashboardScreenState extends State<DashboardScreen>
         ),
       );
 
-      if (showcaseKey != null && showcaseDescription != null) {
-        return Showcase(
-          key: showcaseKey,
-          description: showcaseDescription, // Digunakan di sini
-          child: buttonContent,
-        );
-      }
+      // Logika showcase telah dihapus dari sini
       return buttonContent;
     }
 
@@ -1063,9 +1000,6 @@ class _DashboardScreenState extends State<DashboardScreen>
                   builder: (context) => PengajuanAndaScreen()));
             },
             shadowColor: Colors.grey.withOpacity(0.5),
-            showcaseKey: five, // Key untuk Ajukan Pinjaman
-            showcaseDescription:
-                'Di menu Ajukan Pinjaman, kamu bisa mulai proses pengajuan kredit dengan mudah. \n\nCaranya, cukup mengisi form pengajuan kredit yang tersedia di sini dengan informasi yang diperlukan.\n\nSetelah itu, anda akan kami hubungi via Whatsapp', // PERBAIKAN: Menggunakan showcaseDescription
           ),
         ),
         SizedBox(width: screenWidth * 0.025),
@@ -1100,9 +1034,6 @@ class _DashboardScreenState extends State<DashboardScreen>
                     _handleCheckMemberAndNavigateFromActionButton(context);
                   },
                   shadowColor: Colors.grey.withOpacity(0.5),
-                  showcaseKey: six, // Key untuk Ajukan Mitra
-                  showcaseDescription:
-                      'Dengan menjadi Mitra Pensiunku+, anda bisa mendapatkan insentif dengan cara membantu mendapatkan nasabah baru dan mendaftarkannya di aplikasi.\n\nUntuk memulai, kamu harus menjadi Mitra App+ terlebih dahulu dengan mengisi form pendaftaran yang ada di menu ini.', // PERBAIKAN: Menggunakan showcaseDescription
                 ),
         ),
       ],
@@ -1111,7 +1042,6 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   Widget _buildHeaderImage(
       BuildContext context, double screenWidth, double screenHeight) {
-    // Gunakan _carouselImagePaths yang sudah didefinisikan di state
     final List<String> images = _carouselImagePaths;
 
     return Column(
@@ -1169,16 +1099,14 @@ class _DashboardScreenState extends State<DashboardScreen>
                           images[index],
                           fit: BoxFit.cover,
                           filterQuality: FilterQuality.high,
-                          gaplessPlayback: true,
-                          // Tambahkan cacheWidth dan cacheHeight untuk optimasi
                           cacheWidth: (screenWidth *
                                   0.94 *
                                   MediaQuery.of(context).devicePixelRatio)
-                              .toInt(), // Sesuaikan dengan lebar viewport dan pixel ratio
+                              .toInt(),
                           cacheHeight: (screenHeight *
                                   0.22 *
                                   MediaQuery.of(context).devicePixelRatio)
-                              .toInt(), // Sesuaikan dengan tinggi carousel dan pixel ratio
+                              .toInt(),
                           errorBuilder: (context, error, stackTrace) {
                             debugPrint(
                                 'Error memuat aset ${images[index]}: $error');
@@ -1223,21 +1151,25 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 
-  // Widget kustom untuk item menu "Coming Soon"
-  Widget _buildComingSoonBox(double screenWidth, double screenHeight) {
-    // Content that will be faded (original icon and title)
+  Widget _buildComingSoonContent(double screenWidth, double screenHeight,
+      {required String imagePath,
+      required String titleText,
+      double? imageWidth,
+      double? imageHeight}) {
     final Widget fadedContent = Column(
       mainAxisAlignment: MainAxisAlignment.center,
       mainAxisSize: MainAxisSize.min,
       children: [
         Image.asset(
-          "assets/dashboard_screen/icon_toko.png",
-          width: screenWidth * 0.30,
-          height: screenWidth * 0.16,
+          imagePath,
+          width: imageWidth,
+          height: imageHeight,
+          fit: (imageWidth == null || imageHeight == null)
+              ? BoxFit.contain
+              : null,
         ),
-        // SizedBox(height: screenHeight * 0.001),
         Text(
-          'Toko', // Original title
+          titleText,
           style: Theme.of(context).textTheme.subtitle1?.copyWith(
                 fontSize: screenWidth * 0.030,
                 fontWeight: FontWeight.w600,
@@ -1248,7 +1180,6 @@ class _DashboardScreenState extends State<DashboardScreen>
       ],
     );
 
-    // Overlay content (lock icon and "Coming Soon" text)
     final Widget overlayContent = Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -1269,38 +1200,31 @@ class _DashboardScreenState extends State<DashboardScreen>
       ],
     );
 
-    return Expanded(
-      flex: 2, // Mengambil 2 ruang proporsional
-      child: GestureDetector(
-        onTap: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Fitur ini akan segera hadir!',
-                style: const TextStyle(color: Colors.white),
-              ),
-              backgroundColor: Colors.blueAccent,
-              duration: const Duration(seconds: 2),
+    return GestureDetector(
+      onTap: () {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Fitur ini akan segera hadir!',
+              style: const TextStyle(color: Colors.white),
             ),
-          );
-        },
-        child: Container(
-          margin: EdgeInsets.symmetric(horizontal: screenWidth * 0.01),
-          padding: EdgeInsets.symmetric(vertical: screenHeight * 0.01),
-          // decoration: boxDecoration, // Apply the common box decoration
-          child: Stack(
-            // Use Stack to overlay content
-            alignment: Alignment.center, // Center the children in the stack
-            children: [
-              // Faded background content
-              Opacity(
-                opacity: 0.3,
-                child: fadedContent,
-              ),
-              // Overlay content (lock and "Coming Soon")
-              overlayContent,
-            ],
+            backgroundColor: Colors.blueAccent,
+            duration: const Duration(seconds: 2),
           ),
+        );
+      },
+      child: Container(
+        margin: EdgeInsets.symmetric(horizontal: screenWidth * 0.01),
+        padding: EdgeInsets.symmetric(vertical: screenHeight * 0.01),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Opacity(
+              opacity: 0.3,
+              child: fadedContent,
+            ),
+            overlayContent,
+          ],
         ),
       ),
     );
@@ -1326,7 +1250,6 @@ class _DashboardScreenState extends State<DashboardScreen>
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
             Expanded(
-              // Added Expanded for proportional spacing
               child: IconMenu(
                 image: "assets/dashboard_screen/icon_event.png",
                 title: "Events",
@@ -1335,7 +1258,6 @@ class _DashboardScreenState extends State<DashboardScreen>
               ),
             ),
             Expanded(
-              // Added Expanded for proportional spacing
               child: IconMenu(
                 image: "assets/dashboard_screen/icon_article.png",
                 title: "Artikel",
@@ -1346,7 +1268,6 @@ class _DashboardScreenState extends State<DashboardScreen>
               ),
             ),
             Expanded(
-              // Added Expanded for proportional spacing
               child: IconMenu(
                 image: "assets/dashboard_screen/icon_halo_pensiun.png",
                 title: "Halo Pensiun",
@@ -1355,7 +1276,6 @@ class _DashboardScreenState extends State<DashboardScreen>
               ),
             ),
             Expanded(
-              // Added Expanded for proportional spacing
               child: IconMenu(
                 image: "assets/dashboard_screen/icon_forum.png",
                 title: "PensiTalk",
@@ -1365,7 +1285,6 @@ class _DashboardScreenState extends State<DashboardScreen>
             ),
           ],
         ),
-        // Baris kedua menu
         Padding(
           padding: EdgeInsets.symmetric(
               horizontal: screenWidth * 0.0, vertical: screenHeight * 0.005),
@@ -1373,7 +1292,6 @@ class _DashboardScreenState extends State<DashboardScreen>
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               Expanded(
-                // Added Expanded for proportional spacing
                 child: IconMenu(
                   image: "assets/dashboard_screen/icon_karir.png",
                   title: "Karir",
@@ -1382,17 +1300,27 @@ class _DashboardScreenState extends State<DashboardScreen>
                 ),
               ),
               Expanded(
-                // Added Expanded for proportional spacing
-                child: IconMenu(
-                  image: "assets/dashboard_screen/icon_franchise.png",
-                  title: "Franchise",
-                  routeNamed: UsahaScreen.ROUTE_NAME,
-                  useBox: false,
+                flex: 1,
+                child: _buildComingSoonContent(
+                  screenWidth,
+                  screenHeight,
+                  imagePath: "assets/dashboard_screen/icon_franchise.png",
+                  titleText: "Franchise",
+                  imageWidth: screenWidth * 0.16,
+                  imageHeight: screenWidth * 0.16,
                 ),
               ),
-              // Menggunakan widget kustom untuk "Coming Soon" dengan flex 2
-              _buildComingSoonBox(screenWidth, screenHeight),
-              // Expanded kosong dihapus karena _buildComingSoonBox sekarang mengambil 2 space
+              Expanded(
+                flex: 2,
+                child: _buildComingSoonContent(
+                  screenWidth,
+                  screenHeight,
+                  imagePath: "assets/dashboard_screen/icon_toko.png",
+                  titleText: "Toko",
+                  imageWidth: screenWidth * 0.30,
+                  imageHeight: screenWidth * 0.16,
+                ),
+              ),
             ],
           ),
         ),
@@ -1534,3 +1462,14 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 }
+
+/*
+Pesan-pesan Showcase:
+Icon Akun: 'Kamu bisa menemukan berbagai informasi penting yang berhubungan dengan status pengajuan kredit dan pengaturan'
+Kartu Dompet/Aktifkan Pensiunku+: 'Kamu bisa melihat nominal saldo yang ada di akun kamu.'
+Tombol Simulasi Cepat: 'Dengan fitur Simulasi Cepat PensiunKu, kamu bisa melakukan simulasi kredit dengan mudah dan cepat. \n\nCukup masukkan data yang diperlukan, dan aplikasi ini akan menghitung plafon kredit dan terima bersih yang bisa kamu dapatkan.'
+Tombol Ajukan Pinjaman: 'Di menu Ajukan Pinjaman, kamu bisa mulai proses pengajuan kredit dengan mudah. \n\nCaranya, cukup mengisi form pengajuan kredit yang tersedia di sini dengan informasi yang diperlukan.\n\nSetelah itu, anda akan kami hubungi via Whatsapp'
+Tombol Ajukan Mitra: 'Dengan menjadi Mitra Pensiunku+, anda bisa mendapatkan insentif dengan cara membantu mendapatkan nasabah baru dan mendaftarkannya di aplikasi.\n\nUntuk memulai, kamu harus menjadi Mitra App+ terlebih dahulu dengan mengisi form pendaftaran yang ada di menu ini.'
+Icon Menu Events: 'Kami juga menyediakan berbagai menu menarik yang dapat membantu kamu tetap aktif dan produktif di masa pensiun.'
+Carousel Header Image: 'Kamu bisa melihat berbagai pengumuman dan informasi penting yang perlu diketahui.'
+*/

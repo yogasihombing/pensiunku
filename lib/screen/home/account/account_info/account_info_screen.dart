@@ -1,26 +1,19 @@
 import 'dart:convert';
-import 'dart:developer';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:pensiunku/model/option_model.dart';
 import 'package:pensiunku/model/user_model.dart';
-import 'package:pensiunku/repository/gender_repository.dart';
-import 'package:pensiunku/repository/job_repository.dart';
 import 'package:pensiunku/repository/location_repository.dart';
-import 'package:pensiunku/repository/religion_repository.dart';
 import 'package:pensiunku/model/result_model.dart';
 import 'package:pensiunku/repository/user_repository.dart';
 import 'package:pensiunku/screen/home/account/account_info/account_info_controller.dart';
 import 'package:pensiunku/util/shared_preferences_util.dart';
 import 'package:pensiunku/util/widget_util.dart';
-import 'package:pensiunku/widget/custom_date_field.dart';
-import 'package:pensiunku/widget/custom_select_field.dart';
 import 'package:pensiunku/widget/custom_text_field.dart';
-import 'package:pensiunku/widget/dummy_custom_select_field.dart';
 import 'package:pensiunku/widget/elevated_button_loading.dart';
-import 'package:pensiunku/widget/error_card.dart';
-import 'package:pensiunku/widget/floating_bottom_navigation_bar.dart';
+import 'package:http/http.dart' as http;
 
 class AccountInfoScreen extends StatefulWidget {
   static const String ROUTE_NAME = '/account/info';
@@ -30,28 +23,40 @@ class AccountInfoScreen extends StatefulWidget {
 }
 
 class _AccountInfoScreenState extends State<AccountInfoScreen> {
-  bool _isBottomNavBarVisible = false;
-  AccountInfoController _controller = AccountInfoController();
-  late Future<ResultModel<UserModel>> _futureData;
-  bool _isLoading = false;
-
   late TextEditingController _inputNameController;
   late TextEditingController _inputPhoneController;
   late TextEditingController _inputEmailController;
   late TextEditingController _inputAddressController;
 
+  bool _isBottomNavBarVisible = false;
+  AccountInfoController _controller = AccountInfoController();
+  late Future<ResultModel<UserModel>> _futureData;
+  bool _isLoading = false;
+
   String _inputName = '';
   String _inputPhone = '';
   String _inputEmail = '';
   String _inputAddress = '';
+  UserModel? _userModel;
+  File? _imageFile;
 
-  OptionModel _inputProvinsi = OptionModel(id: 0, text: '');
+  // Hapus _inputProvinsi
+  // OptionModel _inputProvinsi = OptionModel(id: 0, text: '');
+
+  // Tambahkan state baru untuk Kota/Kabupaten
   OptionModel _inputCity = OptionModel(id: 0, text: '');
-  late List<OptionModel> listKabupaten = [];
+  List<OptionModel> _allCityOptions = []; // Ganti _allDomisiliOptions
+  bool _isLoadingCities = false;
 
   @override
   void initState() {
     super.initState();
+    _inputNameController = TextEditingController();
+    _inputPhoneController = TextEditingController();
+    _inputEmailController = TextEditingController();
+    _inputAddressController = TextEditingController();
+
+    _fetchCities(); // Panggil fungsi ini di initState
     _refreshData();
     Future.delayed(Duration(milliseconds: 300), () {
       setState(() {
@@ -67,6 +72,111 @@ class _AccountInfoScreenState extends State<AccountInfoScreen> {
     _inputEmailController.dispose();
     _inputAddressController.dispose();
     super.dispose();
+  }
+
+  // Tambahkan fungsi untuk mengambil data kota/kabupaten
+  Future<void> _fetchCities() async {
+    if (!mounted) return;
+
+    setState(() {
+      _isLoadingCities = true;
+    });
+
+    try {
+      final String domisiliApiUrl =
+          'https://api.pensiunku.id/new.php/getDomisili';
+      final response = await http.get(Uri.parse(domisiliApiUrl));
+
+      if (!mounted) return;
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> decodedData = json.decode(response.body);
+        if (decodedData.containsKey('text') && decodedData['text'] is Map) {
+          final Map<String, dynamic> textData = decodedData['text'];
+          if (textData.containsKey('message') &&
+              textData['message'] == 'success' &&
+              textData.containsKey('data') &&
+              textData['data'] is List) {
+            final List<dynamic> rawCityList = textData['data'];
+            setState(() {
+              _allCityOptions = rawCityList.asMap().entries.map((entry) {
+                int index = entry.key;
+                Map<String, dynamic> item = entry.value;
+                return OptionModel(
+                    id: index + 1, text: item['city'].toString());
+              }).toList();
+            });
+          } else {
+            WidgetUtil.showSnackbar(context,
+                'Gagal memuat data kota: Struktur respons tidak sesuai.');
+          }
+        } else {
+          WidgetUtil.showSnackbar(context,
+              'Gagal memuat data kota: Struktur respons tidak sesuai.');
+        }
+      } else {
+        WidgetUtil.showSnackbar(
+            context, 'Gagal memuat data kota (HTTP ${response.statusCode}).');
+      }
+    } catch (e) {
+      WidgetUtil.showSnackbar(
+          context, 'Terjadi kesalahan saat memuat data kota.');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingCities = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+
+    if (pickedFile != null) {
+      final File file = File(pickedFile.path);
+      setState(() {
+        _imageFile = file;
+      });
+      _uploadProfilePicture(_imageFile!);
+    }
+  }
+
+  void _uploadProfilePicture(File imageFile) async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    final token = SharedPreferencesUtil()
+        .sharedPreferences
+        .getString(SharedPreferencesUtil.SP_KEY_TOKEN);
+
+    if (token == null || _userModel?.id == null) {
+      _showErrorDialog('Authentication token or user ID is missing');
+      return;
+    }
+
+    try {
+      final result = await UserRepository()
+          .uploadProfilePicture(token, _userModel!.id, imageFile);
+
+      if (result.isSuccess) {
+        _refreshData();
+        WidgetUtil.showSnackbar(context, 'Foto profil berhasil diunggah!');
+        setState(() {
+          _imageFile = null;
+        });
+      } else {
+        _showErrorDialog(result.error ?? 'Gagal mengunggah foto profil.');
+      }
+    } catch (e) {
+      _showErrorDialog('Terjadi kesalahan saat mengunggah foto profil.');
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   void _saveAccountInfo() {
@@ -91,11 +201,6 @@ class _AccountInfoScreenState extends State<AccountInfoScreen> {
       return;
     }
 
-    String? _inputCityName;
-    if (_inputCity.id != 0) {
-      _inputCityName = _inputCity.text;
-    }
-
     var formData = {
       'username': _inputName,
       'email': _inputEmail,
@@ -105,11 +210,10 @@ class _AccountInfoScreenState extends State<AccountInfoScreen> {
     if (_inputAddress.isNotEmpty) {
       formData['alamat'] = _inputAddress;
     }
-    if (_inputProvinsi.text.isNotEmpty) {
-      formData['provinsi'] = _inputProvinsi.id.toString();
-    }
-    if (_inputCityName?.isNotEmpty == true) {
-      formData['kota'] = _inputCity.id.toString();
+
+    // Ganti 'provinsi' dengan 'kecamatan' (mengadopsi dari page pengajuan)
+    if (_inputCity.text.isNotEmpty) {
+      formData['kecamatan'] = _inputCity.text;
     }
 
     UserRepository().updateOne(token, formData).then((result) {
@@ -131,10 +235,11 @@ class _AccountInfoScreenState extends State<AccountInfoScreen> {
 
   void _handleSaveResult(ResultModel result) {
     _showErrorDialog(
-        result.isSuccess
-            ? 'Informasi akun berhasil diubah'
-            : result.error ?? 'Gagal menyimpan data user',
-        isSuccess: result.isSuccess);
+      result.isSuccess
+          ? 'Informasi akun berhasil diubah'
+          : result.error ?? 'Gagal menyimpan data user',
+      isSuccess: result.isSuccess,
+    );
 
     WidgetUtil.showSnackbar(
       context,
@@ -142,6 +247,9 @@ class _AccountInfoScreenState extends State<AccountInfoScreen> {
           ? 'Informasi akun berhasil diubah'
           : result.error ?? 'Gagal menyimpan data user',
     );
+    if (result.isSuccess) {
+      _refreshData();
+    }
   }
 
   void _showErrorDialog(String message, {bool isSuccess = false}) {
@@ -169,7 +277,6 @@ class _AccountInfoScreenState extends State<AccountInfoScreen> {
     final theme = Theme.of(context);
     return Stack(
       children: [
-        // Background gradient
         Positioned.fill(
           child: Container(
             decoration: const BoxDecoration(
@@ -187,12 +294,9 @@ class _AccountInfoScreenState extends State<AccountInfoScreen> {
             ),
           ),
         ),
-        // Konten utama
         Column(
           children: [
-            // AppBar (tidak bisa di-scroll)
             _buildCustomAppBar(context),
-            // Konten yang bisa di-scroll
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.symmetric(
@@ -205,10 +309,9 @@ class _AccountInfoScreenState extends State<AccountInfoScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const SizedBox(height: 10.0),
-                      _buildNameAndEmailContainer(), // Bagian ini bisa di-scroll
+                      _buildNameAndEmailContainer(),
                       const SizedBox(height: 40.0),
-                      _buildAccountContent(
-                          context, theme), // Bagian ini bisa di-scroll
+                      _buildAccountContent(context, theme),
                     ],
                   ),
                 ),
@@ -223,8 +326,8 @@ class _AccountInfoScreenState extends State<AccountInfoScreen> {
   Widget _buildCustomAppBar(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(
-        top: 32.0, // Jarak atas
-        bottom: 10.0, // Jarak bawah
+        top: 32.0,
+        bottom: 10.0,
         left: 20.0,
         right: 20.0,
       ),
@@ -251,7 +354,7 @@ class _AccountInfoScreenState extends State<AccountInfoScreen> {
               ),
             ),
           ),
-          const SizedBox(width: 48), // Spacer untuk menyeimbangkan layout
+          const SizedBox(width: 48),
         ],
       ),
     );
@@ -261,7 +364,8 @@ class _AccountInfoScreenState extends State<AccountInfoScreen> {
     return FutureBuilder(
       future: _futureData,
       builder: (context, AsyncSnapshot<ResultModel<UserModel>> snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
+        if (snapshot.connectionState == ConnectionState.waiting ||
+            _isLoadingCities) {
           return Center(
             child: CircularProgressIndicator(
               color: theme.primaryColor,
@@ -270,6 +374,7 @@ class _AccountInfoScreenState extends State<AccountInfoScreen> {
         }
 
         if (snapshot.hasData && snapshot.data?.data != null) {
+          _userModel = snapshot.data!.data!;
           return _buildForm(context, theme, snapshot.data!.data!);
         } else {
           return const Center(
@@ -284,34 +389,78 @@ class _AccountInfoScreenState extends State<AccountInfoScreen> {
     return Center(
       child: Column(
         children: [
-          // Icon profile
-          CircleAvatar(
-            radius: 80.0,
-            backgroundColor: Color(0xfff7f7f7),
-            child: Icon(
-              Icons.person,
-              color: Color(0xFF017964),
-              size: 80.0,
-            ),
+          Stack(
+            children: [
+              CircleAvatar(
+                radius: 80.0,
+                backgroundColor: const Color(0xfff7f7f7),
+                backgroundImage: (_userModel?.profilePictureUrl != null &&
+                        _imageFile == null)
+                    ? NetworkImage(_userModel!.profilePictureUrl!)
+                        as ImageProvider<Object>?
+                    : _imageFile != null
+                        ? FileImage(_imageFile!) as ImageProvider<Object>?
+                        : null,
+                child:
+                    _userModel?.profilePictureUrl == null && _imageFile == null
+                        ? const Icon(
+                            Icons.person,
+                            color: Color(0xFF017964),
+                            size: 80.0,
+                          )
+                        : null,
+              ),
+              Positioned(
+                bottom: 0,
+                right: 0,
+                child: InkWell(
+                  onTap: _pickImage,
+                  child: Container(
+                    padding: const EdgeInsets.all(8.0),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF017964),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.camera_alt,
+                      color: Colors.white,
+                      size: 20.0,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 16.0),
-          // Name and Email
           Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Name
-              Text(
-                _inputName.isNotEmpty ? _inputName : 'Nama belum diatur',
-                style: TextStyle(
-                  fontSize: 16.0,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    _userModel?.username?.isNotEmpty == true
+                        ? _userModel!.username!
+                        : 'Nama belum diatur',
+                    style: const TextStyle(
+                      fontSize: 16.0,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                  if (_userModel?.isPensiunkuPlus == true)
+                    const Icon(
+                      Icons.verified,
+                      color: Colors.blue,
+                      size: 20.0,
+                    ),
+                ],
               ),
               const SizedBox(height: 4.0),
-              // Email
               Text(
-                _inputEmail.isNotEmpty ? _inputEmail : 'Email belum diatur',
+                _userModel?.email?.isNotEmpty == true
+                    ? _userModel!.email!
+                    : 'Email belum diatur',
                 style: TextStyle(
                   fontSize: 14.0,
                   color: Colors.grey[700],
@@ -327,22 +476,16 @@ class _AccountInfoScreenState extends State<AccountInfoScreen> {
   Widget _buildForm(BuildContext context, ThemeData theme, UserModel data) {
     return Column(
       children: [
-        _buildStatusAccount(), // Add the new widget here
+        _buildStatusAccount(),
         SizedBox(height: 30.0),
-        _buildPhone(), // Phone Field
-        // Divider(color: Colors.grey[400]), // Garis pembatas
+        _buildPhone(),
         SizedBox(height: 5.0),
-        _buildAlamat(), // Address Field
-        // Divider(color: Colors.grey[400]), // Garis pembatas
+        _buildAlamat(),
         SizedBox(height: 5.0),
-        _buildProvinsi(), // Province Selector
-        // Divider(color: Colors.grey[400]), // Garis pembatas
-        SizedBox(height: 5.0),
-        _buildKabupaten(), // City Selector
-        // Divider(color: Colors.grey[400]), // Garis pembatas
+        _buildCitySelection(), // Ganti _buildProvinsi()
         SizedBox(height: 5.0),
         _buildSimpan(),
-        SizedBox(height: 24), // Save Button
+        SizedBox(height: 24),
       ],
     );
   }
@@ -357,7 +500,6 @@ class _AccountInfoScreenState extends State<AccountInfoScreen> {
       padding: const EdgeInsets.all(16.0),
       child: Column(
         children: [
-          // Status Akun Row
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -370,17 +512,20 @@ class _AccountInfoScreenState extends State<AccountInfoScreen> {
                 ),
               ),
               Text(
-                'Akun Reguler',
+                _userModel?.isPensiunkuPlus == true
+                    ? 'Pensiunku+'
+                    : 'Akun Reguler',
                 style: TextStyle(
                   fontSize: 14.0,
-                  color: Colors.black,
+                  color: _userModel?.isPensiunkuPlus == true
+                      ? Color(0xFF017964)
+                      : Colors.black,
                   fontWeight: FontWeight.bold,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 8.0),
-          // Dompet Anda Row
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -393,10 +538,14 @@ class _AccountInfoScreenState extends State<AccountInfoScreen> {
                 ),
               ),
               Text(
-                'Belum Aktif',
+                _userModel?.isWalletActive == true
+                    ? 'Sudah Aktif'
+                    : 'Belum Aktif',
                 style: TextStyle(
                   fontSize: 14.0,
-                  color: Colors.black,
+                  color: _userModel?.isWalletActive == true
+                      ? Color(0xFF017964)
+                      : Colors.black,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -412,20 +561,17 @@ class _AccountInfoScreenState extends State<AccountInfoScreen> {
     String? inputPhoneError = _controller.getInputPhoneError(_inputPhone);
 
     return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(36.0),
-        color: Colors.transparent, // No visible background
+      decoration: const BoxDecoration(
+        color: Colors.transparent,
       ),
       padding: const EdgeInsets.symmetric(horizontal: 24.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Label: 'No. Handphone' aligned to the start
           Row(
-            mainAxisAlignment:
-                MainAxisAlignment.spaceBetween, // Rata kiri dan kanan
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
+              const Text(
                 'No. Handphone',
                 style: TextStyle(
                   fontSize: 12,
@@ -433,17 +579,15 @@ class _AccountInfoScreenState extends State<AccountInfoScreen> {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              // Phone Number (text) aligned to the right
               Text(
                 _inputPhone.isNotEmpty ? _inputPhone : 'No. Handphone',
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 12.0,
-                  color: Colors.black54, // Adjust color if needed
+                  color: Colors.black54,
                 ),
               ),
             ],
           ),
-          // Garis pembatas
           Divider(
             color: Colors.grey[400],
             thickness: 1.0,
@@ -456,18 +600,17 @@ class _AccountInfoScreenState extends State<AccountInfoScreen> {
   // 2. Address Field
   Widget _buildAlamat() {
     return Container(
-      decoration: BoxDecoration(
-        color: Colors.transparent, // Latar belakang transparan
+      decoration: const BoxDecoration(
+        color: Colors.transparent,
       ),
       padding: const EdgeInsets.symmetric(horizontal: 24.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Label: 'Alamat' aligned to the start
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
+              const Text(
                 'Alamat',
                 style: TextStyle(
                   fontSize: 12.0,
@@ -477,11 +620,9 @@ class _AccountInfoScreenState extends State<AccountInfoScreen> {
               ),
             ],
           ),
-          // SizedBox(height: 8.0),
-          // Input field tanpa border atau latar belakang
           Container(
-            decoration: BoxDecoration(
-              color: Colors.transparent, // Latar belakang transparan
+            decoration: const BoxDecoration(
+              color: Colors.transparent,
             ),
             child: CustomTextField(
               controller: _inputAddressController,
@@ -490,11 +631,10 @@ class _AccountInfoScreenState extends State<AccountInfoScreen> {
               enabled: !_isLoading,
               minLines: 1,
               maxLines: 5,
-              fillColor: Colors.transparent, // Latar belakang transparan
-              textAlign: TextAlign.left, // Teks diinput rata kiri
+              fillColor: Colors.transparent,
+              textAlign: TextAlign.left,
             ),
           ),
-          // Garis pembatas
           Divider(
             color: Colors.grey[400],
             thickness: 1.0,
@@ -504,95 +644,8 @@ class _AccountInfoScreenState extends State<AccountInfoScreen> {
     );
   }
 
-  // 3. Province Selector
-  Widget _buildProvinsi() {
-    return GestureDetector(
-      onTap: _isLoading ? null : _showProvinceSelectionDialog,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Provinsi',
-                  style: TextStyle(
-                    fontSize: 12.0,
-                    color: Colors.black,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Row(
-                  children: [
-                    Text(
-                      _inputProvinsi.text.isNotEmpty
-                          ? _inputProvinsi.text
-                          : 'Pilih Provinsi',
-                      style: TextStyle(
-                        fontSize: 12.0,
-                        color: _inputProvinsi.text.isNotEmpty
-                            ? Colors.black
-                            : Colors.grey,
-                      ),
-                    ),
-                    SizedBox(width: 8),
-                    Icon(
-                      Icons.chevron_right,
-                      color: Colors.grey,
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            Divider(
-              color: Colors.grey[400],
-              thickness: 1.0,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-// Helper method to show province selection dialog
-  void _showProvinceSelectionDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Pilih Provinsi'),
-          content: Container(
-            width: double.maxFinite,
-            child: ListView.builder(
-              shrinkWrap: true,
-              itemCount: LocationRepository.getProvinces().length,
-              itemBuilder: (context, index) {
-                final province = LocationRepository.getProvinces()[index];
-                return ListTile(
-                  title: Text(province.text),
-                  onTap: () {
-                    _getKabupatenList(province.id.toString());
-                    setState(() {
-                      _inputProvinsi = province;
-                      _inputCity = OptionModel(id: 0, text: '');
-                    });
-                    Navigator.of(context).pop();
-                  },
-                );
-              },
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  // 4. City Selector (Kabupaten/Kota)
-  Widget _buildKabupaten() {
-    if (_inputProvinsi.id == 0) return Container();
-
+  // Ganti widget _buildProvinsi menjadi _buildCitySelection
+  Widget _buildCitySelection() {
     return GestureDetector(
       onTap: _isLoading ? null : _showCitySelectionDialog,
       child: Container(
@@ -603,8 +656,8 @@ class _AccountInfoScreenState extends State<AccountInfoScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Kabupaten/Kota',
+                const Text(
+                  'Kota/Kabupaten', // Ganti teks
                   style: TextStyle(
                     fontSize: 12.0,
                     color: Colors.black,
@@ -616,7 +669,7 @@ class _AccountInfoScreenState extends State<AccountInfoScreen> {
                     Text(
                       _inputCity.text.isNotEmpty
                           ? _inputCity.text
-                          : 'Pilih Kabupaten/Kota',
+                          : 'Pilih Kota/Kabupaten', // Ganti teks
                       style: TextStyle(
                         fontSize: 12.0,
                         color: _inputCity.text.isNotEmpty
@@ -624,8 +677,8 @@ class _AccountInfoScreenState extends State<AccountInfoScreen> {
                             : Colors.grey,
                       ),
                     ),
-                    SizedBox(width: 8),
-                    Icon(
+                    const SizedBox(width: 8),
+                    const Icon(
                       Icons.chevron_right,
                       color: Colors.grey,
                     ),
@@ -643,54 +696,111 @@ class _AccountInfoScreenState extends State<AccountInfoScreen> {
     );
   }
 
+  // Ganti helper method _showProvinceSelectionDialog menjadi _showCitySelectionDialog
+  void _showCitySelectionDialog() {
+    // Gunakan StatefulBuilder untuk mengelola state di dalam dialog
+    List<OptionModel> filteredCities = List.from(_allCityOptions);
+    TextEditingController searchController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            void handleSearch(String query) {
+              setDialogState(() {
+                if (query.isEmpty) {
+                  filteredCities = List.from(_allCityOptions);
+                } else {
+                  filteredCities = _allCityOptions
+                      .where((city) =>
+                          city.text.toLowerCase().contains(query.toLowerCase()))
+                      .toList();
+                }
+              });
+            }
+
+            return Dialog(
+              child: Container(
+                width: double.maxFinite,
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Pilih Kota/Kabupaten',
+                      style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF017964)),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: searchController,
+                      onChanged: handleSearch,
+                      decoration: InputDecoration(
+                        hintText: 'Cari kota/kabupaten...',
+                        prefixIcon: Icon(Icons.search),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide.none,
+                        ),
+                        filled: true,
+                        fillColor: Colors.grey[200],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Expanded(
+                      child: _isLoadingCities
+                          ? Center(
+                              child: CircularProgressIndicator(
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                    Color(0xFF017964)),
+                              ),
+                            )
+                          : filteredCities.isEmpty
+                              ? Center(
+                                  child: Text('Tidak ada kota yang ditemukan'),
+                                )
+                              : ListView.builder(
+                                  shrinkWrap: true,
+                                  itemCount: filteredCities.length,
+                                  itemBuilder: (context, index) {
+                                    final city = filteredCities[index];
+                                    return ListTile(
+                                      title: Text(city.text),
+                                      onTap: () {
+                                        setState(() {
+                                          _inputCity = city;
+                                        });
+                                        Navigator.of(context).pop();
+                                      },
+                                    );
+                                  },
+                                ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   // 5. Save Button
   Widget _buildSimpan() {
     return ElevatedButtonLoading(
       text: 'Simpan',
-      textStyle: TextStyle(
-        fontWeight: FontWeight.bold, // Membuat teks bold
-        fontSize: 14.0, // Sesuaikan ukuran jika perlu
+      textStyle: const TextStyle(
+        fontWeight: FontWeight.bold,
+        fontSize: 14.0,
         color: Colors.black,
       ),
       onTap: _saveAccountInfo,
       isLoading: _isLoading,
       disabled: _isLoading,
-    );
-  }
-
-  // Helper method to show city selection dialog
-  void _showCitySelectionDialog() {
-    if (listKabupaten.isEmpty) {
-      // Ensure kabupaten list is populated
-      _getKabupatenList(_inputProvinsi.id.toString());
-    }
-
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Pilih Kabupaten/Kota'),
-          content: Container(
-            width: double.maxFinite,
-            child: ListView.builder(
-              shrinkWrap: true,
-              itemCount: listKabupaten.length,
-              itemBuilder: (context, index) {
-                final city = listKabupaten[index];
-                return ListTile(
-                  title: Text(city.text),
-                  onTap: () {
-                    setState(() {
-                      _inputCity = city;
-                    });
-                    Navigator.of(context).pop();
-                  },
-                );
-              },
-            ),
-          ),
-        );
-      },
     );
   }
 
@@ -708,75 +818,41 @@ class _AccountInfoScreenState extends State<AccountInfoScreen> {
       if (value.error != null) {
         _showErrorDialog(value.error.toString());
       }
-
       _updateUserData(value);
       return value;
     });
   }
 
-  void _updateUserData(ResultModel<UserModel> value) {
+  void _updateUserData(ResultModel<UserModel> value) async {
+    if (!mounted) return;
+
     setState(() {
+      _userModel = value.data;
       _inputName = value.data?.username ?? '';
-      _inputNameController = TextEditingController(text: _inputName)
-        ..addListener(() {
-          setState(() {
-            _inputName = _inputNameController.text;
-          });
-        });
-
       _inputPhone = value.data?.phone ?? '';
-      _inputPhoneController = TextEditingController(text: _inputPhone)
-        ..addListener(() {
-          setState(() {
-            _inputPhone = _inputPhoneController.text;
-          });
-        });
-
       _inputEmail = value.data?.email ?? '';
-      _inputEmailController = TextEditingController(text: _inputEmail)
-        ..addListener(() {
-          setState(() {
-            _inputEmail = _inputEmailController.text;
-          });
-        });
-
       _inputAddress = value.data?.address ?? '';
-      _inputAddressController = TextEditingController(text: _inputAddress)
-        ..addListener(() {
-          setState(() {
-            _inputAddress = _inputAddressController.text;
-          });
-        });
 
-      if (value.data?.provinsi != null) {
-        _inputProvinsi = LocationRepository.getProvinceById(
-            int.parse(value.data!.provinsi!));
-      }
-
-      if (value.data?.city != null) {
-        _setInputKabupaten(value.data!.city!);
-      }
+      _inputNameController.text = _inputName;
+      _inputPhoneController.text = _inputPhone;
+      _inputEmailController.text = _inputEmail;
+      _inputAddressController.text = _inputAddress;
     });
-  }
 
-  void _setInputKabupaten(String idKabupaten) async {
-    LocationRepository.getNamaWilayah(idKabupaten).then((value) {
-      if (value.error == null) {
-        setState(() {
-          _inputCity = value.data!;
-        });
-        _getKabupatenList(_inputProvinsi.id.toString());
-      }
-    });
-  }
-
-  void _getKabupatenList(String id) async {
-    LocationRepository.getWilayah(id).then((value) {
-      if (value.error == null) {
-        setState(() {
-          listKabupaten = value.data!;
-        });
-      }
-    });
+    // Sesuaikan logika ini untuk mengisi data kota/kabupaten
+    if (value.data?.kecamatan != null && value.data!.kecamatan!.isNotEmpty) {
+      final cityFromAPI = value.data!.kecamatan!;
+      final existingCity = _allCityOptions.firstWhere(
+        (city) => city.text == cityFromAPI,
+        orElse: () => OptionModel(id: 0, text: ''),
+      );
+      setState(() {
+        _inputCity = existingCity;
+      });
+    } else {
+      setState(() {
+        _inputCity = OptionModel(id: 0, text: '');
+      });
+    }
   }
 }

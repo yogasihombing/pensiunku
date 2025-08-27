@@ -1,8 +1,6 @@
-// File: lib/repository/user_repository.dart
-
-import 'dart:developer';
 import 'dart:convert'; // Untuk json.decode
 import 'dart:async'; // Untuk Future.delayed dan timeout
+import 'dart:io';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:http/http.dart' as http; // Menggunakan paket http
@@ -242,6 +240,20 @@ class UserRepository extends BaseRepository {
               );
         }
 
+        // Mapping 'status' dan 'dompet' dari String ke boolean
+        bool isPensiunkuPlus = userJson['status'] == 'Pensiunku+';
+        bool isWalletActive = userJson['dompet'] == 'Sudah Aktif';
+        userJson['is_pensiunku_plus'] = isPensiunkuPlus;
+        userJson['is_wallet_active'] = isWalletActive;
+
+        // Mendapatkan URL gambar dari API jika ada, atau menggunakan default
+        String? profilePictureUrl;
+        if (userJson['profile'] != null) {
+          // Menggunakan host yang benar untuk aset
+          profilePictureUrl = 'https://pensiunku.id/${userJson['profile']}';
+        }
+        userJson['profile_picture_url'] = profilePictureUrl;
+
         UserModel user = UserModel.fromJson(userJson);
 
         await database.userDao.removeAll();
@@ -330,19 +342,69 @@ class UserRepository extends BaseRepository {
 
       if (responseJson['status'] == 'success') {
         Map<String, dynamic> userJson = responseJson['data'];
-        UserModel user = UserModel.fromJson(userJson);
 
-        await database.userDao.removeAll();
-        await database.userDao.insert(user);
-
-        return ResultModel(
-          isSuccess: true,
-          data: user,
-        );
+        // Mengambil data user terbaru dari server
+        ResultModel<UserModel> result = await getOne(token);
+        if (result.isSuccess) {
+          return result;
+        } else {
+          return ResultModel(
+            isSuccess: false,
+            error: responseJson['message'] ?? defaultErrorMessage,
+          );
+        }
       } else {
         return ResultModel(
           isSuccess: false,
           error: responseJson['message'] ?? defaultErrorMessage,
+        );
+      }
+    } on HttpException catch (e) {
+      return _handleHttpError(e, defaultErrorMessage);
+    } catch (e) {
+      return ResultModel(
+        isSuccess: false,
+        error: defaultErrorMessage,
+      );
+    }
+  }
+
+  // Metode baru untuk mengunggah foto profil, disesuaikan dengan logika repository yang ada.
+  Future<ResultModel<UserModel>> uploadProfilePicture(
+      String token, int userId, File imageFile) async {
+    assert(() {
+      return true;
+    }());
+
+    if (!await _isConnected()) {
+      return ResultModel(
+        isSuccess: false,
+        error: 'Tidak ada koneksi internet. Silakan periksa jaringan Anda.',
+      );
+    }
+
+    String defaultErrorMessage = 'Gagal mengunggah foto profil.';
+    try {
+      // Read the image file as bytes
+      List<int> imageBytes = await imageFile.readAsBytes();
+      // Encode bytes to Base64 string
+      String base64Image = base64Encode(imageBytes);
+
+      final response = await _retryHttpRequest(
+          () => api.uploadProfilePicture(token, userId, base64Image));
+      var responseJson = json.decode(response.body);
+      print('uploadProfilePicture response: $responseJson');
+
+      // PERBAIKAN: Mengubah kondisi sukses untuk menyesuaikan dengan respons API
+      if (responseJson['text'] != null &&
+          responseJson['text']['message'] == 'success') {
+        // Setelah berhasil upload, panggil getOne untuk mendapatkan data user terbaru
+        ResultModel<UserModel> result = await getOne(token);
+        return result;
+      } else {
+        return ResultModel(
+          isSuccess: false,
+          error: responseJson['text']?['message'] ?? defaultErrorMessage,
         );
       }
     } on HttpException catch (e) {
@@ -423,7 +485,6 @@ class UserRepository extends BaseRepository {
 
     String defaultErrorMessage = 'Gagal menyimpan FCM token.';
     try {
-      // Asumsi api.saveFcmToken mengembalikan Future<http.Response>
       http.Response response =
           await _retryHttpRequest(() => api.saveFcmToken(token, fcmToken));
       var responseJson = json.decode(response.body);

@@ -27,9 +27,8 @@ class SharedPreferencesUtil {
     sharedPreferences = await SharedPreferences.getInstance();
   }
 
-  static Future<Directory> getAppDir() async{
+  static Future<Directory> getAppDir() async {
     final appDir = await path_provider.getApplicationDocumentsDirectory();
     return appDir;
   }
-
 }

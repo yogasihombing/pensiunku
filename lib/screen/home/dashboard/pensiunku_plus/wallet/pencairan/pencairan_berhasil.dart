@@ -279,14 +279,9 @@ class _PencairanBerhasilScreenState extends State<PencairanBerhasilScreen> {
                         elevation: 5,
                       ),
                       onPressed: () {
-                        // Navigasi ke halaman dashboard utama atau root
-                        Navigator.pushNamedAndRemoveUntil(
-                          context,
-                          DashboardScreen
-                              .ROUTE_NAME, // Ganti dengan route ke Dashboard utama Anda
-                          (Route<dynamic> route) =>
-                              false, // Hapus semua route sebelumnya
-                        );
+                        // Perbaikan: Kembali ke rute Dashboard yang sudah ada
+                        Navigator.of(context)
+                            .popUntil((route) => route.isFirst);
                       },
                       child: Text(
                         'Kembali ke Beranda',

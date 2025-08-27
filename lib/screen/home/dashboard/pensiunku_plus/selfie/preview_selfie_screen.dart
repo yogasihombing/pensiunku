@@ -87,7 +87,7 @@ class _PreviewSelfieScreenState extends State<PreviewSelfieScreen> {
         if (result.error == null) {
           setState(() {
             _userModel = result.data;
-            _isActivated = _userModel?.isActivated ?? false;
+            // _isActivated = _userModel?.isActivated ?? false;
             print('User data loaded successfully:');
             print('User ID: ${_userModel?.id}');
             print('Is Activated: $_isActivated');

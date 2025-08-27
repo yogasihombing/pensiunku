@@ -42,18 +42,8 @@ class _AktifkanPensiunkuPlusScreenState
     final screenHeight = MediaQuery.of(context).size.height;
     return WillPopScope(
       onWillPop: () async {
-        // Navigasi ke DashboardScreen ketika tombol kembali ditekan
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(
-              builder: (context) => DashboardScreen(
-                    onApplySubmission: (context) {},
-                    onChangeBottomNavIndex: (index) {},
-                    scrollController: ScrollController(),
-                    // showcaseKeys: {},
-                  )),
-          (route) => false,
-        );
+        // Perbaikan: Kembali ke rute Dashboard yang sudah ada
+        Navigator.of(context).popUntil((route) => route.isFirst);
         return false;
       },
       child: Scaffold(

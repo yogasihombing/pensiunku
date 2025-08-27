@@ -556,66 +556,66 @@ class MyApp extends StatelessWidget {
           },
         ),
       ),
-      onStart: (index, key) {
-        debugPrint('onStart: $index, $key');
-      },
-      onComplete: (index, key) {
-        debugPrint('onComplete: $index, $key');
-        // Setelah showcase selesai, set flag di shared preferences
-        if (key == eight) {
-          // Menggunakan 'eight' dari `app_showcase_keys.dart`
-          // Pastikan SharedPreferencesUtil sudah diinisialisasi
-          SharedPreferencesUtil().sharedPreferences.setBool(
-              SharedPreferencesUtil.SP_KEY_IS_FINISHED_WALKTHROUGH, true);
-          SystemChrome.setSystemUIOverlayStyle(
-            SystemUiOverlayStyle.light.copyWith(
-              statusBarIconBrightness: Brightness.dark,
-              statusBarColor: Colors.white,
-            ),
-          );
-        }
-      },
-      blurValue: 1,
-      autoPlayDelay: const Duration(seconds: 3),
-      globalTooltipActionConfig: const TooltipActionConfig(
-        position: TooltipActionPosition.inside,
-        alignment: MainAxisAlignment.spaceBetween,
-        actionGap: 20,
-      ),
-      globalTooltipActions: [
-        TooltipActionButton(
-          type: TooltipDefaultActionType.previous,
-          textStyle: const TextStyle(
-            color: Colors.white,
-          ),
-          // Sembunyikan tombol previous untuk showcase pertama
-          hideActionWidgetForShowcase: [
-            two
-          ], // Menggunakan 'one' dari `app_showcase_keys.dart`
-        ),
-        TooltipActionButton(
-          type: TooltipDefaultActionType.next,
-          textStyle: const TextStyle(
-            color: Colors.white,
-          ),
-          // Sembunyikan tombol next untuk showcase terakhir
-          hideActionWidgetForShowcase: [
-            eight
-          ], // Menggunakan 'eight' dari `app_showcase_keys.dart`
-        ),
-        TooltipActionButton(
-          type: TooltipDefaultActionType.skip,
-          textStyle: const TextStyle(
-            color: Colors.white,
-          ),
-          onTap: () {
-            ShowCaseWidget.of(context).dismiss();
-            // Pastikan SharedPreferencesUtil sudah diinisialisasi
-            SharedPreferencesUtil().sharedPreferences.setBool(
-                SharedPreferencesUtil.SP_KEY_IS_FINISHED_WALKTHROUGH, true);
-          },
-        ),
-      ],
+      //   onStart: (index, key) {
+      //     debugPrint('onStart: $index, $key');
+      //   },
+      //   onComplete: (index, key) {
+      //     debugPrint('onComplete: $index, $key');
+      //     // Setelah showcase selesai, set flag di shared preferences
+      //     if (key == eight) {
+      //       // Menggunakan 'eight' dari `app_showcase_keys.dart`
+      //       // Pastikan SharedPreferencesUtil sudah diinisialisasi
+      //       SharedPreferencesUtil().sharedPreferences.setBool(
+      //           SharedPreferencesUtil.SP_KEY_IS_FINISHED_WALKTHROUGH, true);
+      //       SystemChrome.setSystemUIOverlayStyle(
+      //         SystemUiOverlayStyle.light.copyWith(
+      //           statusBarIconBrightness: Brightness.dark,
+      //           statusBarColor: Colors.white,
+      //         ),
+      //       );
+      //     }
+      //   },
+      //   blurValue: 1,
+      //   autoPlayDelay: const Duration(seconds: 3),
+      //   globalTooltipActionConfig: const TooltipActionConfig(
+      //     position: TooltipActionPosition.inside,
+      //     alignment: MainAxisAlignment.spaceBetween,
+      //     actionGap: 20,
+      //   ),
+      //   globalTooltipActions: [
+      //     TooltipActionButton(
+      //       type: TooltipDefaultActionType.previous,
+      //       textStyle: const TextStyle(
+      //         color: Colors.white,
+      //       ),
+      //       // Sembunyikan tombol previous untuk showcase pertama
+      //       hideActionWidgetForShowcase: [
+      //         two
+      //       ], // Menggunakan 'one' dari `app_showcase_keys.dart`
+      //     ),
+      //     TooltipActionButton(
+      //       type: TooltipDefaultActionType.next,
+      //       textStyle: const TextStyle(
+      //         color: Colors.white,
+      //       ),
+      //       // Sembunyikan tombol next untuk showcase terakhir
+      //       hideActionWidgetForShowcase: [
+      //         eight
+      //       ], // Menggunakan 'eight' dari `app_showcase_keys.dart`
+      //     ),
+      //     TooltipActionButton(
+      //       type: TooltipDefaultActionType.skip,
+      //       textStyle: const TextStyle(
+      //         color: Colors.white,
+      //       ),
+      //       onTap: () {
+      //         ShowCaseWidget.of(context).dismiss();
+      //         // Pastikan SharedPreferencesUtil sudah diinisialisasi
+      //         SharedPreferencesUtil().sharedPreferences.setBool(
+      //             SharedPreferencesUtil.SP_KEY_IS_FINISHED_WALKTHROUGH, true);
+      //       },
+      //     ),
+      //   ],
     );
   }
 }

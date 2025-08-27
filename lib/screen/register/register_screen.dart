@@ -1,9 +1,5 @@
-// File: register_screen.dart
-// Implementasi layar registrasi dengan validasi form dan error handling yang lebih baik
-
 import 'package:flutter/material.dart';
 import 'package:pensiunku/repository/user_repository.dart';
-import 'package:pensiunku/screen/register/register_controller.dart';
 import 'package:pensiunku/screen/register/register_success_screen.dart';
 import 'package:pensiunku/util/shared_preferences_util.dart';
 import 'package:pensiunku/widget/custom_text_field.dart';

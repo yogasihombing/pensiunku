@@ -70,7 +70,8 @@ class AppDatabase {
   AppDatabase._internal();
 
   _onCreateTables(Database database) async {
-    await database.execute('''
+    await database.execute(
+        '''
         CREATE TABLE ${LiveUpdateDao.TABLE_NAME}(
           l2 TEXT PRIMARY KEY,
           image TEXT,
@@ -79,7 +80,8 @@ class AppDatabase {
           l3 TEXT
         )
         ''');
-    await database.execute('''
+    await database.execute(
+        '''
         CREATE TABLE ${FaqDao.TABLE_NAME}(
           pertanyaan TEXT PRIMARY KEY,
           kategori_faq TEXT,
@@ -87,26 +89,30 @@ class AppDatabase {
           item_order INT
         )
         ''');
-    await database.execute('''
+    await database.execute(
+        '''
         CREATE TABLE ${FaqDao.CATEGORY_TABLE_NAME}(
           name TEXT PRIMARY KEY,
           item_order INT
         )
         ''');
-    await database.execute('''
+    await database.execute(
+        '''
         CREATE TABLE ${PromoDao.TABLE_NAME}(
           image TEXT PRIMARY KEY,
           url TEXT,
           item_order INT
         )
         ''');
-    await database.execute('''
+    await database.execute(
+        '''
         CREATE TABLE ${ArticleDao.CATEGORY_TABLE_NAME}(
           name TEXT PRIMARY KEY,
           item_order INT
         )
         ''');
-    await database.execute('''
+    await database.execute(
+        '''
         CREATE TABLE ${ArticleDao.TABLE_NAME}(
           title TEXT PRIMARY KEY,
           image TEXT,
@@ -116,7 +122,8 @@ class AppDatabase {
           id INT
         )
         ''');
-    await database.execute('''
+    await database.execute(
+        '''
         CREATE TABLE ${UserDao.TABLE_NAME}(
           id INT PRIMARY KEY,
           telepon TEXT,
@@ -131,10 +138,14 @@ class AppDatabase {
           provinsi TEXT,
           kecamatan TEXT,
           kelurahan TEXT,
-          kodepos TEXT
+          kodepos TEXT,
+          profile_picture_url TEXT,
+          is_pensiunku_plus INT,
+          is_wallet_active INT
         )
         ''');
-    await database.execute('''
+    await database.execute(
+        '''
         CREATE TABLE ${NotificationDao.TABLE_NAME}(
           id INT PRIMARY KEY,
           title TEXT,
@@ -144,7 +155,8 @@ class AppDatabase {
           url TEXT
         )
         ''');
-    await database.execute('''
+    await database.execute(
+        '''
         CREATE TABLE ${SubmissionDao.TABLE_NAME}(
           id INT PRIMARY KEY,
           foto_ktp TEXT,
@@ -175,13 +187,15 @@ class AppDatabase {
           angsuran INT
         )
         ''');
-    await database.execute('''
+    await database.execute(
+        '''
         CREATE TABLE ${SalaryPlaceDao.TABLE_NAME}(
           id INT PRIMARY KEY,
           text TEXT
         )
         ''');
-    await database.execute('''
+    await database.execute(
+        '''
         CREATE TABLE ${ReferralDao.TABLE_NAME}(
           id INT PRIMARY KEY,
           foto_ktp TEXT,
@@ -193,13 +207,15 @@ class AppDatabase {
           referal TEXT
         )
         ''');
-    await database.execute('''
+    await database.execute(
+        '''
         CREATE TABLE ${ThemeDao.TABLE_NAME}(
           parameter TEXT PRIMARY KEY,
           value TEXT
         )
         ''');
-    await database.execute('''
+    await database.execute(
+        '''
         CREATE TABLE ${ShippingDao.TABLE_NAME}(
           id INT PRIMARY KEY,
           address TEXT,
@@ -245,13 +261,12 @@ class AppDatabase {
             .execute('DROP TABLE IF EXISTS ${SalaryPlaceDao.TABLE_NAME}');
         await database
             .execute('DROP TABLE IF EXISTS ${ReferralDao.TABLE_NAME}');
-        await database
-            .execute('DROP TABLE IF EXISTS ${ThemeDao.TABLE_NAME}');
+        await database.execute('DROP TABLE IF EXISTS ${ThemeDao.TABLE_NAME}');
         await database
             .execute('DROP TABLE IF EXISTS ${ShippingDao.TABLE_NAME}');
         await _onCreateTables(database);
       },
-      version: 33,
+      version: 34,
     );
 
     faqDao = FaqDao(_database);

@@ -147,7 +147,16 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
   TextEditingController teleponController = TextEditingController();
   TextEditingController domisiliController = TextEditingController();
   TextEditingController tanggalLahirController = TextEditingController();
-  TextEditingController pekerjaanController = TextEditingController();
+  TextEditingController pekerjaanLainnyaController = TextEditingController();
+
+  // Opsi pekerjaan yang baru
+  final List<String> _pekerjaanOptions = [
+    'Pensiunan',
+    'PNS',
+    'Pegawai Swasta',
+    'Lainnya',
+  ];
+  String? _selectedPekerjaan;
 
   // State baru untuk data domisili dari API
   List<String> _allDomisiliOptions = [];
@@ -157,15 +166,15 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
   late Future<ResultModel<UserModel>> _futureData;
 
   DateTime? _selectedDate;
-  late OptionModel _selectedCity; // Deklarasi _selectedCity di sini
+  late OptionModel _selectedCity;
 
   @override
   void initState() {
     super.initState();
     _isLoadingOverlay = true;
-    _selectedCity = OptionModel(id: 0, text: ''); // Inisialisasi awal
+    _selectedCity = OptionModel(id: 0, text: '');
     _refreshData();
-    _fetchDomisili(); // Panggil fungsi untuk mengambil data domisili
+    _fetchDomisili();
   }
 
   // --- FUNGSI: Mengambil data domisili dari API ---
@@ -379,7 +388,6 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
                                             onTap: () {
                                               Navigator.of(context).pop();
                                               setState(() {
-                                                // Create OptionModel with dummy ID or index
                                                 _selectedCity = OptionModel(
                                                     id: index + 1, text: city);
                                                 domisiliController.text = city;
@@ -476,14 +484,31 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
       );
       return;
     }
-    if (pekerjaanController.text.isEmpty) {
+
+    if (_selectedPekerjaan == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Harap masukkan pekerjaan Anda'),
+          content: Text('Harap pilih pekerjaan Anda'),
           backgroundColor: Colors.red,
         ),
       );
       return;
+    }
+
+    String finalPekerjaan;
+    if (_selectedPekerjaan == 'Lainnya') {
+      finalPekerjaan = pekerjaanLainnyaController.text.trim();
+      if (finalPekerjaan.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Harap isi pekerjaan lainnya'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+    } else {
+      finalPekerjaan = _selectedPekerjaan!;
     }
 
     setState(() {
@@ -496,7 +521,7 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
         telepon: teleponController.text,
         domisili: domisiliController.text,
         tanggalLahir: tanggalLahirController.text,
-        pekerjaan: pekerjaanController.text,
+        pekerjaan: finalPekerjaan, // Menggunakan nilai pekerjaan akhir
       );
 
       if (success) {
@@ -659,28 +684,33 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
       setState(() {
         namaController.text = value.data?.username ?? '';
         teleponController.text = value.data?.phone ?? '';
-        // Inisialisasi tanggal lahir dan pekerjaan jika ada di data user
-        // ASUMSI: UserModel memiliki properti 'birthDate' dan 'job'
         tanggalLahirController.text = value.data?.birthDate ?? '';
-        pekerjaanController.text = value.data?.job ?? '';
+
+        if (value.data?.job != null) {
+          if (_pekerjaanOptions.contains(value.data!.job)) {
+            _selectedPekerjaan = value.data!.job;
+            pekerjaanLainnyaController.clear();
+          } else {
+            _selectedPekerjaan = 'Lainnya';
+            pekerjaanLainnyaController.text = value.data!.job!;
+          }
+        } else {
+          _selectedPekerjaan = null;
+          pekerjaanLainnyaController.clear();
+        }
 
         // Inisialisasi domisili dan _selectedCity
-        // ASUMSI: UserModel memiliki properti 'kecamatan'
         if (value.data?.kecamatan != null &&
             value.data!.kecamatan!.isNotEmpty) {
           domisiliController.text = value.data!.kecamatan!;
-          // Cari OptionModel yang sesuai dari _allDomisiliOptions
-          // Karena _allDomisiliOptions adalah List<String>, kita perlu membuat OptionModel
-          // Jika tidak ditemukan, default ke OptionModel kosong
           _selectedCity = _allDomisiliOptions
                   .firstWhere(
                     (cityText) => cityText == value.data!.kecamatan,
-                    orElse: () => '', // Return empty string if not found
+                    orElse: () => '',
                   )
                   .isNotEmpty
               ? OptionModel(
-                  id: _allDomisiliOptions.indexOf(value.data!.kecamatan!) +
-                      1, // Dummy ID
+                  id: _allDomisiliOptions.indexOf(value.data!.kecamatan!) + 1,
                   text: value.data!.kecamatan!)
               : OptionModel(id: 0, text: '');
         } else {
@@ -909,7 +939,7 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
                                   ),
                                   SizedBox(height: screenHeight * 0.02),
 
-                                  // New: Pekerjaan field
+                                  // Pekerjaan Dropdown
                                   Container(
                                     decoration: BoxDecoration(
                                       borderRadius: BorderRadius.circular(
@@ -917,25 +947,67 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
                                       border:
                                           Border.all(color: Colors.grey[300]!),
                                     ),
-                                    child: TextFormField(
-                                      controller: pekerjaanController,
+                                    child: DropdownButtonFormField<String>(
+                                      value: _selectedPekerjaan,
                                       decoration: InputDecoration(
-                                          labelText: 'Pekerjaan',
-                                          border: OutlineInputBorder()),
+                                        labelText: 'Pekerjaan',
+                                        border: InputBorder.none,
+                                        contentPadding: EdgeInsets.symmetric(
+                                            horizontal: screenWidth * 0.04,
+                                            vertical: screenHeight * 0.015),
+                                        isDense: true,
+                                      ),
+                                      hint: Text('Pilih Pekerjaan'),
+                                      items:
+                                          _pekerjaanOptions.map((String value) {
+                                        return DropdownMenuItem<String>(
+                                          value: value,
+                                          child: Text(value),
+                                        );
+                                      }).toList(),
+                                      onChanged: (String? newValue) {
+                                        setState(() {
+                                          _selectedPekerjaan = newValue;
+                                        });
+                                      },
                                       validator: (value) =>
                                           (value == null || value.isEmpty)
-                                              ? 'Harap masukkan pekerjaan'
+                                              ? 'Harap pilih pekerjaan'
                                               : null,
-                                      style: TextStyle(
-                                          fontSize: screenWidth * 0.04),
                                     ),
                                   ),
+
+                                  if (_selectedPekerjaan == 'Lainnya')
+                                    Padding(
+                                      padding: EdgeInsets.only(
+                                          top: screenHeight * 0.02),
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.circular(
+                                              screenWidth * 0.02),
+                                          border: Border.all(
+                                              color: Colors.grey[300]!),
+                                        ),
+                                        child: TextFormField(
+                                          controller:
+                                              pekerjaanLainnyaController,
+                                          decoration: InputDecoration(
+                                              labelText: 'Tulis pekerjaan Anda',
+                                              border: OutlineInputBorder()),
+                                          validator: (value) =>
+                                              (value == null || value.isEmpty)
+                                                  ? 'Harap isi pekerjaan'
+                                                  : null,
+                                          style: TextStyle(
+                                              fontSize: screenWidth * 0.04),
+                                        ),
+                                      ),
+                                    ),
                                   SizedBox(height: screenHeight * 0.04),
 
                                   // Submit button
                                   Center(
                                     child: SizedBox(
-                                      // width: double.infinity,
                                       height: screenHeight * 0.06,
                                       child: ElevatedButton(
                                         onPressed: _isSubmitting
@@ -1039,7 +1111,7 @@ class _PengajuanAndaScreenState extends State<PengajuanAndaScreen> {
     teleponController.dispose();
     domisiliController.dispose();
     tanggalLahirController.dispose();
-    pekerjaanController.dispose();
+    pekerjaanLainnyaController.dispose();
     super.dispose();
   }
 }

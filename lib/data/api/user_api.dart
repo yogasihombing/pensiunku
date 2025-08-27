@@ -8,7 +8,7 @@ import 'package:pensiunku/config.dart'; // berisi baseUrl, isProd, dsb.
 class UserApi {
   final String _baseUrl;
 
-  UserApi() : _baseUrl = apiHost; // misal apiHost = 'https://api.pensiunku.id'
+  UserApi() : _baseUrl = apiHost;
 
   Future<http.Response> getOne(String token) async {
     final uri = Uri.parse('$_baseUrl/user');
@@ -27,11 +27,29 @@ class UserApi {
     );
   }
 
+  // Metode baru untuk mengunggah foto profil
+  Future<http.Response> uploadProfilePicture(
+      String token, int userId, String base64Image) async {
+    final uri = Uri.parse('https://api.pensiunku.id/new.php/uploadProfile');
+
+    // Payload JSON dengan Base64 string
+    final payload = {
+      'id_user': userId.toString(),
+      // Perubahan di sini: Mengirim Base64 string tanpa prefix.
+      'foto_profile': base64Image
+    };
+
+    return await http.post(
+      uri,
+      headers: ApiUtil.getTokenHeaders(token), // Menggunakan header otorisasi
+      body: jsonEncode(payload),
+    );
+  }
+
   Future<http.Response> sendOtp(String phone) async {
     final uri = Uri.parse('$_baseUrl/user/verify-phone');
-    final payload = isProd
-        ? {'phone': phone}
-        : {'phone': phone, 'test': 'testing'};
+    final payload =
+        isProd ? {'phone': phone} : {'phone': phone, 'test': 'testing'};
     return await http.post(
       uri,
       headers: {'Content-Type': 'application/json'},

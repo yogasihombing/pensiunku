@@ -1,4 +1,3 @@
-
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
@@ -24,7 +23,8 @@ class PencairanDiprosesScreen extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<PencairanDiprosesScreen> createState() => _PencairanDiprosesScreenState();
+  State<PencairanDiprosesScreen> createState() =>
+      _PencairanDiprosesScreenState();
 }
 
 class _PencairanDiprosesScreenState extends State<PencairanDiprosesScreen> {
@@ -48,7 +48,8 @@ class _PencairanDiprosesScreenState extends State<PencairanDiprosesScreen> {
     final screenWidth = mediaQuery.size.width;
 
     // Format tanggal dan waktu
-    final dateTimeFormatter = DateFormat('dd MMMM yyyy • HH:mm:ss \'WIB\'', 'id_ID'); // Menggunakan id_ID untuk bulan
+    final dateTimeFormatter = DateFormat('dd MMMM yyyy • HH:mm:ss \'WIB\'',
+        'id_ID'); // Menggunakan id_ID untuk bulan
     final formattedDateTime = dateTimeFormatter.format(widget.transactionDate);
 
     // Format nominal
@@ -57,8 +58,8 @@ class _PencairanDiprosesScreenState extends State<PencairanDiprosesScreen> {
       symbol: 'Rp ',
       decimalDigits: 0,
     );
-    final formattedNominal = nominalFormatter.format(double.tryParse(widget.nominal) ?? 0.0);
-
+    final formattedNominal =
+        nominalFormatter.format(double.tryParse(widget.nominal) ?? 0.0);
 
     return Scaffold(
       body: Stack(
@@ -111,10 +112,11 @@ class _PencairanDiprosesScreenState extends State<PencairanDiprosesScreen> {
                   SizedBox(height: screenHeight * 0.03),
                   // Ilustrasi (Ganti dengan aset PNG/SVG Anda)
                   Container(
-                    width: screenWidth * 0.8, // Ukuran responsif untuk ilustrasi
-                    height: screenHeight * 0.27,
-                    child: Image.asset('assets/pensiunkuplus/e_wallet/pencairan_diproses.png')
-                  ),
+                      width:
+                          screenWidth * 0.8, // Ukuran responsif untuk ilustrasi
+                      height: screenHeight * 0.27,
+                      child: Image.asset(
+                          'assets/pensiunkuplus/e_wallet/pencairan_diproses.png')),
                   SizedBox(height: screenHeight * 0.03),
 
                   // Card "Mohon Ditunggu"
@@ -153,13 +155,16 @@ class _PencairanDiprosesScreenState extends State<PencairanDiprosesScreen> {
                           ),
                           textAlign: TextAlign.center,
                         ),
-                        SizedBox(height: screenHeight * 0.01), // Tambah spasi untuk nominal
+                        SizedBox(
+                            height: screenHeight *
+                                0.01), // Tambah spasi untuk nominal
                         Text(
                           formattedNominal, // Tampilkan nominal di sini
                           style: TextStyle(
                             fontSize: screenWidth * 0.06,
                             fontWeight: FontWeight.bold,
-                            color: const Color(0xFF017964), // Warna hijau untuk nominal
+                            color: const Color(
+                                0xFF017964), // Warna hijau untuk nominal
                           ),
                           textAlign: TextAlign.center,
                         ),
@@ -189,7 +194,9 @@ class _PencairanDiprosesScreenState extends State<PencairanDiprosesScreen> {
                   Align(
                     alignment: Alignment.center,
                     child: Padding(
-                      padding: EdgeInsets.only(left: screenWidth * 0.02, bottom: screenHeight * 0.01),
+                      padding: EdgeInsets.only(
+                          left: screenWidth * 0.02,
+                          bottom: screenHeight * 0.01),
                       child: Text(
                         "Rekening Pencairan",
                         style: TextStyle(
@@ -223,7 +230,8 @@ class _PencairanDiprosesScreenState extends State<PencairanDiprosesScreen> {
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(8),
                             image: DecorationImage(
-                              image: NetworkImage(widget.bankDetail.bankLogoUrl ??
+                              image: NetworkImage(widget
+                                      .bankDetail.bankLogoUrl ??
                                   'https://placehold.co/${(screenWidth * 0.15).toInt()}x${(screenWidth * 0.15).toInt()}/000000/FFFFFF?text=BANK'),
                               fit: BoxFit.contain,
                               onError: (exception, stackTrace) {
@@ -283,12 +291,9 @@ class _PencairanDiprosesScreenState extends State<PencairanDiprosesScreen> {
                         elevation: 5,
                       ),
                       onPressed: () {
-                        // Navigasi ke halaman dashboard utama atau root
-                        Navigator.pushNamedAndRemoveUntil(
-                          context,
-                          DashboardScreen.ROUTE_NAME, // Ganti dengan route ke Dashboard utama Anda
-                          (Route<dynamic> route) => false, // Hapus semua route sebelumnya
-                        );
+                        // Perbaikan: Kembali ke rute Dashboard yang sudah ada
+                        Navigator.of(context)
+                            .popUntil((route) => route.isFirst);
                       },
                       child: Text(
                         'Kembali ke Beranda',

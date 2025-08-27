@@ -133,7 +133,7 @@ class _PreviewKtpScreenState extends State<PreviewKtpScreen> {
         if (result.error == null) {
           setState(() {
             _userModel = result.data;
-            _isActivated = _userModel?.isActivated ?? false;
+            // _isActivated = _userModel?.isActivated ?? false;
             print('Data user berhasil dimuat:');
             print('User ID: ${_userModel?.id}');
             print('Is Activated: $_isActivated');

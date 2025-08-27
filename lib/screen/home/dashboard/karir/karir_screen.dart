@@ -11,7 +11,7 @@ class KarirScreen extends StatefulWidget {
 class _KarirScreenState extends State<KarirScreen> {
   late final WebViewController _controller;
   final String _initialUrl =
-      'https://www.nabasa.co.id/marsitacademy/Pekerjaan/Lamar?id=1';
+      'https://www.nabasa.co.id/marsitacademy/Pekerjaan/Lamar?id=1&referal=047008964';
 
   @override
   void initState() {

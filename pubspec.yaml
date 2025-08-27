@@ -15,7 +15,7 @@ publish_to: "none" # Remove this line if you wish to publish to pub.dev
 # In iOS, build-name is used as CFBundleShortVersionString while build-number used as CFBundleVersion.
 # Read more about iOS versioning at
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
-version: 1.0.0+5
+version: 1.0.0+6
 
 environment:
   sdk: ">=2.12.0 <3.0.0"
@@ -24,7 +24,6 @@ dependencies:
   flutter:
     sdk: flutter
 
- 
   # UI Components
   awesome_dialog: ^3.0.2
   get: ^4.6.5
@@ -64,8 +63,9 @@ dependencies:
   connectivity_plus: ^5.0.2 #untuk memeriksa status koneksi
   lottie: ^2.3.2
   http: ^0.13.1
+  font_awesome_flutter: ^10.4.0
+  package_info_plus: 1.4.3+1
   showcaseview: ^4.0.1
-
 
   # Firebase
   firebase_core: ^2.8.0 # Updated to a compatible version
@@ -198,6 +198,7 @@ flutter:
     - assets/icon/profile/cs.png
     - assets/icon/profile/faq.png
     - assets/icon/profile/invite_friend.png
+    - assets/icon/profile/referral.png
     - assets/icon/profile/kebijakan_privasi.png
     - assets/icon/profile/syarat_ketentuan.png
     - assets/icon/live_chat.png
@@ -247,6 +248,7 @@ flutter:
     - assets/pensiunkuplus/e_wallet/pencairan_berhasil.png
     - assets/pensiunkuplus/e_wallet/pencairan_diproses.png
     - assets/poster/show_poster1.png
+    - assets/images/user/default.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware.

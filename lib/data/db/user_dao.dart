@@ -10,9 +10,15 @@ class UserDao {
 
   insert(UserModel user) async {
     Batch batch = database.batch();
+
+    // Convert bool to int (1 or 0) for SQLite storage
+    var userMap = user.toJson();
+    userMap['is_pensiunku_plus'] = user.isPensiunkuPlus ? 1 : 0;
+    userMap['is_wallet_active'] = user.isWalletActive ? 1 : 0;
+
     batch.insert(
       TABLE_NAME,
-      user.toJson(),
+      userMap,
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
     await batch.commit();
@@ -22,8 +28,15 @@ class UserDao {
     final userJson = await database.query(
       TABLE_NAME,
     );
-    if (userJson.length > 0) {
-      return UserModel.fromJson(userJson[0]);
+    if (userJson.isNotEmpty) {
+      // Buat salinan Map yang bisa dimodifikasi dari hasil query
+      Map<String, dynamic> userMap = Map.from(userJson[0]);
+
+      // Convert int (1 or 0) back to bool
+      userMap['is_pensiunku_plus'] = (userMap['is_pensiunku_plus'] as int) == 1;
+      userMap['is_wallet_active'] = (userMap['is_wallet_active'] as int) == 1;
+
+      return UserModel.fromJson(userMap);
     }
     return null;
   }
