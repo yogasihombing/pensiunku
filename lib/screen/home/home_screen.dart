@@ -10,6 +10,7 @@ import 'package:pensiunku/model/submission_model.dart';
 import 'package:pensiunku/repository/user_repository.dart';
 import 'package:pensiunku/screen/home/account/account_screen.dart';
 import 'package:pensiunku/screen/home/dashboard/dashboard_screen.dart';
+import 'package:pensiunku/screen/home/dashboard/poster/poster_dialog.dart';
 import 'package:pensiunku/screen/home/dashboard/usaha/usaha_screen.dart';
 import 'package:pensiunku/screen/home/submission/riwayat_pengajuan_orang_lain.dart';
 import 'package:pensiunku/screen/home/update_dialog.dart';
@@ -67,6 +68,14 @@ class _HomeScreenState extends State<HomeScreen> {
     Timer(const Duration(milliseconds: 800), () {
       print('Home Screen: Memeriksa versi baru setelah penundaan 800ms.');
       checkNewVersion(newVersion);
+    });
+
+    // TAMBAHKAN INI: Tampilkan poster dialog setelah delay
+    Timer(const Duration(seconds: 3), () {
+      if (mounted) {
+        print('Home Screen: Menampilkan poster dialog...');
+        PosterDialog.show(context);
+      }
     });
 
     const AndroidNotificationChannel channel = AndroidNotificationChannel(

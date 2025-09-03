@@ -67,6 +67,24 @@ Map<String, String> get defaultApiHeaders {
   };
 }
 
+// 1. Tambahkan model untuk Banner
+class BannerModel {
+  final String id;
+  final String gambar;
+
+  BannerModel({
+    required this.id,
+    required this.gambar,
+  });
+
+  factory BannerModel.fromJson(Map<String, dynamic> json) {
+    return BannerModel(
+      id: json['id'] ?? '',
+      gambar: json['gambar'] ?? '',
+    );
+  }
+}
+
 class DashboardScreen extends StatefulWidget {
   static const String ROUTE_NAME = '/dashboard_screen';
   final void Function(BuildContext) onApplySubmission;
@@ -120,11 +138,16 @@ class _DashboardScreenState extends State<DashboardScreen>
   //   eight,
   // ];
 
-  final List<String> _carouselImagePaths = const [
-    'assets/dashboard_screen/image_1.png',
-    'assets/dashboard_screen/image_2.png',
-    'assets/dashboard_screen/image_3.png',
-  ];
+  // final List<String> _carouselImagePaths = const [
+  //   'assets/dashboard_screen/image_1.png',
+  //   'assets/dashboard_screen/image_2.png',
+  //   'assets/dashboard_screen/image_3.png',
+  // ];
+
+  // Tambahkan variabel baru untuk banner dari API:
+  List<BannerModel> _banners = [];
+  late Future<List<BannerModel>> _futureBanners;
+  bool _isBannersLoading = true;
 
   @override
   bool get wantKeepAlive => true;
@@ -137,6 +160,9 @@ class _DashboardScreenState extends State<DashboardScreen>
 
     _futureArticleCategories = ArticleRepository().getAllCategories();
 
+    // Tambahkan pemanggilan untuk mengambil banner
+    _futureBanners = _fetchBanners();
+
     _refreshData();
 
     _futureGreeting = fetchGreeting().whenComplete(() {
@@ -145,10 +171,6 @@ class _DashboardScreenState extends State<DashboardScreen>
           _isLoadingOverlay = false;
           print('DashboardScreen: Overlay loading dinonaktifkan.');
         });
-        // Panggilan untuk memulai showcase telah dihapus
-        // WidgetsBinding.instance.addPostFrameCallback((_) {
-        //   _startShowcase();
-        // });
       }
     });
   }
@@ -156,17 +178,90 @@ class _DashboardScreenState extends State<DashboardScreen>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _precacheCarouselImages();
+    // _precacheCarouselImages();
   }
 
-  Future<void> _precacheCarouselImages() async {
-    for (final path in _carouselImagePaths) {
-      try {
-        await precacheImage(AssetImage(path), context);
-        print('Precached image: $path');
-      } catch (e, st) {
-        print('Error precaching $path: $e\n$st');
+  // Future<void> _precacheCarouselImages() async {
+  //   for (final path in _carouselImagePaths) {
+  //     try {
+  //       await precacheImage(AssetImage(path), context);
+  //       print('Precached image: $path');
+  //     } catch (e, st) {
+  //       print('Error precaching $path: $e\n$st');
+  //     }
+  //   }
+  // }
+
+  // 3. Tambahkan method untuk mengambil data banner dari API:
+  Future<List<BannerModel>> _fetchBanners() async {
+    try {
+      print('DashboardScreen: Mengambil data banner dari API...');
+
+      final response = await http.get(
+        Uri.parse('https://api.pensiunku.id/new.php/getBannerApps'),
+        headers: defaultApiHeaders,
+      );
+
+      print(
+          'DashboardScreen: Response banner - Status: ${response.statusCode}');
+      print('DashboardScreen: Response banner - Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        // Cek apakah response adalah HTML (Cloudflare/Imunify360 challenge)
+        if (response.body.contains('One moment, please...') ||
+            response.body
+                .contains('Access denied by Imunify360 bot-protection') ||
+            response.body.trim().startsWith('<!DOCTYPE html>')) {
+          throw Exception(
+              'Deteksi tantangan keamanan (Cloudflare/Imunify360). Mohon coba lagi.');
+        }
+
+        final data = jsonDecode(response.body);
+
+        if (data != null && data['text'] != null) {
+          List<BannerModel> banners = [];
+          for (var item in data['text']) {
+            banners.add(BannerModel.fromJson(item));
+          }
+
+          print('DashboardScreen: Berhasil mengambil ${banners.length} banner');
+
+          if (mounted) {
+            setState(() {
+              _banners = banners;
+              _isBannersLoading = false;
+            });
+          }
+
+          return banners;
+        } else {
+          throw Exception('Format response API tidak sesuai');
+        }
+      } else {
+        throw Exception(
+            'Failed to load banners with status code: ${response.statusCode}');
       }
+    } catch (e) {
+      print('DashboardScreen: Error mengambil banner: $e');
+
+      if (mounted) {
+        setState(() {
+          _isBannersLoading = false;
+          // Fallback ke banner default jika API gagal
+          _banners = [
+            BannerModel(id: '1', gambar: 'assets/dashboard_screen/image_1.png'),
+            BannerModel(id: '2', gambar: 'assets/dashboard_screen/image_2.png'),
+            BannerModel(id: '3', gambar: 'assets/dashboard_screen/image_3.png'),
+          ];
+        });
+      }
+
+      // Return fallback banners
+      return [
+        BannerModel(id: '1', gambar: 'assets/dashboard_screen/image_1.png'),
+        BannerModel(id: '2', gambar: 'assets/dashboard_screen/image_2.png'),
+        BannerModel(id: '3', gambar: 'assets/dashboard_screen/image_3.png'),
+      ];
     }
   }
 
@@ -184,6 +279,55 @@ class _DashboardScreenState extends State<DashboardScreen>
   //   }
   // }
 
+  // 2. Tambahkan method untuk handling banner click
+  void _handleBannerClick(BannerModel banner) {
+    print(
+        'DashboardScreen: Banner diklik - ID: ${banner.id}, URL: ${banner.gambar}');
+
+    // Logika navigasi berdasarkan ID banner
+    switch (banner.id) {
+      case '4':
+        // Banner dengan ID 4 mengarah ke HalopensiunScreen
+        print('DashboardScreen: Navigasi ke HalopensiunScreen');
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => HalopensiunScreen()),
+        );
+        break;
+      case '3':
+        // Anda bisa menambahkan navigasi untuk banner lain
+        print('DashboardScreen: Banner ID 3 diklik - belum ada navigasi');
+        // _showBannerInfo('Banner 3', 'Fitur ini akan segera hadir!');
+        break;
+      case '2':
+        print('DashboardScreen: Banner ID 2 diklik - belum ada navigasi');
+        // _showBannerInfo('Banner 2', 'Fitur ini akan segera hadir!');
+        break;
+      case '1':
+        print('DashboardScreen: Banner ID 1 diklik - belum ada navigasi');
+        // _showBannerInfo('Banner 1', 'Fitur ini akan segera hadir!');
+        break;
+      default:
+        print('DashboardScreen: Banner dengan ID tidak dikenal: ${banner.id}');
+        // _showBannerInfo('Info', 'Banner ini belum memiliki navigasi.');
+        break;
+    }
+  }
+
+// 3. Method helper untuk menampilkan info banner
+  void _showBannerInfo(String title, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: const TextStyle(color: Colors.white),
+        ),
+        backgroundColor: Colors.blueAccent,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
   Future<void> _refreshData() async {
     print('DashboardScreen: _refreshData dipanggil.');
     String? token = SharedPreferencesUtil()
@@ -197,6 +341,11 @@ class _DashboardScreenState extends State<DashboardScreen>
       });
       return;
     }
+
+    // Refresh banner data
+    setState(() {
+      _futureBanners = _fetchBanners();
+    });
 
     print('DashboardScreen: Memulai pengambilan data user...');
     try {
@@ -1040,10 +1189,9 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 
+  // 4. Update method _buildHeaderImage() dengan tambahan GestureDetector:
   Widget _buildHeaderImage(
       BuildContext context, double screenWidth, double screenHeight) {
-    final List<String> images = _carouselImagePaths;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1062,92 +1210,185 @@ class _DashboardScreenState extends State<DashboardScreen>
           width: double.infinity,
           height: screenHeight * 0.22,
           padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.02),
-          child: CarouselSlider.builder(
-            itemCount: images.length,
-            options: CarouselOptions(
-              height: screenHeight * 0.22,
-              enlargeCenterPage: true,
-              autoPlay: true,
-              autoPlayInterval: const Duration(seconds: 3),
-              autoPlayAnimationDuration: const Duration(milliseconds: 800),
-              viewportFraction: 0.94,
-              aspectRatio: 16 / 9,
-              reverse: true,
-              enlargeStrategy: CenterPageEnlargeStrategy.height,
-              pageViewKey: const PageStorageKey('carousel'),
-            ),
-            itemBuilder: (context, index, realIndex) {
-              return Container(
-                margin: EdgeInsets.symmetric(horizontal: screenWidth * 0.01),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(screenWidth * 0.05),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      spreadRadius: 1,
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
+          child: FutureBuilder<List<BannerModel>>(
+            future: _futureBanners,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting ||
+                  _isBannersLoading) {
+                return Center(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(screenWidth * 0.05),
+                      color: Colors.grey[200],
                     ),
-                  ],
+                    child: const CircularProgressIndicator(
+                      valueColor:
+                          AlwaysStoppedAnimation<Color>(Color(0xFF017964)),
+                    ),
+                  ),
+                );
+              }
+
+              if (snapshot.hasError || _banners.isEmpty) {
+                print(
+                    'DashboardScreen: Error atau tidak ada banner: ${snapshot.error}');
+                return Center(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(screenWidth * 0.05),
+                      color: Colors.grey[200],
+                    ),
+                    child: Icon(
+                      Icons.image_not_supported,
+                      size: screenWidth * 0.1,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                );
+              }
+
+              return CarouselSlider.builder(
+                itemCount: _banners.length,
+                options: CarouselOptions(
+                  height: screenHeight * 0.22,
+                  enlargeCenterPage: true,
+                  autoPlay: true,
+                  autoPlayInterval: const Duration(seconds: 3),
+                  autoPlayAnimationDuration: const Duration(milliseconds: 800),
+                  viewportFraction: 0.94,
+                  aspectRatio: 16 / 9,
+                  reverse: true,
+                  enlargeStrategy: CenterPageEnlargeStrategy.height,
+                  pageViewKey: const PageStorageKey('carousel'),
                 ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(screenWidth * 0.05),
-                  child: Stack(
-                    children: [
-                      Positioned.fill(
-                        child: Image.asset(
-                          images[index],
-                          fit: BoxFit.cover,
-                          filterQuality: FilterQuality.high,
-                          cacheWidth: (screenWidth *
-                                  0.94 *
-                                  MediaQuery.of(context).devicePixelRatio)
-                              .toInt(),
-                          cacheHeight: (screenHeight *
-                                  0.22 *
-                                  MediaQuery.of(context).devicePixelRatio)
-                              .toInt(),
-                          errorBuilder: (context, error, stackTrace) {
-                            debugPrint(
-                                'Error memuat aset ${images[index]}: $error');
-                            return Container(
-                              color: Colors.grey[200],
-                              child: Center(
-                                child: Icon(
-                                  Icons.broken_image,
-                                  size: screenWidth * 0.1,
-                                  color: Colors.grey[600],
+                itemBuilder: (context, index, realIndex) {
+                  final banner = _banners[index];
+                  final isAssetImage = banner.gambar.startsWith('assets/');
+
+                  return GestureDetector(
+                    onTap: () => _handleBannerClick(banner), // Tambahkan ini
+                    child: Container(
+                      margin:
+                          EdgeInsets.symmetric(horizontal: screenWidth * 0.01),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(screenWidth * 0.05),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            spreadRadius: 1,
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(screenWidth * 0.05),
+                        child: Stack(
+                          children: [
+                            Positioned.fill(
+                              child: isAssetImage
+                                  ? Image.asset(
+                                      banner.gambar,
+                                      fit: BoxFit.cover,
+                                      filterQuality: FilterQuality.high,
+                                      errorBuilder:
+                                          (context, error, stackTrace) {
+                                        debugPrint(
+                                            'Error memuat aset ${banner.gambar}: $error');
+                                        return _buildErrorImage(screenWidth);
+                                      },
+                                    )
+                                  : Image.network(
+                                      banner.gambar,
+                                      fit: BoxFit.cover,
+                                      filterQuality: FilterQuality.high,
+                                      loadingBuilder:
+                                          (context, child, loadingProgress) {
+                                        if (loadingProgress == null)
+                                          return child;
+                                        return Center(
+                                          child: CircularProgressIndicator(
+                                            value: loadingProgress
+                                                        .expectedTotalBytes !=
+                                                    null
+                                                ? loadingProgress
+                                                        .cumulativeBytesLoaded /
+                                                    loadingProgress
+                                                        .expectedTotalBytes!
+                                                : null,
+                                            valueColor:
+                                                const AlwaysStoppedAnimation<
+                                                    Color>(Color(0xFF017964)),
+                                          ),
+                                        );
+                                      },
+                                      errorBuilder:
+                                          (context, error, stackTrace) {
+                                        debugPrint(
+                                            'Error memuat gambar ${banner.gambar}: $error');
+                                        return _buildErrorImage(screenWidth);
+                                      },
+                                    ),
+                            ),
+                            Positioned.fill(
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  borderRadius:
+                                      BorderRadius.circular(screenWidth * 0.05),
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                    colors: [
+                                      Colors.transparent,
+                                      Colors.black.withOpacity(0.15),
+                                    ],
+                                    stops: const [0.7, 1.0],
+                                  ),
                                 ),
                               ),
-                            );
-                          },
-                        ),
-                      ),
-                      Positioned.fill(
-                        child: Container(
-                          decoration: BoxDecoration(
-                            borderRadius:
-                                BorderRadius.circular(screenWidth * 0.05),
-                            gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                Colors.transparent,
-                                Colors.black.withOpacity(0.15),
-                              ],
-                              stops: const [0.7, 1.0],
                             ),
-                          ),
+                            // Optional: Tambahkan indikator bahwa banner bisa diklik
+                            Positioned(
+                              top: 8,
+                              right: 8,
+                              child: Container(
+                                padding: EdgeInsets.all(4),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withOpacity(0.3),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Icon(
+                                  Icons.touch_app,
+                                  color: Colors.white,
+                                  size: 16,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
-                  ),
-                ),
+                    ),
+                  );
+                },
               );
             },
           ),
         ),
       ],
+    );
+  }
+
+  // 8. Tambahkan helper method untuk error image:
+  Widget _buildErrorImage(double screenWidth) {
+    return Container(
+      color: Colors.grey[200],
+      child: Center(
+        child: Icon(
+          Icons.broken_image,
+          size: screenWidth * 0.1,
+          color: Colors.grey[600],
+        ),
+      ),
     );
   }
 
@@ -1341,9 +1582,9 @@ class _DashboardScreenState extends State<DashboardScreen>
             child: Text(
               'Artikel',
               style: TextStyle(
-                  fontSize: screenWidth * 0.035,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black),
+                  fontSize: screenWidth * 0.030,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87),
             ),
           ),
           FutureBuilder<ResultModel<List<ArticleCategoryModel>>>(

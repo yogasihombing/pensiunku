@@ -1,41 +1,126 @@
+import 'dart:convert';
+
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:pensiunku/model/poster_dialog/popup_model.dart';
+import 'package:pensiunku/repository/poster_dialog/popup_repository.dart';
+import 'package:pensiunku/util/shared_preferences_util.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:http/http.dart' as http;
 
 class PosterDialog {
   // Variabel statis untuk melacak apakah dialog sudah ditampilkan dalam sesi ini
   static bool _hasShownInCurrentSession = false;
-  // URL Google Play Store yang akan dibuka
-  static const String playstoreUrl =
-      'https://play.google.com/store/apps/details?id=com.taspen.tcds';
+
+  // Repository untuk API call
+  static final PopupRepository _popupRepository = PopupRepository();
 
   // Method untuk membuka URL
-  static Future<void> _launchURL() async {
+  static Future<void> _launchURL(String? url) async {
+    if (url == null || url.isEmpty) {
+      debugPrint('URL kosong atau null');
+      return;
+    }
+
     try {
-      final Uri url = Uri.parse(playstoreUrl);
+      final Uri uri = Uri.parse(url);
       if (!await launchUrl(
-        url,
+        uri,
         mode: LaunchMode.externalApplication,
       )) {
-        throw Exception('Tidak dapat membuka $playstoreUrl');
+        throw Exception('Tidak dapat membuka $url');
       }
     } catch (e) {
       debugPrint('Error membuka URL: $e');
     }
   }
 
-  // Method statis untuk menampilkan dialog poster dengan animasi
-  static void show(BuildContext context) {
-    // Cek apakah sudah ditampilkan dalam sesi ini
-    if (!_hasShownInCurrentSession) {
-      _hasShownInCurrentSession = true; // Tandai bahwa dialog sudah ditampilkan
+  // Method untuk mendapatkan data popup dari API
+  static Future<PopupModel?> _fetchPopupData() async {
+    try {
+      print('PosterDialog: Mengambil data popup dari API...');
+      final result = await _popupRepository.getPopupApps();
+
+      if (result.error != null) {
+        print('PosterDialog: Error dari API: ${result.error}');
+        return null;
+      }
+
+      if (result.data != null) {
+        print('PosterDialog: Data popup berhasil diambil: ${result.data}');
+        return result.data;
+      }
+
+      print('PosterDialog: Data popup null dari API');
+      return null;
+    } catch (e) {
+      print('PosterDialog: Exception saat mengambil data popup: $e');
+      return null;
+    }
+  }
+
+  // Method untuk memeriksa apakah popup sudah pernah ditampilkan hari ini
+  static bool _hasShownToday() {
+    final prefs = SharedPreferencesUtil().sharedPreferences;
+    final lastShown = prefs.getString('popup_last_shown_date');
+    final today =
+        DateTime.now().toIso8601String().split('T')[0]; // Format: YYYY-MM-DD
+
+    print('PosterDialog: Last shown date: $lastShown, Today: $today');
+    return lastShown == today;
+  }
+
+  // Method untuk menyimpan tanggal terakhir popup ditampilkan
+  static Future<void> _setShownToday() async {
+    final prefs = SharedPreferencesUtil().sharedPreferences;
+    final today = DateTime.now().toIso8601String().split('T')[0];
+    await prefs.setString('popup_last_shown_date', today);
+    print('PosterDialog: Popup marked as shown for date: $today');
+  }
+
+  // Method statis untuk menampilkan dialog poster dengan data dari API
+  static Future<void> show(BuildContext context) async {
+    // Cek apakah sudah ditampilkan dalam sesi ini atau hari ini
+    if (_hasShownInCurrentSession || _hasShownToday()) {
+      print(
+          'PosterDialog: Popup sudah ditampilkan dalam sesi ini atau hari ini');
+      return;
+    }
+
+    try {
+      // Ambil data popup dari API
+      final popupData = await _fetchPopupData();
+
+      if (popupData == null) {
+        print('PosterDialog: Tidak ada data popup, tidak menampilkan dialog');
+        return;
+      }
+
+      // Cek apakah popup aktif
+      if (popupData.isActive != true) {
+        print('PosterDialog: Popup tidak aktif, tidak menampilkan dialog');
+        return;
+      }
+
+      // Cek apakah ada gambar
+      if (popupData.image == null || popupData.image!.isEmpty) {
+        print('PosterDialog: Tidak ada gambar popup, tidak menampilkan dialog');
+        return;
+      }
+
+      // Tandai bahwa dialog sudah ditampilkan dalam sesi ini
+      _hasShownInCurrentSession = true;
+      await _setShownToday();
+
+      // if (!context.mounted) return;
 
       showGeneralDialog(
         context: context,
-        barrierDismissible: false,
+        barrierDismissible: true,
         barrierLabel: "Poster Dialog",
         barrierColor: Colors.black.withOpacity(0.7),
         transitionDuration: const Duration(milliseconds: 400),
-        pageBuilder: (_, __, ___) => Container(), // Tidak digunakan
+        pageBuilder: (_, __, ___) => Container(),
         transitionBuilder: (context, animation, secondaryAnimation, child) {
           return ScaleTransition(
             scale: CurvedAnimation(
@@ -54,6 +139,10 @@ class PosterDialog {
                   children: [
                     // Container untuk poster dengan shadow
                     Container(
+                      constraints: const BoxConstraints(
+                        maxHeight: 500,
+                        maxWidth: 350,
+                      ),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
@@ -68,11 +157,43 @@ class PosterDialog {
                         borderRadius: BorderRadius.circular(16),
                         child: Stack(
                           children: [
-                            // Gambar poster
-                            Image.asset(
-                              'assets/poster/show_poster1.png',
+                            // Gambar poster dari API
+                            CachedNetworkImage(
+                              imageUrl: popupData.image!,
                               fit: BoxFit.cover,
+                              placeholder: (context, url) => Container(
+                                height: 400,
+                                color: Colors.grey[300],
+                                child: const Center(
+                                  child: CircularProgressIndicator(
+                                    color: Color(0xFF017964),
+                                  ),
+                                ),
+                              ),
+                              errorWidget: (context, url, error) => Container(
+                                height: 400,
+                                color: Colors.grey[300],
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.broken_image,
+                                      size: 50,
+                                      color: Colors.grey[600],
+                                    ),
+                                    const SizedBox(height: 10),
+                                    Text(
+                                      'Gagal memuat gambar',
+                                      style: TextStyle(
+                                        color: Colors.grey[600],
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
+
                             // Gradient overlay di bagian bawah untuk tombol
                             Positioned(
                               bottom: 0,
@@ -121,11 +242,33 @@ class PosterDialog {
                                 ),
                               ),
                             ),
+
+                            // Tombol close di pojok kiri atas
+                            Positioned(
+                              top: 16,
+                              left: 16,
+                              child: GestureDetector(
+                                onTap: () => Navigator.pop(context),
+                                child: Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withOpacity(0.5),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: const Icon(
+                                    Icons.close,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
+                                ),
+                              ),
+                            ),
                           ],
                         ),
                       ),
                     ),
                     const SizedBox(height: 20),
+
                     // Tombol untuk action
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -136,17 +279,14 @@ class PosterDialog {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.white,
                             foregroundColor: Colors.black,
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 20), // Sesuaikan padding horizontal
-                            minimumSize:
-                                const Size(0, 35), // Hilangkan lebar minimum
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            minimumSize: const Size(0, 35),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(25),
                             ),
                             elevation: 5,
                             shadowColor: Colors.black.withOpacity(0.1),
-                            visualDensity:
-                                VisualDensity.compact, // Padatkan layout
+                            visualDensity: VisualDensity.compact,
                           ),
                           child: const Text(
                             'Tutup',
@@ -156,39 +296,42 @@ class PosterDialog {
                             ),
                           ),
                         ),
-                        const SizedBox(width: 15),
-                        // Tombol Play Store
-                        ElevatedButton(
-                          onPressed: _launchURL,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF017964),
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 15), // Sesuaikan padding
-                            minimumSize: const Size(0, 35),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(25),
-                            ),
-                            elevation: 5,
-                            shadowColor:
-                                const Color(0xFF01875F).withOpacity(0.3),
-                            visualDensity: VisualDensity.compact,
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              // const Icon(Icons.android, size: 20),
-                              const SizedBox(width: 8),
-                              const Text(
-                                'Play Store',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
+
+                        // Tampilkan tombol URL jika ada
+                        if (popupData.url != null &&
+                            popupData.url!.isNotEmpty) ...[
+                          const SizedBox(width: 15),
+                          ElevatedButton(
+                            onPressed: () => _launchURL(popupData.url),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF017964),
+                              foregroundColor: Colors.white,
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 15),
+                              minimumSize: const Size(0, 35),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(25),
                               ),
-                            ],
+                              elevation: 5,
+                              shadowColor:
+                                  const Color(0xFF01875F).withOpacity(0.3),
+                              visualDensity: VisualDensity.compact,
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                SizedBox(width: 8),
+                                Text(
+                                  'Lihat',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
+                        ],
                       ],
                     )
                   ],
@@ -198,6 +341,8 @@ class PosterDialog {
           );
         },
       );
+    } catch (e) {
+      print('PosterDialog: Error menampilkan dialog: $e');
     }
   }
 
@@ -207,16 +352,13 @@ class PosterDialog {
   }
 
   // Method untuk menampilkan dialog dengan animasi konfeti
-  static void showWithConfetti(BuildContext context) {
-    show(context);
+  static Future<void> showWithConfetti(BuildContext context) async {
+    await show(context);
     // Tambahkan tampilan konfeti di sini jika menggunakan library konfeti
-    // Contoh: jika menggunakan confetti package
-    // ConfettiController confettiController = ConfettiController(duration: const Duration(seconds: 2));
-    // confettiController.play();
   }
 }
 
-// Tambahan: Widget untuk tampilan poster dengan animasi shimmer ketika loading
+// Widget untuk tampilan poster dengan animasi shimmer ketika loading
 class ShimmerPosterLoader extends StatefulWidget {
   final double width;
   final double height;
@@ -290,7 +432,6 @@ class _ShimmerPosterLoaderState extends State<ShimmerPosterLoader>
     );
   }
 }
-
 
 // import 'package:flutter/material.dart';
 // import 'package:shared_preferences/shared_preferences.dart';

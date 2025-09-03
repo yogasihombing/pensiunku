@@ -73,7 +73,6 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen>
   @override
   void initState() {
     super.initState();
-    // PERBAIKAN: Memastikan data locale diinisialisasi untuk DateFormat
     initializeDateFormatting('id_ID', null).then((_) {
       debugPrint("Locale data for id_ID initialized successfully.");
     }).catchError((e) {
@@ -446,7 +445,6 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen>
   }
 
   // === FUNGSI SCREENSHOT BARU ===
-  // Fungsi screenshot yang sudah diperbaiki untuk full-page
   Future<void> _captureFullScreenAndSave() async {
     if (!mounted) return;
 
@@ -524,9 +522,7 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen>
             stops: [0.25, 0.5, 0.75, 1.0],
           ),
         ),
-        // PERBAIKAN: Menggunakan Column dan MainAxisSize.min agar konten tidak meluber
         child: SingleChildScrollView(
-          // DITAMBAH: Tambahkan SingleChildScrollView
           child: Padding(
             padding:
                 const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
@@ -534,7 +530,6 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen>
               crossAxisAlignment: CrossAxisAlignment.center,
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Header dengan logo
                 Center(
                   child: Image.asset(
                     'assets/register_screen/pensiunku.png',
@@ -559,8 +554,6 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen>
                   ),
                 ),
                 const SizedBox(height: 24.0),
-
-                // Title
                 Text(
                   'Simulasi Cepat Pensiunku (SCP)',
                   style: TextStyle(
@@ -571,8 +564,6 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen>
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 24.0),
-
-                // Data Pengaju
                 Container(
                   width: double.infinity,
                   padding: EdgeInsets.all(16),
@@ -611,10 +602,7 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen>
                     ],
                   ),
                 ),
-
                 const SizedBox(height: 20.0),
-
-                // Hasil Simulasi
                 if (_simulationResult != null) ...[
                   Container(
                     width: double.infinity,
@@ -649,8 +637,6 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen>
                   ),
                   const SizedBox(height: 20.0),
                 ],
-
-                // Syarat dan Ketentuan
                 Container(
                   width: double.infinity,
                   padding: EdgeInsets.all(16),
@@ -680,10 +666,7 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen>
                     ],
                   ),
                 ),
-
                 const SizedBox(height: 20.0),
-
-                // Footer
                 Container(
                   padding: EdgeInsets.all(12),
                   decoration: BoxDecoration(
@@ -1051,14 +1034,27 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen>
   // --- Metode Build Utama ---
   @override
   Widget build(BuildContext context) {
-    final double topBarHeight = 50.0;
-    final double topPadding = MediaQuery.of(context).padding.top;
-
     return Scaffold(
       resizeToAvoidBottomInset: true,
+      appBar: AppBar(
+        title: const Text(
+          'Simulasi Cepat Pensiunku (SCP)',
+          style: TextStyle(
+            color: Color(0xFF017964),
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+          ),
+        ),
+        centerTitle: true,
+        backgroundColor: Colors.white,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Color(0xFF017964)),
+          onPressed: () => Navigator.pop(context),
+        ),
+        elevation: 0, // Menghilangkan shadow
+      ),
       body: Stack(
         children: [
-          // Latar belakang gradien
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
@@ -1074,7 +1070,6 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen>
               ),
             ),
           ),
-          // Konten layar utama
           RepaintBoundary(
             key: _scrollingContentKey,
             child: SingleChildScrollView(
@@ -1109,7 +1104,6 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen>
                           ],
                           validator: validateNama,
                         ),
-
                         buildFormFieldWithError(
                           controller: _tanggalLahirController,
                           fieldKey: 'tanggalLahir',
@@ -1124,7 +1118,6 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen>
                           onChanged: (value) {
                             String digitsOnly = value.replaceAll('-', '');
                             String formatted = '';
-
                             if (digitsOnly.isNotEmpty) {
                               formatted = digitsOnly.substring(
                                   0, min(2, digitsOnly.length));
@@ -1147,7 +1140,6 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen>
                           },
                           validator: validateTanggalLahir,
                         ),
-
                         Padding(
                           padding: const EdgeInsets.only(left: 16.0),
                           child: Text(
@@ -1159,7 +1151,6 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen>
                             ),
                           ),
                         ),
-
                         Row(
                           children: [
                             Radio<String>(
@@ -1186,7 +1177,6 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen>
                           ],
                         ),
                         SizedBox(height: 10.0),
-
                         if (_statusPengaju == 'Pra-Pensiun')
                           buildFormFieldWithError(
                             controller: _tanggalPensiunController,
@@ -1202,7 +1192,6 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen>
                             onChanged: (value) {
                               String digitsOnly = value.replaceAll('-', '');
                               String formatted = '';
-
                               if (digitsOnly.isNotEmpty) {
                                 formatted = digitsOnly.substring(
                                     0, min(2, digitsOnly.length));
@@ -1226,7 +1215,6 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen>
                             },
                             validator: validateTanggalPensiun,
                           ),
-
                         buildFormFieldWithError(
                           controller: _gajiPensiunController,
                           fieldKey: 'gajiPensiun',
@@ -1250,8 +1238,6 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen>
                           },
                           validator: validateGajiPensiun,
                         ),
-
-                        // --- Bagian Input Domisili dengan DropdownSearch ---
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -1351,7 +1337,6 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen>
                             SizedBox(height: 10.0),
                           ],
                         ),
-
                         buildFormFieldWithError(
                           controller: _pekerjaanController,
                           fieldKey: 'pekerjaan',
@@ -1359,7 +1344,6 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen>
                           validator: validatePekerjaan,
                           hintText: 'Masukkan pekerjaan',
                         ),
-
                         buildFormFieldWithError(
                           controller: _nomorTeleponController,
                           fieldKey: 'nomorTelepon',
@@ -1370,8 +1354,6 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen>
                           ],
                           validator: validateNomorTelepon,
                         ),
-
-                        // --- Bagian Hasil Simulasi ---
                         Container(
                           width: double.infinity,
                           padding: const EdgeInsets.symmetric(vertical: 12.0),
@@ -1469,7 +1451,6 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen>
                                 ),
                         ),
                         SizedBox(height: 10.0),
-
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -1543,7 +1524,6 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen>
                           ],
                         ),
                         SizedBox(height: 16.0),
-
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -1617,42 +1597,6 @@ class _SimulasiCepatScreenState extends State<SimulasiCepatScreen>
               ),
             ),
           ),
-          // Custom top bar
-          Positioned(
-            top: 10,
-            left: 0,
-            right: 0,
-            child: SafeArea(
-              child: Container(
-                height: topBarHeight,
-                child: Stack(
-                  children: [
-                    Positioned(
-                      left: 0,
-                      top: 0,
-                      bottom: 0,
-                      child: IconButton(
-                        icon: const Icon(Icons.arrow_back,
-                            color: Color(0xFF017964)),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                    ),
-                    Center(
-                      child: Text(
-                        'Simulasi Cepat Pensiunku (SCP)',
-                        style: const TextStyle(
-                          color: Color(0xFF017964),
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          // Loading Overlay dan Screenshot
           if (_isLoadingOverlay || _isSavingScreenshot)
             Positioned.fill(
               child: ModalBarrier(

@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:pensiunku/data/db/app_database.dart';
 import 'package:pensiunku/main.dart';
+import 'package:pensiunku/screen/home/dashboard/poster/poster_dialog.dart';
 import 'package:pensiunku/screen/notification/notification_screen.dart';
 import 'package:pensiunku/screen/register/prepare_register_screen.dart';
 import 'package:pensiunku/screen/welcome/welcome_screen.dart';
@@ -32,6 +33,9 @@ class _InitScreenState extends State<InitScreen>
       vsync: this,
       duration: const Duration(seconds: 2),
     )..repeat(); // Muter terus
+
+    // TAMBAHKAN INI: Reset status poster dialog saat app dibuka
+    PosterDialog.resetShowStatus();
 
     // Mengatur UI system
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersive);
